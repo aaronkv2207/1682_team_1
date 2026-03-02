@@ -43,5 +43,5 @@ def W_fix(*args_fix):
     #W_pax, W_cargo
     return sum(args_fix)
 
-def MTOW(W_pow, W_air, W_fix)
+def MTOW(W_pow, W_air, W_fix):
     return sum(W_pow, W_air, W_fix)
