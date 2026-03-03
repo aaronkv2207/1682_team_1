@@ -63,7 +63,9 @@ v_stall = v_stall_ot * beta
 w_s = ((0.5 * rho * v_stall**2) * cl_max).to("N/m^2")
 
 # NOTE: preliminary assumption; will inform mass fractions for fuel and structures
-weight_fixed = PAYLOAD * 1.10  # assumed slight mass increase for avionics
+weight_fixed = (
+    PAYLOAD * 1.10
+)  # assumed slight mass increase for other equipment (avionics, e.g.)
 weight_pow = weight_pgen + (weight_pay_fuel - weight_fixed)
 weight_struct = mtow_ot - weight_pay_fuel
 
