@@ -38,7 +38,7 @@ weight_pgen = (
 mtow_ot = 12500 * ureg("lbs").to_base_units()
 # mlw_ot = 12300 * ureg("lbs").to_base_units()
 weight_pay_fuel = (
-    4400 * ureg("lb").to_base_units() * 1.3
+    4400 * ureg("lb").to_base_units() * 1.5
 )  # https://www.nohrsc.noaa.gov/snowsurvey/twin_otter.html; added fuel weight for improved range
 
 v_stall_ot = 28.8 * ureg("m/s")
@@ -67,7 +67,7 @@ weight_fixed = PAYLOAD * 1.10  # assumed slight mass increase for avionics
 weight_pow = weight_pgen + (weight_pay_fuel - weight_fixed)
 weight_struct = mtow_ot - weight_pay_fuel
 
-xcg = ...
+# xcg = ...  # TODO
 mtow = weight_pow + weight_fixed + weight_struct
 pow_f = (weight_pow / mtow).magnitude
 struct_f = (weight_struct / mtow).magnitude
@@ -75,9 +75,10 @@ fix_f = (weight_fixed / mtow).magnitude
 
 print(
     f"{35 * '='}\nMass Fractions from correlation\n"
+    f"MTOW: {round(mtow, 2)}\n"
     f"pow_f: {round(pow_f, 2)}\n"
     f"struct_f: {round(struct_f, 2)}\n"
     f"fix_f: {round(fix_f, 2)}\n{15 * '-'}\n"
-    f"Wing Loading (W/S): {round(w_s, 2)}\n"
-    f"Wing Area: {round(((mtow * g).to('N') / w_s), 2)}\n{35 * '='}"
+    f"W/S: {round(w_s, 2)}\n"
+    f"S: {round(((mtow * g).to('N') / w_s), 2)}\n{35 * '='}"
 )
