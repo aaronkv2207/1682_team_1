@@ -36,7 +36,7 @@ v_stall_ot = 28.8 * ureg("m/s")
 v_approach_ot = 1.3 * v_stall_ot
 v_cruise_ot = 182 * ureg("knots").to_base_units()
 
-n_props_ot = 3
+n_props_ot = 2
 p_shaft_ot = 620 * ureg("shp").to_base_units()
 
 # modified parameters to size our plane
