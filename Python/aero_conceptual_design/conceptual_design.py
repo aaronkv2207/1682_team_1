@@ -7,8 +7,7 @@ ureg = UnitRegistry()
 
 # mission requirements
 g = 9.81 * ureg("m/s^2")
-N = 19
-PAY = 100 * ureg("kg")
+PAYLOAD = 19 * 100 * ureg("kg")
 RANGE = 1500 * ureg("miles").to("m")
 V_CRUISE = 125 * ureg("m/s")
 X_TAKEOFF = 300 * ureg("ft").to("m")  # will need to be larger
@@ -30,22 +29,55 @@ tailplane_area_ot = 100.0 * ureg("ft^2").to_base_units()
 elevator_area_incl_tabs_ot = 35.0 * ureg("ft^2").to_base_units()
 
 w_s_ot = 145.50 * ureg("kg / m^2")
-w_p_ot = 10.1 * ureg("lbs/shp").to_base_units()  # power loading
-mtow_ot = 5670 * ureg("kg")
+w_p_ot = 10.1 * ureg("lbs/hp").to("kg/W")  # power loading
+
+weight_pgen = (
+    50 * ureg("lbs").to_base_units()
+) * 2  # https://www.startergenerator.com/inventory/250SG114Q
+
+mtow_ot = 12500 * ureg("lbs").to_base_units()
+# mlw_ot = 12300 * ureg("lbs").to_base_units()
+weight_pay_fuel = (
+    4400 * ureg("lb").to_base_units() * 1.3
+)  # https://www.nohrsc.noaa.gov/snowsurvey/twin_otter.html; added fuel weight for improved range
+
 v_stall_ot = 28.8 * ureg("m/s")
 v_approach_ot = 1.3 * v_stall_ot
 v_cruise_ot = 182 * ureg("knots").to_base_units()
 
 n_props_ot = 2
-p_shaft_ot = 620 * ureg("shp").to_base_units()
+p_shaft_ot = 620 * ureg("hp").to("W")
+
+x_to = 366 * ureg("m")  # src: https://dehavilland.com/twin-otter-classic-300-g/
+x_land = 320 * ureg("m")
 
 # modified parameters to size our plane
 cl_max = ...  # TODO: Fill in based on wind tunnel data
 atm = Atmosphere(h=0)
-rho = atm.density[0]
+rho = atm.density[0] * ureg("kg/m^3")
 
-w_s = (0.5 * rho * v_stall_ot**2) * cl_max
-mtow = mtow_ot  # NOTE: preliminary assumption; will inform mass fractions for fuel and structures
+# NOTE: x_to proportional to v^3 (1st order approx.)
+beta = (2 / 3) ** (1 / 3)  # will enable 30% reduction in takeoff length
+v_stall = v_stall_ot * beta
+
+w_s = ((0.5 * rho * v_stall**2) * cl_max).to("N/m^2")
+
+# NOTE: preliminary assumption; will inform mass fractions for fuel and structures
+weight_fixed = PAYLOAD * 1.10  # assumed slight mass increase for avionics
+weight_pow = weight_pgen + (weight_pay_fuel - weight_fixed)
+weight_struct = mtow_ot - weight_pay_fuel
+
 xcg = ...
-fuel_f = ...
-struct_f = ...
+mtow = weight_pow + weight_fixed + weight_struct
+pow_f = (weight_pow / mtow).magnitude
+struct_f = (weight_struct / mtow).magnitude
+fix_f = (weight_fixed / mtow).magnitude
+
+print(
+    f"{35 * '='}\nMass Fractions from correlation\n"
+    f"pow_f: {round(pow_f, 2)}\n"
+    f"struct_f: {round(struct_f, 2)}\n"
+    f"fix_f: {round(fix_f, 2)}\n{15 * '-'}\n"
+    f"Wing Loading (W/S): {round(w_s, 2)}\n"
+    f"Wing Area: {round(((mtow * g).to('N') / w_s), 2)}\n{35 * '='}"
+)
