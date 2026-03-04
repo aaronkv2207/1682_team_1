@@ -1,42 +1,102 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Constants
-V_stall = 20 # m/s
-rho = 1.225
-mu = 0.02 # Rolling friction coefficient
-e = 0.7 # Oswald efficiency factor
-S = 20 
-AR = 20
-W = 84516.21
-m = 8618.255 # 19,000 lbs in kg
-g = 9.81 # gravitational accelearation [m/s^2]
+
+# ============================================================
+# ATMOSPHERE & AIRCRAFT CONSTANTS (SI UNITS)
+# ============================================================
+
+rho = 1.225              # Air density [kg/m^3]
+g = 9.81                 # Gravity [m/s^2]
+
+W = 84516.21             # Aircraft weight [N]
+m = W / g                # Aircraft mass [kg]
+
+S = 20.0                 # Wing area [m^2]
+AR = 20.0                # Aspect ratio [-]
+e = 0.7                  # Oswald efficiency factor [-]
+
+CL = 0.2                 # Lift coefficient (TO config) [-]
+CD0 = 0.1                # Parasite drag coefficient [-]
+
+mu = 0.02                # Rolling friction coefficient [-]
+x_runway = 91.44         # Runway length (300 ft) [m]
+
+V_stall = 20.0           # Stall speed [m/s]
 
 
-x = 91.44 # 300 ft in m
+# ============================================================
+# DERIVED AERODYNAMIC COEFFICIENTS
+# ============================================================
+
+CDi = CL**2 / (np.pi * AR * e)     # Induced drag coefficient [-]
+CD = CD0 + CDi                    # Total drag coefficient [-]
 
 
-CL = 0.2
-CD0 = 0.1
-CDi = CL**2/(np.pi * AR * e)
-CD = CD0 + CDi
+# ============================================================
+# AERODYNAMIC FORCES
+# ============================================================
+
+def Lift(v):
+    """Lift force [N]."""
+    return 0.5 * rho * v**2 * S * CL
 
 
+def Drag(v):
+    """Drag force [N]."""
+    return 0.5 * rho * v**2 * S * CD
 
 
-def D(v):
-    return 1/2 * rho * v**2 * S * CDi
-def L(v):
-    return 1/2 * rho * v**2 * S * CL
-def T(v):
-    return D(v) + mu*(W - L(v)) + m*v/(2*x)
+# ============================================================
+# TAKEOFF GROUND ROLL MODEL
+# ============================================================
 
-def T_c(v, R):
-    return T(v) / (1/2*rho*(v**2) * np.pi * R**2)
-def eta_ideal(v, R):
-    return 2 / (1+ np.sqrt(1+T_c(v)))
-def P_shaft_required(v,R):
-    return (T(v) * v) / eta_ideal(v)
+def Acceleration_required(v):
+    """Required average acceleration to reach v in runway distance [m/s^2]."""
+    return v**2 / (2 * x_runway)
+
+
+def Thrust_required(v):
+    """Thrust required during ground roll [N]."""
+    return (
+        Drag(v)
+        + mu * (W - Lift(v))
+        + m * Acceleration_required(v)
+    )
+
+
+# ============================================================
+# ACTUATOR DISK MODEL
+# ============================================================
+
+def Disk_area(R):
+    """Disk area [m^2]."""
+    return np.pi * R**2
+
+
+def Thrust_coefficient(v, R):
+    """Velocity-based thrust coefficient Tc [-]."""
+    if v == 0:
+        return np.inf
+    return Thrust_required(v) / (0.5 * rho * v**2 * Disk_area(R))
+
+
+def Eta_ideal(v, R):
+    """Ideal propulsive efficiency [-]."""
+    Tc = Thrust_coefficient(v, R)
+    return 2 / (1 + np.sqrt(1 + Tc))
+
+
+def Shaft_power_required(v, R):
+    """Ideal shaft power required [W]."""
+    if v == 0:
+        # Static case
+        T = Thrust_required(0)
+        A = Disk_area(R)
+        delta_V = np.sqrt(2 * T / (rho * A))
+        return T * delta_V / 2
+    else:
+        return Thrust_required(v) * v / Eta_ideal(v, R)
 
 
 
