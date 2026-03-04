@@ -80,7 +80,8 @@ print(
     f"MTOW: {round(mtow.to('lbs'), 2)}\n"
     f"pow_f: {round(pow_f, 2)}\n"
     f"struct_f: {round(struct_f, 2)}\n"
-    f"fix_f: {round(fix_f, 2)}\n{15 * '-'}\n"
+    f"fix_f: {round(fix_f, 2)}\n{35 * '-'}\n"
+    f"V_STALL: {round(V_STALL, 2)}\n"
     f"W/S: {round(W_S, 2)}\n"
     f"S: {round(S, 2)}\n{35 * '='}"
 )
