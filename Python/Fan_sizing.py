@@ -37,13 +37,13 @@ CD = CD0 + CDi                    # Total drag coefficient [-]
 # AERODYNAMIC FORCES
 # ============================================================
 
-def Lift(v):
-    """Lift force [N]."""
+def L(v):
+    """Lift force [N]"""
     return 0.5 * rho * v**2 * S * CL
 
 
-def Drag(v):
-    """Drag force [N]."""
+def D(v):
+    """Drag force [N]"""
     return 0.5 * rho * v**2 * S * CD
 
 
@@ -51,17 +51,17 @@ def Drag(v):
 # TAKEOFF GROUND ROLL MODEL
 # ============================================================
 
-def Acceleration_required(v):
+def a(v):
     """Required average acceleration to reach v in runway distance [m/s^2]."""
     return v**2 / (2 * x_runway)
 
 
-def Thrust_required(v):
+def T(v):
     """Thrust required during ground roll [N]."""
     return (
-        Drag(v)
-        + mu * (W - Lift(v))
-        + m * Acceleration_required(v)
+        D(v)
+        + mu * (W - L(v))
+        + m * a(v)
     )
 
 
@@ -70,33 +70,33 @@ def Thrust_required(v):
 # ============================================================
 
 def Disk_area(R):
-    """Disk area [m^2]."""
+    """Disk area [m^2]"""
     return np.pi * R**2
 
 
-def Thrust_coefficient(v, R):
-    """Velocity-based thrust coefficient Tc [-]."""
+def T_c(v, R):
+    """Velocity-based thrust coefficient Tc [-]"""
     if v == 0:
         return np.inf
-    return Thrust_required(v) / (0.5 * rho * v**2 * Disk_area(R))
+    return T(v) / (0.5 * rho * v**2 * Disk_area(R))
 
 
 def Eta_ideal(v, R):
-    """Ideal propulsive efficiency [-]."""
-    Tc = Thrust_coefficient(v, R)
+    """Ideal propulsive efficiency [-]"""
+    Tc = T_c(v, R)
     return 2 / (1 + np.sqrt(1 + Tc))
 
 
-def Shaft_power_required(v, R):
-    """Ideal shaft power required [W]."""
+def P_shaft_required(v, R):
+    """Ideal shaft power required [W]"""
     if v == 0:
         # Static case
-        T = Thrust_required(0)
+        T = T(0)
         A = Disk_area(R)
         delta_V = np.sqrt(2 * T / (rho * A))
         return T * delta_V / 2
     else:
-        return Thrust_required(v) * v / Eta_ideal(v, R)
+        return T(v) * v / Eta_ideal(v, R)
 
 
 
