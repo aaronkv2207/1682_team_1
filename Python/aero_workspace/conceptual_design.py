@@ -1,7 +1,6 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from pint import UnitRegistry
 from ambiance import Atmosphere
+from pint import UnitRegistry
 
 ureg = UnitRegistry()
 
@@ -71,10 +70,10 @@ rho = atm.density[0] * ureg("kg/m^3")
 
 # NOTE: x_to proportional to v^3 (1st order approx.)
 beta = (1 / 7) ** (1 / 3)  # will enable ~33% reduction in takeoff length
-v_stall = v_stall_ot * beta
+V_STALL = v_stall_ot * beta
 
-w_s = ((0.5 * rho * v_stall**2) * cl_max).to("N/m^2")
-
+W_S = ((0.5 * rho * V_STALL**2) * cl_max).to("N/m^2")
+S = (mtow * g).to("N") / W_S
 
 print(
     f"{35 * '='}\nMass Fractions from correlation\n"
@@ -82,6 +81,6 @@ print(
     f"pow_f: {round(pow_f, 2)}\n"
     f"struct_f: {round(struct_f, 2)}\n"
     f"fix_f: {round(fix_f, 2)}\n{15 * '-'}\n"
-    f"W/S: {round(w_s, 2)}\n"
-    f"S: {round(((mtow * g).to('N') / w_s), 2)}\n{35 * '='}"
+    f"W/S: {round(W_S, 2)}\n"
+    f"S: {round(S, 2)}\n{35 * '='}"
 )
