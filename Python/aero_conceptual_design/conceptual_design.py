@@ -27,7 +27,8 @@ fin_area_ot = 48.0 * ureg("ft^2").to_base_units()
 rudder_area_incl_tab_ot = 34.0 * ureg("ft^2").to_base_units()
 tailplane_area_ot = 100.0 * ureg("ft^2").to_base_units()
 elevator_area_incl_tabs_ot = 35.0 * ureg("ft^2").to_base_units()
-
+n_props_ot = 2
+p_shaft_ot = 620 * ureg("hp").to("W")
 w_s_ot = 145.50 * ureg("kg / m^2")
 w_p_ot = 10.1 * ureg("lbs/hp").to("kg/W")  # power loading
 
@@ -38,36 +39,16 @@ weight_pgen = (
 mtow_ot = 12500 * ureg("lbs").to_base_units()
 # mlw_ot = 12300 * ureg("lbs").to_base_units()
 weight_pay_fuel = (
-    4400 * ureg("lb").to_base_units() * 1.5
+    4400 * ureg("lb").to_base_units() * 1.75
 )  # https://www.nohrsc.noaa.gov/snowsurvey/twin_otter.html; added fuel weight for improved range
 
-v_stall_ot = 28.8 * ureg("m/s")
-v_approach_ot = 1.3 * v_stall_ot
-v_cruise_ot = 182 * ureg("knots").to_base_units()
-
-n_props_ot = 2
-p_shaft_ot = 620 * ureg("hp").to("W")
-
-x_to = 366 * ureg("m")  # src: https://dehavilland.com/twin-otter-classic-300-g/
-x_land = 320 * ureg("m")
-
-# modified parameters to size our plane
-cl_max = ...  # TODO: Fill in based on wind tunnel data
-atm = Atmosphere(h=0)
-rho = atm.density[0] * ureg("kg/m^3")
-
-# NOTE: x_to proportional to v^3 (1st order approx.)
-beta = (2 / 3) ** (1 / 3)  # will enable ~33% reduction in takeoff length
-v_stall = v_stall_ot * beta
-
-w_s = ((0.5 * rho * v_stall**2) * cl_max).to("N/m^2")
 
 # NOTE: preliminary assumption; will inform mass fractions for fuel and structures
 weight_fixed = (
     PAYLOAD * 1.10
 )  # assumed slight mass increase for other equipment (avionics, e.g.)
 weight_pow = weight_pgen + (weight_pay_fuel - weight_fixed)
-weight_struct = mtow_ot - weight_pay_fuel
+weight_struct = mtow_ot * 0.7
 
 # xcg = ...  # TODO
 mtow = weight_pow + weight_fixed + weight_struct
@@ -75,9 +56,29 @@ pow_f = (weight_pow / mtow).magnitude
 struct_f = (weight_struct / mtow).magnitude
 fix_f = (weight_fixed / mtow).magnitude
 
+#############
+v_stall_ot = 28.8 * ureg("m/s") * (mtow / mtow_ot)
+v_approach_ot = 1.3 * v_stall_ot
+v_cruise_ot = 182 * ureg("knots").to_base_units()
+
+x_to = 366 * ureg("m")  # src: https://dehavilland.com/twin-otter-classic-300-g/
+x_land = 320 * ureg("m")
+
+# modified parameters to size our plane
+cl_max = 6.1  # TODO: Fill in based on wind tunnel data
+atm = Atmosphere(h=0)
+rho = atm.density[0] * ureg("kg/m^3")
+
+# NOTE: x_to proportional to v^3 (1st order approx.)
+beta = (1 / 7) ** (1 / 3)  # will enable ~33% reduction in takeoff length
+v_stall = v_stall_ot * beta
+
+w_s = ((0.5 * rho * v_stall**2) * cl_max).to("N/m^2")
+
+
 print(
     f"{35 * '='}\nMass Fractions from correlation\n"
-    f"MTOW: {round(mtow, 2)}\n"
+    f"MTOW: {round(mtow.to('lbs'), 2)}\n"
     f"pow_f: {round(pow_f, 2)}\n"
     f"struct_f: {round(struct_f, 2)}\n"
     f"fix_f: {round(fix_f, 2)}\n{15 * '-'}\n"
