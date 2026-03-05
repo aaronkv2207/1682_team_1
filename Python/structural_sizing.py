@@ -82,10 +82,27 @@ class Wing():
         pass
 
     def takeoff(self):
+        # Find forces - do we need to incorporate some takeoff angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
         q_takeoff = 0.5*self.rho_ground*self.aero["v_takeoff"]**2
-        L_takeoff = self.aero["CL_takeoff"]*q_takeoff*self.aero["S"]
+        L_takeoff = self.aero["CL_takeoff"]*q_takeoff*self.aero["S"] # or lift distribution from aero
         T_takeoff = self.loading["T_takeoff"] # not sure where this will come from exactly
         D_takeoff = self.aero["CD_takeoff"]*q_takeoff*self.aero["drag_area"]
+
+        # NOTE: figure out how weight and xcg fits into this
+
+        # Calculate stresses and torsion
+        axial_stress_takeoff = ... # NOTE: function from Leala's code (same for other variables below)
+        shear_stress_takeoff = ...
+
+        # Find component sizing based on calculated loading
+        # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
+        takeoff_spar_cap_area = self.spar_cap_area(L_takeoff, 0, axial_stress_takeoff)
+        takeoff_spar_web_area = self.spar_web_area(L, 0, shear_stress_takeoff)
+        takeoff_skin_thickness = self.skin_thickness(q_takeoff, shear_stress_takeoff)
+        takeoff_tube_thickness = self.tube_thickness() # still not sure what this is for
+
+        return takeoff_spar_cap_area, takeoff_spar_web_area, takeoff_skin_thickness, takeoff_tube_thickness
+
 
     def climb(self):
         pass
