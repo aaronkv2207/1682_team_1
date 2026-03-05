@@ -1,6 +1,31 @@
 # Team 1 - Structural Sizing
 import numpy as np
 
+class Structure:
+    """Gets total structural mass from different structural components"""
+    pass
+
+class Wing(Structure):
+    """Wing class:
+    - Takes in general wing sizing and material
+    - Sizes structural components on the wing
+    - Outputs weight of the wing"""
+
+    def __init__(self, aero_sizing, materials, weight_estimate):
+        self.aero_sizing = aero_sizing
+        self.material = materials
+        self.weight_estimate = weight_estimate
+
+class Tail(Structure):
+    pass
+
+class Fuselage(Structure):
+    pass
+
+class LandingGear(Structure):
+    pass
+
+
 # Assumptions/variables
 L = ... # lift
 W_total = ... # total weight
