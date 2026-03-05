@@ -7,7 +7,7 @@ from J import JetParam, JetControl, WingJSec, JVL, JWing
 from scipy.interpolate import Akima1DInterpolator
 
 # Wing geometry
-main_foil = asb.Airfoil(coordinates='./spring2025/jw05.dat')
+main_foil = asb.Airfoil(coordinates='./JVL_writer/jw05.dat')
 S = 49.6 #twin otter wing area is 39 m^2
 AR = 8 #twin otter is 10.05
 ail_hinge = 0.7
@@ -20,17 +20,18 @@ root_chord = 2*MAC - tip_chord #root chord needs to be adjusted for lost area fr
 
 # vertical tail geometry
 lv = 10 #distance from wing quarter chord to vertical tail quarter chord
-Vv = .1 #Vertical tail volume coefficient TODO: get updated value from Brenda
+#TODO: update VT moment arm to account for the sweep
+Vv = .1 #Vertical tail volume coefficient 
 vt_ar = 1.2
 tail_hinge = 0.7
 
 Sv = Vv*S*b/lv
 vt_c = np.sqrt(Sv/vt_ar) #constant chord
 vt_b = vt_ar*vt_c
-vt_x = lv + 1/4 * MAC - 1/4 * vt_c #distance from wing LE to tail LE
+vt_x = lv + 1/4 * MAC - 1/4 * vt_c #distance from wing LE to tail (avg) LE
 
 # horizontal tail geometry
-lh = 10 + vt_b/2 #include some sweep in the vertical tail to extend the ht moment arm
+lh = lv + vt_c/3 #include some sweep in the vertical tail to extend the ht moment arm
 Vh = 1.05
 ht_ar = 2
 
@@ -41,6 +42,7 @@ ht_tc = 2*ht_mac - ht_rc
 ht_b = ht_ar*ht_mac
 
 ht_x = lh + 1/4 * MAC - 1/4 * ht_mac
+vt_sweep_x = ht_x - vt_x
 
 # fuselage (not very well parametrized at the moment)
 nose_x = -5
@@ -96,14 +98,14 @@ vertical_tail = JWing(
     symmetric=False,
     xsecs=[
         WingJSec(
-            xyz_le=[0, 0, 0],
+            xyz_le=[-vt_sweep_x, 0, 0],
             chord=vt_c,
             twist=0,
             airfoil=asb.Airfoil(name="NACA0012"),
             control_surfaces = [asb.ControlSurface(name="Rudder", hinge_point=tail_hinge, deflection=0)]
         ),
         WingJSec(
-            xyz_le=[ht_x - vt_x, 0, vt_b],
+            xyz_le=[vt_sweep_x, 0, vt_b],
             chord=vt_c,
             twist=0,
             airfoil=asb.Airfoil(name="NACA0012"),
@@ -144,12 +146,13 @@ def generate_fuselage_xsecs(N: int) -> List[asb.FuselageXSec]:
     Returns:
         List[FuselageXSec]: List of fuselage cross-sections.
     """
-    x_positions = np.linspace(nose_x, vt_x + vt_c, N)  # Generate N sections along the fuselage
+    fuse_end = vt_x - vt_sweep_x + vt_c #end of the fuselage, at the end of the vertical tail
+    x_positions = np.linspace(nose_x, fuse_end, N)  # Generate N sections along the fuselage
     r = np.array([0.3, 2/3*fuse_width, fuse_width, fuse_width, fuse_width, 3/4*fuse_width, 1.0])
     z = -r/2
-    zs = np.interp(x_positions, [nose_x, 7.8*nose_x, nose_x/2, 0, vt_x/2, vt_x, vt_x + vt_c], z)  # Interpolate z position
-    widths = np.interp(x_positions, [nose_x, 7/8*nose_x, 1/2*nose_x, 0, vt_x/2, vt_x, vt_x + vt_c], r)  # Width transition
-    heights = Akima1DInterpolator([nose_x, 7/8*nose_x, 1/2*nose_x, 0, vt_x/2, vt_x, vt_x + vt_c], r, method="akima")(x_positions)
+    zs = np.interp(x_positions, [nose_x, 7.8*nose_x, nose_x/2, 0, vt_x/2, vt_x, fuse_end], z)  # Interpolate z position
+    widths = np.interp(x_positions, [nose_x, 7/8*nose_x, 1/2*nose_x, 0, vt_x/2, vt_x, fuse_end], r)  # Width transition
+    heights = Akima1DInterpolator([nose_x, 7/8*nose_x, 1/2*nose_x, 0, vt_x/2, vt_x, fuse_end], r, method="akima")(x_positions)
     # heights = np.interp(x_positions, [nose_x, 7/8*nose_x, nose_x/2, vt_x/2, vt_x, vt_x + vt_c], [0, 2, 3, 3, 2.5, 2.0])  # Height transition
     shapes = np.interp(x_positions, [nose_x, nose_x/2, vt_x/2, vt_x, vt_x + vt_c], [1, 2.5, 2.5, 2, 1])  # Shape transition
 
@@ -224,18 +227,11 @@ avl_plane.default_analysis_specific_options = {
         asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"),
     }
 
-avl_plane.write_jvl('1682_v0', CLAF=False, j=True)
+avl_plane.write_jvl('./JVL_files/1682_v0', CLAF=False, j=True)
 
 plane.draw_three_view(show=False)
 p.show_plot(tight_layout=False, savefig="3view.png")
-# print("Desired wing area: ", S)
-# print("Actual wing area:", wing.area())
 
-# """ Defining Plane Based on Sections"""
-
-# Wing
-
-## Section 1:
-
-# jw01 = asb.Airfoil(name='./spring2025/jw01.dat')
-# jw01.draw()
+print(f'Wing span: {b:.2f} m')
+print(f'Wing aspect ratio: {AR:.2f}')
+print(f'Wing mean aerodynamic chord: {MAC:.2f} m')
