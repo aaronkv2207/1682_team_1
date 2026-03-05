@@ -1,6 +1,6 @@
 # Team 1 - Structural Sizing
 import numpy as np
-from ... import ... as beam
+# from ... import ... as ... # elasticity stuff
 
 class Wing():
     """Wing class:
@@ -10,6 +10,7 @@ class Wing():
 
     # Set constants
     g = 9.81
+    rho_ground = 1.225
 
     def __init__(self, aero, loading, materials, weight_estimate):
         self.aero = aero
@@ -24,60 +25,92 @@ class Wing():
 
         # Calculate max load factor
         N = L/W_total # flight load factor
-        N_land = a_z/g # landing load factor
+        N_land = a_z/self.g # landing load factor
         N_max = np.max(N, N_land) # maximum load factor
 
         return N, N_land, N_max
 
-    def spar_cap_area(self):
+    def spar_cap_area(self, L, a_z, axial_stress):
         """Find necessary spar cap area based on loading"""
         # Get required variables
         c_tip = self.aero["c_tip"]
         c_0 = self.aero["c_0"]
         taper_ratio = c_tip/c_0
-        N_max = self.get_N()[2]
+        N_max = self.get_N(L, a_z)[2]
         W_cent = self.aero["W_total"] - self.weight_estimate
-        axial_max = ... # TODO: fill in function from other script
         b = self.aero["b"]
         h = self.aero["h"]
-        N = self.get_N()[0]
+        N = self.get_N(L, a_z)[0]
         E = self.materials["spar_car_E"] # maybe remain this variable if it shows up again just for clarity
         w_b_max = self.aero["w_b_max"] # not sure where we'll actually get this
 
         # Calculate area based on strength and stiffness requirements
-        A_cap_0_strength = (N_max*W_cent)/(12*axial_max)*(b/h)*(1+2*taper_ratio)/(1+taper_ratio)
+        A_cap_0_strength = (N_max*W_cent)/(12*axial_stress)*(b/h)*(1+2*taper_ratio)/(1+taper_ratio)
         A_cap_0_stiffness = (N*W_cent)/(48*E) * b**2/h**2 * 1/w_b_max * (1+2*taper_ratio)/(1+taper_ratio)
         return np.max(A_cap_0_strength, A_cap_0_stiffness)
 
-    def spar_web_area(self):
+    def spar_web_area(self, L, a_z, shear_stress):
         """Find necessary spar web area based on loading"""
         # Get required variables
-        N_max = self.get_N()[2]
+        N_max = self.get_N(L, a_z)[2]
         W_cent = self.aero["W_total"] - self.weight_estimate
-        shear_max = ... # TODO: fill in function from other script
 
         # Return spar web area
-        return (N_max*W_cent)/(2*shear_max)
+        return (N_max*W_cent)/(2*shear_stress)
 
-    def skin_thickness(self):
+    def skin_thickness(self, q, shear_stress):
         """Find necessary skin thickness based on loading"""
+        # Get required variables
+        b_ail = self.aero["b_ail"]
+        c_ail = self.aero["c_ail"]
+        y_ail = self.aero["y_ail"]
+        c_m = self.aero["c_m"] # I don't think this changes based on flight conditions but not sure
+        A = self.aero["A"]
+        s_tot = self.aero["s_tot"] # not sure what this is
+        G = self.materials["skin_G"]
+        twist_max = self.aero["twist_max"]
 
-
-        t_skin_strength = q*b_ail*c_ail**2*c_m*1/(2*A)*1/(1/shear_max)
+        # Calculate skin thickness requirements
+        t_skin_strength = q*b_ail*c_ail**2*c_m*1/(2*A)*1/(1/shear_stress)
         t_skin_stiffness = 1*b_ail*c_ail**2*y_ail*c_m*s_tot/(4*A**2*G)*(1/twist_max)
 
+        # Return max thickness
         return np.max(t_skin_strength, t_skin_stiffness)
 
-    def tube_thickness():
+    def tube_thickness(self):
         # TODO: implement this (not sure where this component goes so not doing this yet)
         pass
 
+    def takeoff(self):
+        q_takeoff = 0.5*self.rho_ground*self.aero["v_takeoff"]**2
+        L_takeoff = self.aero["CL_takeoff"]*q_takeoff*self.aero["S"]
+        T_takeoff = self.loading["T_takeoff"] # not sure where this will come from exactly
+        D_takeoff = self.aero["CD_takeoff"]*q_takeoff*self.aero["drag_area"]
+
+    def climb(self):
+        pass
+
+    def cruise(self):
+        pass
+
+    def descent(self):
+        pass
+
+    def landing(self):
+        pass
+
+    def max_load_sizing(self):
+        pass
+
+    def wing_weight(self):
+        pass
     # add methods for each flight stage that gets the correct loads and then sizes based off that
     # also add method to run through each flight stage and then get max loading
     # weight method takes max loading and uses that sizing to get weight of components
 
 
 class Tail():
+    # should this be a subclass of wing so that it inherits a lot of the functions?
     pass
 
 class Fuselage():
