@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from ambiance import Atmosphere
-from conceptual_design import MTOW, V_STALL, V_CRUISE, W_S, S, ureg
+from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
 
 
 # TODO: update constants in dataclass
@@ -21,6 +21,15 @@ class AircraftConfig:
     CDi_takeoff: ...  # TODO: couple with drag model outputs
     CL_takeoff: float = ...  # TODO: fill-in based on JVL outputs
     CM_takeoff: float = ...  # TODO: fill-in based on JVL outputs
+
+    #### CLIMB DEFINITIONS ###
+    v_cruise: int = ...
+    weight_cruise: ...  # TODO: update to varied model
+    h_cruise: ...
+    Cd0_cruise: ...
+    Cdv_cruise: ...
+    CDi_cruise: ...
+    # TODO: will need to integrate lift from control surfaces
 
     #### CRUISE DEFINITIONS ###
     v_cruise: int = V_CRUISE
@@ -41,6 +50,15 @@ class AircraftConfig:
 
 
 class TakeOff:
+    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
+    Return polynomial fit of operating points.
+
+    Returns:
+        array: Will give polynomial coefficients for functions --> CL, CD, CM
+    """
+
+
+class Climb:
     """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
     Return polynomial fit of operating points.
 
@@ -98,8 +116,8 @@ class Landing:
 if __name__ == "__main__":
     cruise_cls = CruiseModel(
         s_ref=AircraftConfig.s_ref,
-        weight=AircraftConfig.weight_cruise,  # TODO: update to varied model
-        v_cruise=AircraftConfig.v_cruise,  # # TODO: update to varied model
+        weight=AircraftConfig.weight_cruise,
+        v_cruise=AircraftConfig.v_cruise,
         h_cruise=AircraftConfig.h_cruise,
         AR=AircraftConfig.AR,
         Cd0=AircraftConfig.Cd0_cruise,
