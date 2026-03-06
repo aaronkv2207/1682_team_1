@@ -50,13 +50,13 @@ weight_pow = weight_pgen + (weight_pay_fuel - weight_fixed)
 weight_struct = mtow_ot * 0.7
 
 # xcg = ...  # TODO
-mtow = weight_pow + weight_fixed + weight_struct
-pow_f = (weight_pow / mtow).magnitude
-struct_f = (weight_struct / mtow).magnitude
-fix_f = (weight_fixed / mtow).magnitude
+MTOW = weight_pow + weight_fixed + weight_struct
+pow_f = (weight_pow / MTOW).magnitude
+struct_f = (weight_struct / MTOW).magnitude
+fix_f = (weight_fixed / MTOW).magnitude
 
 #############
-v_stall_ot = 28.8 * ureg("m/s") * (mtow / mtow_ot)
+v_stall_ot = 28.8 * ureg("m/s") * (MTOW / mtow_ot)
 v_approach_ot = 1.3 * v_stall_ot
 v_cruise_ot = 182 * ureg("knots").to_base_units()
 
@@ -73,11 +73,11 @@ beta = (1 / 7) ** (1 / 3)  # will enable ~33% reduction in takeoff length
 V_STALL = v_stall_ot * beta
 
 W_S = ((0.5 * rho * V_STALL**2) * cl_max).to("N/m^2")
-S = (mtow * g).to("N") / W_S
+S = (MTOW * g).to("N") / W_S
 
 print(
     f"{35 * '='}\nMass Fractions from correlation\n"
-    f"MTOW: {round(mtow.to('lbs'), 2)}\n"
+    f"MTOW: {round(MTOW.to('lbs'), 2)}\n"
     f"pow_f: {round(pow_f, 2)}\n"
     f"struct_f: {round(struct_f, 2)}\n"
     f"fix_f: {round(fix_f, 2)}\n{35 * '-'}\n"
