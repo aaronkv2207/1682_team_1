@@ -75,13 +75,15 @@ V_STALL = v_stall_ot * beta
 W_S = ((0.5 * rho * V_STALL**2) * cl_max).to("N/m^2")
 S = (MTOW * g).to("N") / W_S
 
-print(
-    f"{35 * '='}\nMass Fractions from correlation\n"
-    f"MTOW: {round(MTOW.to('lbs'), 2)}\n"
-    f"pow_f: {round(pow_f, 2)}\n"
-    f"struct_f: {round(struct_f, 2)}\n"
-    f"fix_f: {round(fix_f, 2)}\n{35 * '-'}\n"
-    f"V_STALL: {round(V_STALL, 2)}\n"
-    f"W/S: {round(W_S, 2)}\n"
-    f"S: {round(S, 2)}\n{35 * '='}"
-)
+print_bool = False
+if print_bool:
+    print(
+        f"{35 * '='}\nMass Fractions from correlation\n"
+        f"MTOW: {round(MTOW.to('lbs'), 2)}\n"
+        f"pow_f: {round(pow_f, 2)}\n"
+        f"struct_f: {round(struct_f, 2)}\n"
+        f"fix_f: {round(fix_f, 2)}\n{35 * '-'}\n"
+        f"V_STALL: {round(V_STALL, 2)}\n"
+        f"W/S: {round(W_S, 2)}\n"
+        f"S: {round(S, 2)}\n{35 * '='}"
+    )
