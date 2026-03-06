@@ -18,6 +18,7 @@ class AircraftConfig:
     v_takeoff: float = 1.2 * V_STALL
     Cd0_takeoff: ...  # TODO: couple with Brenda's drag model output
     Cdv_takeoff: ...  # TODO: couple with drag model outputs
+    CDi_takeoff: ...  # TODO: couple with drag model outputs
     CL_takeoff: float = ...  # TODO: fill-in based on JVL outputs
     CM_takeoff: float = ...  # TODO: fill-in based on JVL outputs
 
@@ -27,11 +28,14 @@ class AircraftConfig:
     h_cruise: ...
     Cd0_cruise: ...
     Cdv_cruise: ...
+    CDi_cruise: ...
+    # TODO: will need to integrate lift from control surfaces
 
     #### LANDING DEFINITIONS ###
     v_landing: float = 1.2 * V_STALL
     Cd0_landing: ...  # TODO: couple with Brenda's drag model output
     Cdv_landing: ...  # TODO: couple with drag model outputs
+    CDi_landing: ...  # TODO: couple with drag model outputs
     CL_landing: float = ...  # TODO: fill-in based on JVL outputs
     CM_landing: float = ...  # TODO: fill-in based on JVL outputs
 
@@ -41,32 +45,32 @@ class TakeOff:
     Return polynomial fit of operating points.
 
     Returns:
-        array: Functions of CL, CD, CM
+        array: Will give polynomial coefficients for functions --> CL, CD, CM
     """
 
 
 class CruiseModel:
-    def __init__(self, s_ref, weight, v_cruise, h_cruise, AR, Cd0, Cdv, e=None) -> None:
+    def __init__(self, s_ref, weight, v_cruise, h_cruise, AR, Cd0, Cdv, CDi) -> None:
         self.s_ref = s_ref * ureg("m^2")
         self.weight = weight * ureg("N")  # newtons
         self.v_cruise = v_cruise.magnitude * ureg("m/s")
         self.h_cruise = h_cruise
         self.density = Atmosphere(h=h_cruise.magnitude).density[0] * ureg("kg/m^3")
         self.AR = AR
-        self.e = e
         self.q = 0.5 * self.density * (self.v_cruise**2)
         self.Cd0 = Cd0
         self.Cdv = Cdv
+        self.CDi = CDi
 
     def cl(self):
         L = self.weight  # assumes I have weight as a function of time
         return (L / (self.q * self.s_ref)).magnitude
 
     def cd_induced(self):
-        if self.e is None:
-            return "Query JVL output"
+        if self.CDi is None:
+            return (self.cl() ** 2) / (np.pi * self.AR * 0.7)  # assume e=0.7
         else:
-            return (self.cl() ** 2) / (np.pi * self.AR * self.e)
+            return self.CDi
 
     def cd_parasitic(self):
         return self.Cd0
@@ -86,7 +90,7 @@ class Landing:
     Return polynomial fit of operating points.
 
     Returns:
-        array: Functions of CL, CD, CM
+        array: Will give polynomial coefficients for functions --> CL, CD, CM
     """
 
 
@@ -100,6 +104,7 @@ if __name__ == "__main__":
         AR=AircraftConfig.AR,
         Cd0=AircraftConfig.Cd0_cruise,
         Cdv=AircraftConfig.Cdv_cruise,
+        CDi=AircraftConfig.CDi_cruise,
     )
     CD_total_cruise = cruise_cls.cd_total()
     L_over_D_cruise = cruise_cls.cl() / CD_total_cruise
