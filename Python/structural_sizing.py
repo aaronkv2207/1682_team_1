@@ -66,6 +66,7 @@ class Wing():
         y_ail = self.aero["y_ail"]
         c_m = self.aero["c_m"] # I don't think this changes based on flight conditions but not sure
         A = self.aero["A"]
+        # testing merging
         s_tot = self.aero["s_tot"] # not sure what this is
         G = self.materials["skin_G"]
         twist_max = self.aero["twist_max"]
