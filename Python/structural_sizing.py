@@ -65,11 +65,14 @@ class Wing():
         c_ail = self.aero["c_ail"]
         y_ail = self.aero["y_ail"]
         c_m = self.aero["c_m"] # I don't think this changes based on flight conditions but not sure
-        A = self.aero["A"]
-        # testing merging
+        x1 = self.aero["x1"]
+        x2= self.aero["x2"]
+        tx1 = self.aero["tx1"]
+        tx2 = self.aero["tx2"]
         s_tot = self.aero["s_tot"] # not sure what this is
         G = self.materials["skin_G"]
         twist_max = self.aero["twist_max"]
+
 
         # Calculate skin thickness requirements
         t_skin_strength = q*b_ail*c_ail**2*c_m*1/(2*A)*1/(1/shear_stress)
