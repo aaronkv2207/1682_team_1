@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 rho = 1.225              # Air density [kg/m^3]
 g = 9.81                 # Gravity [m/s^2]
+a = 343                  # Speed of Sound [m/s^2]
 
 W = 73618.07             # Aircraft weight [N] --> 16550 lbs
 m = W / g                # Aircraft mass [kg]
@@ -20,7 +21,7 @@ AR = 8                   # Aspect ratio [-]
 e = 0.7                  # Oswald efficiency factor [-]
 
 CL = 6.1                 # Lift coefficient (TO config) [-]
-CD0 = 0.32               # Parasite drag coefficient [-]
+CD0 = 0.032               # Parasite drag coefficient [-]
 
 mu = 0.02                # Rolling friction coefficient [-]
 x_runway = 52            # Runway length (171 ft) [m]
@@ -59,7 +60,7 @@ def D(v):
 # TAKEOFF GROUND ROLL MODEL
 # ============================================================
 
-def a(v):
+def acc(v):
     """Required average acceleration to reach v in runway distance [m/s^2]."""
     return v**2 / (2 * x_runway)
 
@@ -69,7 +70,7 @@ def T(v):
     return (
         D(v)
         + mu * (W - L(v))
-        + m * a(v)
+        + m * acc(v)
     )
 
 # ============================================================
@@ -110,6 +111,10 @@ def P_cruise(v, R):
     eta = Eta_ideal_cruise(v, R)
     return T_cruise(v) * v / eta
 
+def M_tip(R):
+    """Tip Mach number at cruise"""
+    return np.sqrt((omega * R)**2 + V_cruise**2) / a
+
 
 # ============================================================
 # ACTUATOR DISK MODEL
@@ -148,6 +153,7 @@ def Eta_ideal(v, R):
     """Ideal propulsive efficiency [-]"""
     Tc = T_c(v, R)
     return 2 / (1 + np.sqrt(1 + Tc))
+print(Eta_ideal_cruise(125,3.5))
 
 
 # ============================================================
@@ -177,6 +183,23 @@ def P_shaft_required(v, R):
     return P
 
 
+# ============================================================
+# Sanity Check Plot: CRUISE EFFICIENCY VS RADIUS
+# ============================================================
+
+R_sweep = np.linspace(1.0, 10.0, 200)   # sweep radius from 1m to 4m
+
+eta_cruise = Eta_ideal_cruise(V_cruise, R_sweep)
+
+plt.figure(figsize=(8,6))
+plt.plot(R_sweep, eta_cruise)
+
+plt.xlabel("Propeller Radius [m]")
+plt.ylabel("Ideal Propulsive Efficiency η")
+plt.title("Ideal Cruise Efficiency vs Propeller Radius")
+
+plt.grid(True)
+plt.show()
 
 
 
@@ -184,57 +207,119 @@ vel = np.linspace(0, V_to, 200)
 R_values = np.linspace(1.524, 3.048, 5) # Radius sweep (5 ft to 10 ft)
 
 
+# # ============================================================
+# # PLOT 1: THRUST COEFFICIENT VS VELOCITY
+# # ============================================================
+
+# vel_tc = np.linspace(1, V_to, 200)  # avoid zero
+
+# plt.figure(figsize=(8,6))
+
+# for r in R_values:
+#     plt.plot(vel_tc, T_c(vel_tc, r), label=f"R = {r:.2f} m")
+
+# plt.xlabel("Velocity [m/s]")
+# plt.ylabel("Velocity-Based Thrust Coefficient $T_c$ [-]")
+# plt.title("Thrust Coefficient vs Velocity (Ground Roll)")
+# plt.legend()
+# plt.grid(True)
+# plt.show()
+
+# # ============================================================
+# # PLOT 2: SHAFT POWER REQUIRED VS VELOCITY
+# # ============================================================
+
+# plt.figure(figsize=(8,6))
+
+# for r in R_values:
+#     plt.plot(vel, P_shaft_required(vel, r)/1000, label=f"R = {r:.2f} m")
+
+# plt.xlabel("Velocity [m/s]")
+# plt.ylabel("Shaft Power Required [kW]")
+# plt.title("Shaft Power Required vs Velocity (Ground Roll)")
+# plt.legend()
+# plt.grid(True)
+# plt.show()
+
+
+# # ============================================================
+# # PLOT 3: Cruise Efficiency vs Advance Ratio
+# # ============================================================
+# plt.figure(figsize=(8,6))
+# for r in R_values:
+#     J = V_cruise / (omega * r)
+#     eta = Eta_ideal_cruise(V_cruise, r)
+#     plt.scatter(J, eta, label=f"R = {r:.2f} m")
+
+# plt.xlabel("Advance Ratio J = V/(ΩR)")
+# plt.ylabel("Ideal Efficiency η")
+# plt.title("Cruise Efficiency vs Advance Ratio")
+# plt.legend()
+# plt.grid(True)
+# plt.show()
+
+
+# # ============================================================
+# # PLOT 4: Tip Mach # During Cruise
+# # ============================================================
+
+# plt.figure(figsize=(8,6))
+# R_plot = np.linspace(1.0, 4.0, 200)
+# plt.plot(R_plot, M_tip(R_plot), label="Tip Mach")
+# plt.axhline(0.65, linestyle="--", label="Efficiency limit")
+# plt.axhline(0.85, linestyle="--", label="Compressibility limit")
+# plt.xlabel("Propeller Radius [m]")
+# plt.ylabel("Tip Mach Number")
+# plt.title("Propeller Tip Mach at Cruise")
+# plt.legend()
+# plt.grid(True)
+# plt.show()
+
+
+
+
+
+
 # ============================================================
-# PLOT 1: THRUST COEFFICIENT VS VELOCITY
+# PLOT 5: Tradeoff Plot
 # ============================================================
 
-vel_tc = np.linspace(1, V_to, 200)  # avoid zero
+R_plot = np.linspace(1.0, 5, 200)
 
-plt.figure(figsize=(8,6))
+P_vals = [P_shaft_required(V_to, r)/1000 for r in R_plot]  # kW
+eta_vals = [Eta_ideal_cruise(V_cruise,r) for r in R_plot]
+print(eta_vals)
+M_vals = [M_tip(r) for r in R_plot]
 
-for r in R_values:
-    plt.plot(vel_tc, T_c(vel_tc, r), label=f"R = {r:.2f} m")
+fig, ax1 = plt.subplots(figsize=(9,6))
 
-plt.xlabel("Velocity [m/s]")
-plt.ylabel("Velocity-Based Thrust Coefficient $T_c$ [-]")
-plt.title("Thrust Coefficient vs Velocity (Ground Roll)")
-plt.legend()
+# Power curve
+ax1.plot(R_plot, P_vals, label="Takeoff Power Required (kW)")
+ax1.set_xlabel("Propeller Radius [m]")
+ax1.set_ylabel("Power (kW) / Efficiency")
+
+# Efficiency curve
+# ax1.plot(R_plot, eta_vals, linestyle="--", label="Cruise Efficiency about .73")
+
+# Example motor power limit
+motor_power = 1.1e6  # kW (CHANGE THIS)
+ax1.axhline(motor_power, linestyle=":", label="Motor Power Limit")
+
+# Second axis for tip Mach
+ax2 = ax1.twinx()
+ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
+ax2.set_ylabel("Tip Mach Number")
+
+# Mach limits
+ax2.axhline(0.85, color="red", linestyle="--", label="Mach Limit")
+
+# Combine legends
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines1 + lines2, labels1 + labels2, loc="best")
+
+plt.title("Propeller Radius Trade Study")
 plt.grid(True)
 plt.show()
 
-# ============================================================
-# PLOT 2: SHAFT POWER REQUIRED VS VELOCITY
-# ============================================================
 
-plt.figure(figsize=(8,6))
-
-for r in R_values:
-    plt.plot(vel, P_shaft_required(vel, r)/1000, label=f"R = {r:.2f} m")
-
-plt.xlabel("Velocity [m/s]")
-plt.ylabel("Shaft Power Required [kW]")
-plt.title("Shaft Power Required vs Velocity (Ground Roll)")
-plt.legend()
-plt.grid(True)
-plt.show()
-
-
-# ============================================================
-# PLOT 3: Cruise Efficiency vs Advance Ratio
-# ============================================================
-plt.figure(figsize=(8,6))
-for r in R_values:
-    J = V_cruise / (omega * r)
-    eta = Eta_ideal_cruise(V_cruise, r)
-    plt.scatter(J, eta, label=f"R = {r:.2f} m")
-
-plt.xlabel("Advance Ratio J = V/(ΩR)")
-plt.ylabel("Ideal Efficiency η")
-plt.title("Cruise Efficiency vs Advance Ratio")
-plt.legend()
-plt.grid(True)
-plt.show()
-
-
-
-    

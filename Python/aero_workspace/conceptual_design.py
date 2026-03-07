@@ -75,7 +75,7 @@ V_STALL = v_stall_ot * beta
 W_S = ((0.5 * rho * V_STALL**2) * cl_max).to("N/m^2")
 S = (MTOW * g).to("N") / W_S
 
-print_bool = False
+print_bool = True
 if print_bool:
     print(
         f"{35 * '='}\nMass Fractions from correlation\n"
