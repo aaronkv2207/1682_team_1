@@ -27,6 +27,8 @@ def max_climb_angle(gamma):
     L_D=params['L_D']
     return np.sin(gamma)-T_W+1/L_D
 
+
+
 #should i be solving for gamma(t)
 #theroretically know everything except for v_C, could that be something we also want to assume
 #are gamma and pitch attitude different from each other
