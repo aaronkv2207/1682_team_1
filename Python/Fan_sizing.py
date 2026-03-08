@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# GOAL: Look at tradeoffs between radius for P_required during takeoff
-# and eta_ideal during cruise
+# GOAL: Look at tradeoffs that occur when changing the radius of the fan
 
 # ============================================================
 # ATMOSPHERE & AIRCRAFT CONSTANTS (SI UNITS)
@@ -30,7 +29,7 @@ V_stall = 19.933         # Stall speed [m/s]
 V_to = 1.2*V_stall       # Takeoff speed [m/s]
 V_cruise = 125           # Cruise Speed [m/s] --> 280 mph
 
-RPM = 2100               # RPM of propeller [rev/min]
+RPM = 1000 #2100               # RPM of propeller [rev/min]
 omega = RPM*2*np.pi/60   # [rad/s]
 
 
@@ -153,7 +152,7 @@ def Eta_ideal(v, R):
     """Ideal propulsive efficiency [-]"""
     Tc = T_c(v, R)
     return 2 / (1 + np.sqrt(1 + Tc))
-print(Eta_ideal_cruise(125,3.5))
+# print(Eta_ideal_cruise(125,3.5))
 
 
 # ============================================================
@@ -183,28 +182,28 @@ def P_shaft_required(v, R):
     return P
 
 
-# ============================================================
-# Sanity Check Plot: CRUISE EFFICIENCY VS RADIUS
-# ============================================================
+# # ============================================================
+# # Sanity Check Plot: CRUISE EFFICIENCY VS RADIUS
+# # ============================================================
 
-R_sweep = np.linspace(1.0, 10.0, 200)   # sweep radius from 1m to 4m
+# R_sweep = np.linspace(1.0, 10.0, 200)   # sweep radius from 1m to 4m
 
-eta_cruise = Eta_ideal_cruise(V_cruise, R_sweep)
+# eta_cruise = Eta_ideal_cruise(V_cruise, R_sweep)
 
-plt.figure(figsize=(8,6))
-plt.plot(R_sweep, eta_cruise)
+# plt.figure(figsize=(8,6))
+# plt.plot(R_sweep, eta_cruise)
 
-plt.xlabel("Propeller Radius [m]")
-plt.ylabel("Ideal Propulsive Efficiency η")
-plt.title("Ideal Cruise Efficiency vs Propeller Radius")
+# plt.xlabel("Propeller Radius [m]")
+# plt.ylabel("Ideal Propulsive Efficiency η")
+# plt.title("Ideal Cruise Efficiency vs Propeller Radius")
 
-plt.grid(True)
-plt.show()
+# plt.grid(True)
+# plt.show()
 
 
 
-vel = np.linspace(0, V_to, 200)
-R_values = np.linspace(1.524, 3.048, 5) # Radius sweep (5 ft to 10 ft)
+# vel = np.linspace(0, V_to, 200)
+# R_values = np.linspace(1.524, 3.048, 5) # Radius sweep (5 ft to 10 ft)
 
 
 # # ============================================================
@@ -284,11 +283,11 @@ R_values = np.linspace(1.524, 3.048, 5) # Radius sweep (5 ft to 10 ft)
 # PLOT 5: Tradeoff Plot
 # ============================================================
 
-R_plot = np.linspace(1.0, 5, 200)
+R_plot = np.linspace(1.0, 5, 200) #M
 
 P_vals = [P_shaft_required(V_to, r)/1000 for r in R_plot]  # kW
 eta_vals = [Eta_ideal_cruise(V_cruise,r) for r in R_plot]
-print(eta_vals)
+# print(eta_vals)
 M_vals = [M_tip(r) for r in R_plot]
 
 fig, ax1 = plt.subplots(figsize=(9,6))
@@ -296,7 +295,7 @@ fig, ax1 = plt.subplots(figsize=(9,6))
 # Power curve
 ax1.plot(R_plot, P_vals, label="Takeoff Power Required (kW)")
 ax1.set_xlabel("Propeller Radius [m]")
-ax1.set_ylabel("Power (kW) / Efficiency")
+ax1.set_ylabel("Power (kW)")
 
 # Efficiency curve
 # ax1.plot(R_plot, eta_vals, linestyle="--", label="Cruise Efficiency about .73")
@@ -311,12 +310,12 @@ ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
 ax2.set_ylabel("Tip Mach Number")
 
 # Mach limits
-ax2.axhline(0.85, color="red", linestyle="--", label="Mach Limit")
+ax2.axhline(0.85, color="red", linestyle="--", label=f"Mach Limit={0.85}")
 
 # Combine legends
 lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
-ax1.legend(lines1 + lines2, labels1 + labels2, loc="best")
+ax1.legend(lines1 + lines2, labels1 + labels2)
 
 plt.title("Propeller Radius Trade Study")
 plt.grid(True)
