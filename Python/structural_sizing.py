@@ -30,6 +30,7 @@ class Wing():
         t_x2 = self.aero["t_x2"]
         x_1 = self.aero["x_1"]
         x_2 = self.aero["x_2"]
+        b = self.aero["b"]
 
         h = 0.5*(t_x1+t_x2)
         w = x_2-x_1
@@ -69,6 +70,7 @@ class Wing():
         t_x2 = self.aero["t_x2"]
         x_1 = self.aero["x_1"]
         x_2 = self.aero["x_2"]
+        b = self.aero["b"]
 
         h = 0.5*(t_x1+t_x2)
         w = x_2-x_1
@@ -150,6 +152,7 @@ class Wing():
         s_tot = self.aero["s_tot"] # not sure what this is
         G = self.materials["skin_G"]
         twist_max = self.aero["twist_max"]
+        A = self.aero["airfoil_surface_area"]
 
 
         # Calculate skin thickness requirements
@@ -178,7 +181,7 @@ class Wing():
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
         takeoff_spar_cap_area = self.spar_cap_area(L_takeoff, 0, axial_stress_takeoff)
-        takeoff_spar_web_area = self.spar_web_area(L, 0, shear_stress_takeoff)
+        takeoff_spar_web_area = self.spar_web_area(L_takeoff, 0, shear_stress_takeoff)
         takeoff_skin_thickness = self.skin_thickness(q_takeoff, shear_stress_takeoff)
         takeoff_tube_thickness = self.tube_thickness() # still not sure what this is for
 
@@ -285,6 +288,7 @@ class Wing():
 
 
     def wing_weight(self):
+        b = self.aero["b"]
         # for one of two wings
         sizing = self.max_load_sizing()
         spar_cap_weight = sizing[0]*b*self.materials["spar_cap_density"]
