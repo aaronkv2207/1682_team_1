@@ -42,14 +42,13 @@ class Aircraft:
         x = [u, w, q, theta] state vector
         params = dictionary of aircraft parameters
         """
-        #State vector
+        # State vector
         u, w, q, theta, xe, ze = x
 
         # Kinematics
         alpha = np.arctan2(w, u)
         V = np.sqrt(u**2 + w**2)
         Q = 0.5 * self.rho * V**2
-
 
         # Transform velocities to earth frame
         u_e = u * np.cos(theta) + w * np.sin(theta)
@@ -86,9 +85,9 @@ class Aircraft:
 
 
         # Equations of motion
-        u_dot = (1/self.m) * X - 9.81 * np.sin(theta)
-        w_dot = (1/self.m) * Z + 9.81 * np.cos(theta) + u * q
-        q_dot = 1/self.I_y * M
+        u_dot = (1 / self.m) * X - 9.81 * np.sin(theta)
+        w_dot = (1 / self.m) * Z + 9.81 * np.cos(theta) + u * q
+        q_dot = 1 / self.I_y * M
         theta_dot = q
         x_dot = u_e
         z_dot = -w_e
@@ -97,16 +96,17 @@ class Aircraft:
             z_dot=0
 
         return [u_dot, w_dot, q_dot, theta_dot, x_dot, z_dot]
+
     def takeoff_event(self, t, x):
-        u, w =x[0], x[1]
-        V=np.sqrt(u**2+w**2)
-        Q=0.5*self.rho*V**2
-        L=Q*self.CL(t, x)*self.S
-        W=self.m*9.81
-        return L-W
+        u, w = x[0], x[1]
+        V = np.sqrt(u**2 + w**2)
+        Q = 0.5 * self.rho * V**2
+        L = Q * self.CL(t, x) * self.S
+        W = self.m * 9.81
+        return L - W
 
     def CL(self, t, x):
-        #Control surface inputs
+        # Control surface inputs
         u, w, q, theta, xe, ze = x
         alpha = np.arctan2(w, u)
         ui, wi, qi, thetai, xei, zei, =self.ic
@@ -163,25 +163,25 @@ class Aircraft:
             phi=1
         return self.CD0+self.cd_w+self.cd_t*self.St/self.S+phi*self.CL(t, x)**2/(np.pi*self.AR)
 
-    '''
+    """
     Modeling elevator surface delfection over time.
-    Given a time input, elevator deflection will change, which will go into Cm, CL, etc caclulations'''
+    Given a time input, elevator deflection will change, which will go into Cm, CL, etc caclulations"""
+
     def elevator(self, t):
         if t<3:
             return 0
         else:
             return np.radians(-10) #modellig pull up at takeoff after 5 sec
     def flaps(self, t):
-        if t<20:
+        if t < 20:
             return np.radians(10)
-        elif t<25:
-            return np.radians(10)*(1-(t-20)/5) #linearly decreasing funnction
+        elif t < 25:
+            return np.radians(10) * (1 - (t - 20) / 5)  # linearly decreasing funnction
         else:
             return 0
     def throttle(self, t):
         tau=2 #engine response time (sec)
         return 1-np.exp(-t/tau) #where does this go in thrust/drag calculation
-
 
 
 Aircraft.takeoff_event.terminal=False # doesn't stop integrating with ivp once takeoff occurs but records when event happens
@@ -260,12 +260,18 @@ plane_1=Aircraft(
 t_span = (0, 15)
 t_eval = np.linspace(0, 15, 1000)
 
-sol = solve_ivp(plane_1.aircraft_dynamics, t_span, plane_1.ic, t_eval=t_eval, events=plane_1.takeoff_event)
+sol = solve_ivp(
+    plane_1.aircraft_dynamics,
+    t_span,
+    plane_1.ic,
+    t_eval=t_eval,
+    events=plane_1.takeoff_event,
+)
 
 # sol.y[i] gives time series of ith state
 
-#RESULTS
-#x takeoff and at what time
+# RESULTS
+# x takeoff and at what time
 if sol.t_events[0].size > 0:
     t_to=sol.t_events[0][0]
     x_to=sol.y_events[0][0][4]
@@ -282,21 +288,21 @@ else:
 # Positions
 
 plt.plot(sol.y[4], sol.y[5])
-plt.xlabel('x Position (m)')
-plt.ylabel(' z Position (m)')
-plt.title('Trajectory')
+plt.xlabel("x Position (m)")
+plt.ylabel(" z Position (m)")
+plt.title("Trajectory")
 plt.grid(True)
 plt.axis("equal")
 plt.show()
 
 # Velocities
-u=sol.y[0]
-w=sol.y[1]
-v=np.sqrt(u**2+w**2)
+u = sol.y[0]
+w = sol.y[1]
+v = np.sqrt(u**2 + w**2)
 
 plt.plot(sol.t, v)
-plt.xlabel('Time (s)')
-plt.ylabel('Velocity (m/s)')
-plt.title('Airspeed vs Time')
+plt.xlabel("Time (s)")
+plt.ylabel("Velocity (m/s)")
+plt.title("Airspeed vs Time")
 plt.grid(True)
 plt.show()
