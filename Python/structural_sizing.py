@@ -305,8 +305,56 @@ class Tail():
     # should this be a subclass of wing so that it inherits a lot of the functions?
     pass
 
-class Fuselage():
-    pass
+class Fuselage:
+
+    def __init__(self, length, radius):
+        self.length = length
+        self.R = radius
+        self.weight = 0.0 # to be derived
+
+
+    def pressure_at_altitude(h):
+        """
+        Returns atmospheric pressure (Pa) at altitude h (meters)
+        Valid up to 11 km (troposphere)
+        """
+        P0 = 101325      # Sea level pressure (Pa)
+        T0 = 288.15      # Sea level temperature (K)
+        L  = 0.0065      # Lapse rate (K/m)
+        g  = 9.80665     # Gravity (m/s^2)
+        R  = 287.05      # Gas constant for air (J/kg*K)
+
+        return P0 * (1 - (L * h) / T0)**(g / (R * L))
+
+    def required_thickness_hoop(altitude,
+                        yield_strength,
+                        safety_factor):
+        """
+        Computes required wall thickness required (meters)
+        
+        radius: cabin radius (m)
+        altitude: flight altitude (m)
+        cabin_pressure: desired internal pressure (Pa)
+        yield_strength: material yield strength (Pa)
+        safety_factor: structural safety factor
+        """
+
+        cabin_pressure = 75150   # Pa (~8,000 ft)
+
+        # Outside pressure
+        P_out = self.pressure_at_altitude(altitude)
+        
+        # Pressure differential
+        delta_P = cabin_pressure - P_out
+        
+        # Allowable stress
+        sigma_allow = yield_strength / safety_factor
+        
+        # Thin wall hoop stress formula
+        t = (delta_P * self.R) / sigma_allow
+        
+        return t, delta_P
+
 
 class LandingGear():
     pass
