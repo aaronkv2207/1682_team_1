@@ -354,7 +354,7 @@ class Fuselage:
         t = (delta_P * self.R) / sigma_allow
 
         return t, delta_P
-    
+
     def get_total_weight(self):
         pass
 
