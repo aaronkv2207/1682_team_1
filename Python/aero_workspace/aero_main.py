@@ -15,7 +15,7 @@ class AircraftConfig:
 
     #### GLOBAL DEFINITIONS ###
     AR: int = 8
-    s_ref: float = S
+    s_ref: float = S  # NOTE: S_ref may change after Brenda's drag update
 
     #### TAKEOFF DEFINITIONS ###
     v_takeoff: float = 1.2 * V_STALL
@@ -40,9 +40,14 @@ class AircraftConfig:
     v_cruise: int = V_CRUISE
     weight_cruise: ...  # TODO: update to varied model
     h_cruise: ...
-    Cd0_cruise: ...
-    Cdv_cruise: ...
+
+    # TODO: see if Brenda's model can define all stage parameters at the top, so function call only takes in a stage
+    # Her script will also add up the drags for all components
+
+    Cd0_cruise: float = C_Dp(stage="cruise")
+    Cdv_cruise: float = 0.0
     CDi_cruise: ...
+
     CM_cruise: float = ...  # TODO: fill-in based on JVL outputs
     # TODO: will need to integrate lift from control surfaces
 
