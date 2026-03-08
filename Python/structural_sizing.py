@@ -313,7 +313,7 @@ class Fuselage:
         self.weight = 0.0 # to be derived
 
 
-    def pressure_at_altitude(h):
+    def pressure_at_altitude(self, h):
         """
         Returns atmospheric pressure (Pa) at altitude h (meters)
         Valid up to 11 km (troposphere)
@@ -326,12 +326,12 @@ class Fuselage:
 
         return P0 * (1 - (L * h) / T0)**(g / (R * L))
 
-    def required_thickness_hoop(altitude,
+    def required_thickness_hoop(self, altitude,
                         yield_strength,
                         safety_factor):
         """
         Computes required wall thickness required (meters)
-        
+
         radius: cabin radius (m)
         altitude: flight altitude (m)
         cabin_pressure: desired internal pressure (Pa)
@@ -343,16 +343,16 @@ class Fuselage:
 
         # Outside pressure
         P_out = self.pressure_at_altitude(altitude)
-        
+
         # Pressure differential
         delta_P = cabin_pressure - P_out
-        
+
         # Allowable stress
         sigma_allow = yield_strength / safety_factor
-        
+
         # Thin wall hoop stress formula
         t = (delta_P * self.R) / sigma_allow
-        
+
         return t, delta_P
     
     def get_total_weight(self):
