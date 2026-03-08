@@ -131,6 +131,6 @@ def C_Dp(rho, V, mu, l, x_tr):
 
 # calculate induced drag
 def C_Di(C_L):
-    C_Di = C_L**2 / (np.pi*AR*e)
+    C_Di = C_L**2 / (np.pi * AR * e)
     return C_Di
 

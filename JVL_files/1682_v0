@@ -89,10 +89,6 @@ JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
 FlapJet2 1.000 1.000
 
-JETCONTROL
-#Djet  1.0   1.0  ! name, gain, SgnDup
-AilJet 1.000 -1.000
-
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
@@ -100,10 +96,6 @@ SECTION
 
 AFIL
 JVL_files/1682_v0.af4
-
-JETCONTROL
-#Djet  1.0   1.0  ! name, gain, SgnDup
-AilJet 1.000 -1.000
 
 #===============================================================================
 SURFACE
@@ -114,7 +106,7 @@ Vertical Tail
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-8.8394844 0 0 2.8694135 0
+9.0853493 0 0 2.8694135 0
 
 AFIL
 JVL_files/1682_v0.af5
@@ -126,7 +118,7 @@ Rudder 1 0.7 0 0 0 1
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-10.970799 0 3.4432962 2.8694135 0
+10.724934 0 3.4432962 2.8694135 0
 
 AFIL
 JVL_files/1682_v0.af6
@@ -143,7 +135,7 @@ YDUPLICATE
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-10.970799 0 3.4432962 2.8694135 0
+10.724934 0 3.4432962 2.8694135 0
 
 AFIL
 JVL_files/1682_v0.af7
@@ -155,7 +147,7 @@ Elevator 1 0.7 0 0 0 1
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-11.844287 4.8653385 3.4432962 1.995925 0
+11.544446 4.919315 3.4432962 2.0499015 0
 
 AFIL
 JVL_files/1682_v0.af8

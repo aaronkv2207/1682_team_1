@@ -7,43 +7,44 @@ import matplotlib.pyplot as plt
 # ATMOSPHERE & AIRCRAFT CONSTANTS (SI UNITS)
 # ============================================================
 
-rho = 1.225              # Air density [kg/m^3]
-g = 9.81                 # Gravity [m/s^2]
-a = 343                  # Speed of Sound [m/s^2]
+rho = 1.225  # Air density [kg/m^3]
+g = 9.81  # Gravity [m/s^2]
+a = 343  # Speed of Sound [m/s^2]
 
-W = 73618.07             # Aircraft weight [N] --> 16550 lbs
-m = W / g                # Aircraft mass [kg]
+W = 73618.07  # Aircraft weight [N] --> 16550 lbs
+m = W / g  # Aircraft mass [kg]
 
-wing_loading = 14.8456   # Wing loading [N/m^2]
-S = W / wing_loading     # Wing area [m^2]
-AR = 8                   # Aspect ratio [-]
-e = 0.7                  # Oswald efficiency factor [-]
+wing_loading = 14.8456  # Wing loading [N/m^2]
+S = W / wing_loading  # Wing area [m^2]
+AR = 8  # Aspect ratio [-]
+e = 0.7  # Oswald efficiency factor [-]
 
-CL = 6.1                 # Lift coefficient (TO config) [-]
-CD0 = 0.032               # Parasite drag coefficient [-]
+CL = 6.1  # Lift coefficient (TO config) [-]
+CD0 = 0.032  # Parasite drag coefficient [-]
 
-mu = 0.02                # Rolling friction coefficient [-]
-x_runway = 52            # Runway length (171 ft) [m]
+mu = 0.02  # Rolling friction coefficient [-]
+x_runway = 52  # Runway length (171 ft) [m]
 
-V_stall = 19.933         # Stall speed [m/s]
-V_to = 1.2*V_stall       # Takeoff speed [m/s]
-V_cruise = 125           # Cruise Speed [m/s] --> 280 mph
+V_stall = 19.933  # Stall speed [m/s]
+V_to = 1.2 * V_stall  # Takeoff speed [m/s]
+V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
-RPM = 1000 #2100               # RPM of propeller [rev/min]
-omega = RPM*2*np.pi/60   # [rad/s]
+RPM = 1000  # 2100               # RPM of propeller [rev/min]
+omega = RPM * 2 * np.pi / 60  # [rad/s]
 
 
 # ============================================================
 # DERIVED AERODYNAMIC COEFFICIENTS
 # ============================================================
 
-CDi = CL**2 / (np.pi * AR * e)     # Induced drag coefficient [-]
-CD = CD0 + CDi                    # Total drag coefficient [-]
+CDi = CL**2 / (np.pi * AR * e)  # Induced drag coefficient [-]
+CD = CD0 + CDi  # Total drag coefficient [-]
 
 
 # ============================================================
 # AERODYNAMIC FORCES
 # ============================================================
+
 
 def L(v):
     """Lift force [N]"""
@@ -59,6 +60,7 @@ def D(v):
 # TAKEOFF GROUND ROLL MODEL
 # ============================================================
 
+
 def acc(v):
     """Required average acceleration to reach v in runway distance [m/s^2]."""
     return v**2 / (2 * x_runway)
@@ -66,15 +68,13 @@ def acc(v):
 
 def T(v):
     """Thrust required during ground roll [N]."""
-    return (
-        D(v)
-        + mu * (W - L(v))
-        + m * acc(v)
-    )
+    return D(v) + mu * (W - L(v)) + m * acc(v)
+
 
 # ============================================================
 # CRUISE MODEL (STEADY LEVEL FLIGHT)
 # ============================================================
+
 
 def CL_cruise(v):
     """Lift coefficient required for steady level flight [-]"""
@@ -97,27 +97,32 @@ def T_cruise(v):
     """Thrust required at cruise [N]"""
     return D_cruise(v)
 
+
 def Tc_cruise(v, R):
     """Velocity-based thrust coefficient at cruise [-]"""
     A = Disk_area(R)
     return T_cruise(v) / (0.5 * rho * v**2 * A)
 
+
 def Eta_ideal_cruise(v, R):
     Tc = Tc_cruise(v, R)
     return 2 / (1 + np.sqrt(1 + Tc))
+
 
 def P_cruise(v, R):
     eta = Eta_ideal_cruise(v, R)
     return T_cruise(v) * v / eta
 
+
 def M_tip(R):
     """Tip Mach number at cruise"""
-    return np.sqrt((omega * R)**2 + V_cruise**2) / a
+    return np.sqrt((omega * R) ** 2 + V_cruise**2) / a
 
 
 # ============================================================
 # ACTUATOR DISK MODEL
 # ============================================================
+
 
 def Disk_area(R):
     """Disk area [m^2]"""
@@ -126,25 +131,22 @@ def Disk_area(R):
 
 def T_c(v, R):
     """Velocity-based thrust coefficient Tc [-]"""
-    
+
     v = np.asarray(v)
     A = Disk_area(R)
-    
+
     Tc = np.zeros_like(v)
-    
+
     # Avoid divide-by-zero
     small_mask = v < 1e-6
     dynamic_mask = ~small_mask
-    
+
     if np.any(dynamic_mask):
-        Tc[dynamic_mask] = (
-            T(v[dynamic_mask]) /
-            (0.5 * rho * v[dynamic_mask]**2 * A)
-        )
-    
+        Tc[dynamic_mask] = T(v[dynamic_mask]) / (0.5 * rho * v[dynamic_mask] ** 2 * A)
+
     # For very small velocity → treat as large loading
     Tc[small_mask] = 1e6
-    
+
     return Tc
 
 
@@ -152,6 +154,8 @@ def Eta_ideal(v, R):
     """Ideal propulsive efficiency [-]"""
     Tc = T_c(v, R)
     return 2 / (1 + np.sqrt(1 + Tc))
+
+
 # print(Eta_ideal_cruise(125,3.5))
 
 
@@ -159,9 +163,10 @@ def Eta_ideal(v, R):
 # POWER FUNCTION (FIXED FOR ARRAYS)
 # ============================================================
 
+
 def P_shaft_required(v, R):
     """Ideal shaft power required [W]"""
-    
+
     v = np.asarray(v)
     P = np.zeros_like(v)
 
@@ -199,7 +204,6 @@ def P_shaft_required(v, R):
 
 # plt.grid(True)
 # plt.show()
-
 
 
 # vel = np.linspace(0, V_to, 200)
@@ -275,22 +279,18 @@ def P_shaft_required(v, R):
 # plt.show()
 
 
-
-
-
-
 # ============================================================
 # PLOT 5: Tradeoff Plot
 # ============================================================
 
-R_plot = np.linspace(1.0, 5, 200) #M
+R_plot = np.linspace(1.0, 5, 200)  # M
 
-P_vals = [P_shaft_required(V_to, r)/1000 for r in R_plot]  # kW
-eta_vals = [Eta_ideal_cruise(V_cruise,r) for r in R_plot]
+P_vals = [P_shaft_required(V_to, r) / 1000 for r in R_plot]  # kW
+eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
 # print(eta_vals)
 M_vals = [M_tip(r) for r in R_plot]
 
-fig, ax1 = plt.subplots(figsize=(9,6))
+fig, ax1 = plt.subplots(figsize=(9, 6))
 
 # Power curve
 ax1.plot(R_plot, P_vals, label="Takeoff Power Required (kW)")
@@ -320,5 +320,3 @@ ax1.legend(lines1 + lines2, labels1 + labels2)
 plt.title("Propeller Radius Trade Study")
 plt.grid(True)
 plt.show()
-
-

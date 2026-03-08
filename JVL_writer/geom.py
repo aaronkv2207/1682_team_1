@@ -31,7 +31,7 @@ vt_b = vt_ar*vt_c
 vt_x = lv + 1/4 * MAC - 1/4 * vt_c #distance from wing LE to tail (avg) LE
 
 # horizontal tail geometry
-lh = lv + vt_c/3 #include some sweep in the vertical tail to extend the ht moment arm
+lh = lv + 0.25*vt_c #include some sweep in the vertical tail to extend the ht moment arm
 Vh = 1.05
 ht_ar = 2
 
@@ -81,7 +81,7 @@ wing = JWing(
             twist=0,
             airfoil=main_foil,
             control_surfaces = [asb.ControlSurface(name="Flap2", hinge_point=0.8, deflection=0), asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=0.8, deflection=0)],
-            JetControls= [JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1), JetControl(jet_name="AilJet", gain=1, sgn_dup=-1)],
+            JetControls= [JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1)],
         ),
         WingJSec(
             xyz_le=[ail_hinge*root_chord-ail_hinge*tip_chord, 1/2*b, 0],
@@ -89,7 +89,6 @@ wing = JWing(
             twist=0,
             airfoil=main_foil,
             control_surfaces = [asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=ail_hinge, deflection=0)],
-            JetControls= [JetControl(jet_name="AilJet", gain=1, sgn_dup=-1)],
         )
     ]
 )
@@ -176,12 +175,12 @@ fuselage = asb.Fuselage(
 
 plane = asb.Airplane(
     name="Initial Aircraft",
-    xyz_ref=[0, 0, 0],
+    xyz_ref=[MAC/4, 0, 0],
     wings=[wing, vertical_tail, horizinatal_tail],
     fuselages=[fuselage]
 )
 
-avl_plane = JVL(
+jvl_plane = JVL(
     airplane=plane,
     op_point=asb.OperatingPoint(
         velocity=100,
@@ -192,7 +191,7 @@ avl_plane = JVL(
         r=0,
     ),
     avl_command='.\\jvl2.20.exe')
-avl_plane.default_analysis_specific_options = {
+jvl_plane.default_analysis_specific_options = {
         asb.Airplane: dict(profile_drag_coefficient=0),
         JWing: dict(
             wing_level_spanwise_spacing=True,
@@ -227,7 +226,7 @@ avl_plane.default_analysis_specific_options = {
         asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"),
     }
 
-avl_plane.write_jvl('./JVL_files/1682_v0', CLAF=False, j=True)
+jvl_plane.write_jvl('./JVL_files/1682_v0', CLAF=False, j=True)
 
 plane.draw_three_view(show=False)
 p.show_plot(tight_layout=False, savefig="3view.png")

@@ -70,7 +70,9 @@ class Climb:
 
 
 class CruiseModel:
-    def __init__(self, s_ref, weight, v_cruise, h_cruise, AR, Cd0, Cdv, CDi) -> None:
+    def __init__(
+        self, s_ref, weight, v_cruise, h_cruise, AR, Cd0, Cdv, CDi, e=0.7
+    ) -> None:
         self.s_ref = s_ref * ureg("m^2")
         self.weight = weight * ureg("N")  # newtons
         self.v_cruise = v_cruise.magnitude * ureg("m/s")
@@ -81,6 +83,7 @@ class CruiseModel:
         self.Cd0 = Cd0
         self.Cdv = Cdv
         self.CDi = CDi
+        self.e = e
 
     def cl(self):
         L = self.weight  # assumes I have weight as a function of time
@@ -88,18 +91,12 @@ class CruiseModel:
 
     def cd_induced(self):
         if self.CDi is None:
-            return (self.cl() ** 2) / (np.pi * self.AR * 0.7)  # assume e=0.7
+            return (self.cl() ** 2) / (np.pi * self.AR * self.e)
         else:
             return self.CDi
 
-    def cd_parasitic(self):
-        return self.Cd0
-
-    def cd_viscous(self):
-        return self.Cdv
-
     def cd_total(self):
-        return self.cd_induced() + self.cd_parasitic() + self.cd_viscous()
+        return self.cd_induced() + self.Cd0 + self.Cdv
 
     def drag_total(self):
         return self.cd_total() * self.q * self.s_ref
@@ -125,6 +122,6 @@ if __name__ == "__main__":
         Cd0=AircraftConfig.Cd0_cruise,
         Cdv=AircraftConfig.Cdv_cruise,
         CDi=AircraftConfig.CDi_cruise,
-    )
+    )  #  default assumes e=0.7; change this parameter if different
     CD_total_cruise = cruise_cls.cd_total()
     L_over_D_cruise = cruise_cls.cl() / CD_total_cruise
