@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 from ambiance import Atmosphere
 from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
+from drag import C_Dp
+from scipy.interpolate import interp1d
 
 
 # TODO: update constants in dataclass
@@ -16,9 +19,10 @@ class AircraftConfig:
 
     #### TAKEOFF DEFINITIONS ###
     v_takeoff: float = 1.2 * V_STALL
-    Cd0_takeoff: ...  # TODO: couple with Brenda's drag model output
-    Cdv_takeoff: ...  # TODO: couple with drag model outputs
-    CDi_takeoff: ...  # TODO: couple with drag model outputs
+    Cd0_takeoff: float = ...  # TODO: couple with Brenda's drag model output
+    Cdv_takeoff: float = ...  # TODO: couple with drag model outputs
+    CDi_takeoff: float = ...  # TODO: couple with drag model outputs
+    e_takeoff: float = ...  # NOTE: specify e or CDi; make sure to pass in relevant parameter in function call
     CL_takeoff: float = ...  # TODO: fill-in based on JVL outputs
     CM_takeoff: float = ...  # TODO: fill-in based on JVL outputs
 
@@ -51,22 +55,43 @@ class AircraftConfig:
     CM_landing: float = ...  # TODO: fill-in based on JVL outputs
 
 
-class TakeOff:
+class TakeOffCoeff:
     """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Return polynomial fit of operating points.
+    Defines functions based on fit of operating points --> CL, CD, CM."""
 
-    Returns:
-        array: Will give polynomial coefficients for functions --> CL, CD, CM
-    """
+    df = pd.read_csv("./takeoff_coefficients")
+    alphas = df["ALPHA"]
+    betas = df["BETAS"]
+
+    CL_alpha_fn = interp1d(alphas, df["CL"])
+    CD_alpha_fn = interp1d(alphas, df["CD"])
+    CM_alpha_fn = interp1d(alphas, df["CM"])
+
+    CL_beta_fn = interp1d(betas, df["CL"])
+    CD_beta_fn = interp1d(betas, df["CD"])
+    CM_beta_fn = interp1d(betas, df["CM"])
 
 
-class Climb:
+class ClimbCoeff:
     """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Return polynomial fit of operating points.
+    Defines functions based on fit of operating points --> CL, CD, CM."""
 
-    Returns:
-        array: Will give polynomial coefficients for functions --> CL, CD, CM
-    """
+
+class CruiseCoeff:
+    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
+    Defines functions based on fit of operating points --> CL, CD, CM."""
+
+    df = pd.read_csv("./cruise_coefficients")
+    alphas = df["ALPHA"]
+    betas = df["BETAS"]
+
+    CL_alpha_fn = interp1d(alphas, df["CL"])
+    CD_alpha_fn = interp1d(alphas, df["CD"])
+    CM_alpha_fn = interp1d(alphas, df["CM"])
+
+    CL_beta_fn = interp1d(betas, df["CL"])
+    CD_beta_fn = interp1d(betas, df["CD"])
+    CM_beta_fn = interp1d(betas, df["CM"])
 
 
 class CruiseModel:
@@ -102,13 +127,21 @@ class CruiseModel:
         return self.cd_total() * self.q * self.s_ref
 
 
-class Landing:
+class LandingCoeff:
     """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Return polynomial fit of operating points.
+    Defines functions based on fit of operating points --> CL, CD, CM."""
 
-    Returns:
-        array: Will give polynomial coefficients for functions --> CL, CD, CM
-    """
+    df = pd.read_csv("./landing_coefficients")
+    alphas = df["ALPHA"]
+    betas = df["BETAS"]
+
+    CL_alpha_fn = interp1d(alphas, df["CL"])
+    CD_alpha_fn = interp1d(alphas, df["CD"])
+    CM_alpha_fn = interp1d(alphas, df["CM"])
+
+    CL_beta_fn = interp1d(betas, df["CL"])
+    CD_beta_fn = interp1d(betas, df["CD"])
+    CM_beta_fn = interp1d(betas, df["CM"])
 
 
 # Runner script
