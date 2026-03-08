@@ -55,7 +55,7 @@ class AircraftConfig:
     CM_landing: float = ...  # TODO: fill-in based on JVL outputs
 
 
-class TakeOffCoeff:
+class TakeoffCoeff:
     """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
     Defines functions based on fit of operating points --> CL, CD, CM."""
 
