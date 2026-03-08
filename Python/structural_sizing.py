@@ -41,10 +41,14 @@ class Wing():
         y = h/2
 
 
-        # Moment equations
-        M_y = T*(x_T1+x_T2+x_T3+x_T4) # - drag integral
-        M_z = self.weight_estimate*(b/4) + W_duct*(x_T1+x_T2+x_T3+x_T4) # - lift integral
-        # TODO: add actual integral stuff for D, L, W
+        # # Moment equations for final model:
+        # M_y = T*(x_T1+x_T2+x_T3+x_T4) # - drag integral
+        # M_z = self.weight_estimate*(b/4) + W_duct*(x_T1+x_T2+x_T3+x_T4) # - lift integral
+        # # TODO: add actual integral stuff for D, L, W
+
+        # Moment equations as of now (3/8) to test model, assume uniform distribution:
+        M_y = T*(x_T1+x_T2+x_T3+x_T4) - (D*(b/2)**2)/2
+        M_z = self.weight_estimate*(b/4) + W_duct*(x_T1+x_T2+x_T3+x_T4) - (L*(b/2)**2)/2
 
         # Moments of inertia
         I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
