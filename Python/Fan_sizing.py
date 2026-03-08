@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # GOAL: Look at tradeoffs between radius for P_required during takeoff
-# and eta_idela during cruise
+# and eta_ideal during cruise
 
 # ============================================================
 # ATMOSPHERE & AIRCRAFT CONSTANTS (SI UNITS)
