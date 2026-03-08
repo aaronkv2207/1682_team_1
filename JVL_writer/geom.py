@@ -48,12 +48,10 @@ vt_sweep_x = ht_x - vt_x
 nose_x = -5
 fuse_width = 2.5 #width at the wing
 
-jet_hdisk = 2 #???
-
 wing = JWing(
     name="Main Wing",
     symmetric=True,
-    JetParam=JetParam(hdisk=jet_hdisk, fh=0.0, djet0=0.0, djet1=0.0, djet3=0.0),
+    JetParam=JetParam(hdisk=0.188, fh=0.0, djet0=0.0, djet1=0.0, djet3=0.0),
     xsecs=[
         WingJSec(
             xyz_le=[0, 0, 0],
@@ -90,7 +88,7 @@ wing = JWing(
             chord=tip_chord,
             twist=0,
             airfoil=main_foil,
-            control_surfaces = [asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=ail_hinge, deflection=0)]
+            control_surfaces = [asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=ail_hinge, deflection=0)],
         )
     ]
 )
@@ -177,7 +175,7 @@ fuselage = asb.Fuselage(
 
 plane = asb.Airplane(
     name="Initial Aircraft",
-    xyz_ref=[0, 0, 0],
+    xyz_ref=[MAC/4, 0, 0],
     wings=[wing, vertical_tail, horizinatal_tail],
     fuselages=[fuselage]
 )
