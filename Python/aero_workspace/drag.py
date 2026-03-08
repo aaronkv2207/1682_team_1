@@ -120,7 +120,6 @@ def C_Dp(rho, V, mu, l, x_tr):
     C_ft = 0.455 / (np.log10(Re_l) ** 2.58)
 
     Cf = max(C_fl, C_ft - (Re_x_tr / 320 - 39) / Re_l)
-
     CDA = S_wet * C_f * Kf
 
     return C_Dp
