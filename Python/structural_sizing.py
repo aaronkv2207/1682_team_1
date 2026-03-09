@@ -311,7 +311,7 @@ class Wing():
 
 
 class Tail():
-    # should this be a subclass of wing so that it inherits a lot of the functions?
+
     def __init__(self, aero, loading, materials, weight_estimate):
         self.aero = aero
         self.loading = loading
@@ -347,8 +347,8 @@ class Tail():
         xv = wv/2 #vert
         yv = hv/2 #vert
 
-        xh = wh/2 
-        zh = hh/2 
+        xh = wh/2 #ho 
+        zh = hh/2 #ho 
 
         # Moment for vertical tail (accounting for T-tail, but not including angle):
         M_yv = (Dv*(b_vert/2)**2)/2 #moment from drag of v and h
@@ -375,7 +375,7 @@ class Tail():
         axial_xx_v = ((M_yv*xv)/I_y_v)+(V_tensile/crossA_v)-(V_compress/crossA_v)
 
         # Stress equations horizontal 
-        axial_xx_h = (M_xv*zh)/I_x_v
+        axial_xx_h = (M_xh*zh)/I_x_v
         axial_zz_h = ((M_zh*xh)/I_z_v)
 
 
@@ -383,6 +383,71 @@ class Tail():
         axial_max_h = max(abs(axial_xx_h), abs(axial_zz_h))
 
         return axial_max_v, axial_max_h 
+    
+    def shear_stress_vert_ho (self, Lv, Lh, Dv, Dh, tv, th, hweight): 
+        b_vert = self.aero["b_vert"]
+        b_ho = self.aero["b_ho"]
+
+        t_x1_v = self.aero["t_x1_v"]
+        t_x2_v = self.aero["t_x2_v"]
+        x_1_v = self.aero["x_1_v"]
+        x_2_v = self.aero["x_2_v"]
+
+        x_1_h = self.aero["x_1_h"]
+        x_2_h = self.aero["x_2_h"]
+        t_x1_h = self.aero["t_x1_h"]
+        t_x2_h = self.aero["t_x2_h"]
+
+        #vertical tail calcs: 
+        hv = 0.5*(t_x1_v+t_x2_v) #along y axis
+        wv = x_2_v-x_1_v #along x axis
+        crossA_v = (hv*wv)-(hv-2*tv)*(wv-2*tv)
+
+        #horizontal tail calcs: 
+        hh = 0.5*(t_x1_h+t_x2_h) # along z axis
+        wh = x_2_h-x_1_h # along x axis
+        crossA_h = (hh*wh)-(hh-2*th)*(wh-2*th)
+
+        # Force equations vertical
+        F_y_v = Lv 
+        F_x_v = Dv + Dh
+        # TODO: add actual integral stuff for D, L, W
+
+        # Force equations horizontal 
+        F_z_h = Lh 
+        F_x_h = Dh 
+
+        # 1st moments of area vertical 
+        Q_x = (hv*wv**2)/8 - ((hv-2*tv)*(wv-2*tv)**2)/8
+        Q_y = (wv*hv**2)/8 - ((wv-2*tv)*(hv-2*tv)**2)/8
+
+        # 1st moments of area horizontal
+        Q_x = (hh*wh**2)/8 - ((hh-2*th)*(wh-2*th)**2)/8
+        Q_z = (wh*hh**2)/8 - ((wh-2*th)*(hh-2*th)**2)/8
+
+        # Moments of inertia vertical 
+        I_y_v = (hv*wv**3)/12 - ((hv-2*tv)*(wv-2*tv)**3)/12
+        I_x_v = (wv*hv**3)/12 - ((wv-2*tv)*(hv-2*tv)**3)/12
+
+        # Moments of inertia horizontal 
+        I_x_h = (hh*wh**3)/12 - ((hh-2*th)*(wh-2*th)**3)/12
+        I_z_h = (wh*hh**3)/12 - ((wh-2*th)*(hh-2*th)**3)/12
+
+        shear_zy_v = (F_y_v*Q_x)/(I_x_v*tv)  #shear zy
+        shear_zx_v = (F_x_v*Q_y)/(I_y_v*tv)  #shear zx
+
+        shear_yz_h = (F_z_h*Q_x)/(I_x_h*th)  #shear yz
+        shear_zx_h = (F_x_h*Q_z)/(I_z_h*th)  #shear yx
+
+
+        shear_max_v = max(abs(shear_zy_v), abs(shear_zx_v))
+        shear_max_h = max(abs(shear_yz_h), abs(shear_zx_h))
+
+        return shear_max_v, shear_max_h
+
+    
+
+
 
 
 class Fuselage:
