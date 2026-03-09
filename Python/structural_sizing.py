@@ -35,8 +35,8 @@ class Wing():
         x_2 = self.aero["x_2"]
         b = self.aero["b"]
 
-        h = 0.5*(t_x1+t_x2)
-        w = x_2-x_1
+        h = 0.5*(t_x1+t_x2) 
+        w = x_2-x_1 
         t = ... # box thickness - estimate
 
         # NOTE: not sure if this is right z and y are dist. from the neutral axis
@@ -317,46 +317,72 @@ class Tail():
         self.loading = loading
         self.material = materials
         self.weight_estimate = weight_estimate
-
-    def axial_stress_vert (self, Lv, Lh, Dv, Dh, hweight):
+    
+    def axial_stress_vert_ho (self, Lv, Lh, Dv, Dh, tv, th, hweight):
         # Get required variables
         b_vert = self.aero["b_vert"]
         b_ho = self.aero["b_ho"]
+
         t_x1_v = self.aero["t_x1_v"]
         t_x2_v = self.aero["t_x2_v"]
         x_1_v = self.aero["x_1_v"]
         x_2_v = self.aero["x_2_v"]
 
-        #vertical tail calcs:
-        h = 0.5*(t_x1_v+t_x2_v) #along y axis
-        w = x_2_v-x_1_v #along x axis
-        t = ... # box thickness - estimate
-        crossA_v = (h*w)-(h-2*t)*(w-2*t)
+        x_1_h = self.aero["x_1_h"]
+        x_2_h = self.aero["x_2_h"]
+        t_x1_h = self.aero["t_x1_h"]
+        t_x2_h = self.aero["t_x2_h"]
+
+        #vertical tail calcs: 
+        hv = 0.5*(t_x1_v+t_x2_v) #along y axis
+        wv = x_2_v-x_1_v #along x axis
+        crossA_v = (hv*wv)-(hv-2*tv)*(wv-2*tv)
+
+        #horizontal tail calcs: 
+        hh = 0.5*(t_x1_h+t_x2_h) # along z axis
+        wh = x_2_h-x_1_h # along x axis
+        crossA_h = (hh*wh)-(hh-2*th)*(wh-2*th)
 
         # NOTE: not sure if this is right z and y are dist. from the neutral axis
-        z = w/2
-        y = h/2
+        xv = wv/2 #vert
+        yv = hv/2 #vert
+
+        xh = wh/2 
+        zh = hh/2 
 
         # Moment for vertical tail (accounting for T-tail, but not including angle):
         M_yv = (Dv*(b_vert/2)**2)/2 #moment from drag of v and h
-        M_xv = (Lv*(b_vert/2)**2)/2 #lift moment
+        M_xv = (Lv*(b_vert/2)**2)/2 #lift moment 
+
+        # Moment for horizontal tail (uniform lift and drag for now- 3/9)
+        M_xh = (Lh*(b_ho/2)**2)/2 
+        M_zh = (Dh*(b_ho/2)**2)/2
 
         #compressive and tensile loads on vertical tail along z (not including angle):
         V_compress = hweight  #h weight
         V_tensile = Lh #h lift
 
-        # Moments of inertia vertical
-        I_y_v = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
-        I_x_v = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
+        # Moments of inertia vertical 
+        I_y_v = (hv*wv**3)/12 - ((hv-2*tv)*(wv-2*tv)**3)/12
+        I_x_v = (wv*hv**3)/12 - ((wv-2*tv)*(hv-2*tv)**3)/12
 
-        # Stress equations vertical NOTE check again
-        axial_yy_v = -(M_xv*y)/I_x_v
-        axial_xx_v = ((M_yv*z)/I_y_v)+(V_tensile/crossA_v)-(V_compress/crossA_v)
+        # Moments of inertia horizontal 
+        I_x_v = (hh*wh**3)/12 - ((hh-2*th)*(wh-2*th)**3)/12
+        I_z_v = (wh*hh**3)/12 - ((wh-2*th)*(hh-2*th)**3)/12
+
+        # Stress equations vertical NOTE check again 
+        axial_yy_v = -(M_xv*yv)/I_x_v
+        axial_xx_v = ((M_yv*xv)/I_y_v)+(V_tensile/crossA_v)-(V_compress/crossA_v)
+
+        # Stress equations horizontal 
+        axial_xx_h = (M_xv*zh)/I_x_v
+        axial_zz_h = ((M_zh*xh)/I_z_v)
+
 
         axial_max_v = max(abs(axial_xx_v), abs(axial_yy_v))
+        axial_max_h = max(abs(axial_xx_h), abs(axial_zz_h))
 
-        # return axial_yy + axial_zz
-        return axial_max_v
+        return axial_max_v, axial_max_h 
 
 
 class Fuselage:
