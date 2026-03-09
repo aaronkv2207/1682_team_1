@@ -69,7 +69,7 @@ atm = Atmosphere(h=0)
 rho = atm.density[0] * ureg("kg/m^3")
 
 # NOTE: x_to proportional to v^3 (1st order approx.)
-beta = (1 / 7) ** (1 / 3)  # will enable ~33% reduction in takeoff length
+beta = (1 / 7) ** (1 / 3)  # will enable for reduction in takeoff length
 V_STALL = v_stall_ot * beta
 
 W_S = ((0.5 * rho * V_STALL**2) * cl_max).to("N/m^2")
