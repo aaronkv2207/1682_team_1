@@ -1,7 +1,9 @@
 # Team 1 - Structural Sizing
 import numpy as np
 import math as math
-# from ... import ... as ... # elasticity stuff
+
+# TODO: go through and check for b/2, L/2, etc. stuff (depending on how we define b, L, etc. in the code)
+# check signs in stress equations
 
 class Wing():
     """Wing class:
@@ -82,8 +84,8 @@ class Wing():
         t = ... # box thickness - estimate
 
         # Force equations
-        F_y = self.weight_estimate*(b/2) + 4*W_duct # - lift integral
-        F_z = -4*T # + drag integral
+        F_y = self.weight_estimate*(b/2) + 4*W_duct - L # - lift integral
+        F_z = -4*T + D # + drag integral
         # TODO: add actual integral stuff for D, L, W
 
         # 1st moments of area
@@ -313,7 +315,7 @@ class Tail():
         self.loading = loading
         self.material = materials
         self.weight_estimate = weight_estimate
-    
+
     def axial_stress_vert (self, Lv, Lh, Dv, Dh, hweight):
         # Get required variables
         b_vert = self.aero["b_vert"]
@@ -323,7 +325,7 @@ class Tail():
         x_1_v = self.aero["x_1_v"]
         x_2_v = self.aero["x_2_v"]
 
-        #vertical tail calcs: 
+        #vertical tail calcs:
         h = 0.5*(t_x1_v+t_x2_v) #along y axis
         w = x_2_v-x_1_v #along x axis
         t = ... # box thickness - estimate
@@ -335,17 +337,17 @@ class Tail():
 
         # Moment for vertical tail (accounting for T-tail, but not including angle):
         M_yv = (Dv*(b_vert/2)**2)/2 #moment from drag of v and h
-        M_xv = (Lv*(b_vert/2)**2)/2 #lift moment 
+        M_xv = (Lv*(b_vert/2)**2)/2 #lift moment
 
-        #compressive and tensile loads on vertical tail along z (not including angle): 
-        V_compress = hweight  #h weight 
-        V_tensile = Lh #h lift 
+        #compressive and tensile loads on vertical tail along z (not including angle):
+        V_compress = hweight  #h weight
+        V_tensile = Lh #h lift
 
-        # Moments of inertia vertical 
+        # Moments of inertia vertical
         I_y_v = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
         I_x_v = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
 
-        # Stress equations vertical NOTE check again 
+        # Stress equations vertical NOTE check again
         axial_yy_v = -(M_xv*y)/I_x_v
         axial_xx_v = ((M_yv*z)/I_y_v)+(V_tensile/crossA_v)-(V_compress/crossA_v)
 
@@ -406,10 +408,10 @@ class Fuselage:
         self.hoop_t = (delta_P * self.R) / sigma_allow
 
         return self.hoop_t
-    
+
     def required_thickness_moment(self, yield_stress, safety_factor=2):
         pass
-    
+
     def get_dead_weight(self):
         seat_weight = self.n*13.0 # kg (average modern aircraft seat weight)
         person_weight = self.n*100.0 # kg
@@ -446,6 +448,8 @@ class Fuselage:
 
 class LandingGear():
     pass
+
+
 
 
 # # Assumptions/variables
