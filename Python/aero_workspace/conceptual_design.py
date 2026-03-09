@@ -38,7 +38,7 @@ weight_pgen = (
 mtow_ot = 12500 * ureg("lbs").to_base_units()
 # mlw_ot = 12300 * ureg("lbs").to_base_units()
 weight_pay_fuel = (
-    4400 * ureg("lb").to_base_units() * 1.75
+    4400 * ureg("lb").to_base_units() * 2.0
 )  # https://www.nohrsc.noaa.gov/snowsurvey/twin_otter.html; added fuel weight for improved range
 
 
@@ -47,7 +47,7 @@ weight_fixed = (
     PAYLOAD * 1.10
 )  # assumed slight mass increase for other equipment (avionics, e.g.)
 weight_pow = weight_pgen + (weight_pay_fuel - weight_fixed)
-weight_struct = mtow_ot * 0.7
+weight_struct = mtow_ot * 0.6
 
 # xcg = ...  # TODO
 MTOW = weight_pow + weight_fixed + weight_struct
