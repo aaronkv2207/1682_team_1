@@ -6,14 +6,14 @@ Initial Aircraft
 #Sref    Cref    Bref
 49.599999999999994 2.4899799195977463 19.91983935678197
 #Xref    Yref    Zref
-0 0 0
+0.62249 0 0
 # CDp
 0
 #===============================================================================
 SURFACE
 Main Wing
 #Nchord  Cspace  [ Nspan Sspace  Nujet Cusp  Nwjet Cwsp ]
-25   1   25   1   0.2   0.0   12   -2.0
+16   1   25   1   0.2   0.0   12   -2.0
 
 YDUPLICATE
 0
@@ -26,16 +26,21 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 0 0 0 2.4899799 0
 
-AFIL
-JVL_files/1682_v0.af0
+!AFIL
+!JVL_files/1682_v0.af0
+NACA
+2500
 
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 0 1.25 0 2.4899799 0
 
-AFIL
-JVL_files/1682_v0.af1
+!AFIL
+!JVL_files/1682_v0.af1
+NACA
+2500
+
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -50,8 +55,10 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 0 3.9449732 0 2.4899799 0
 
-AFIL
-JVL_files/1682_v0.af2
+!AFIL
+!JVL_files/1682_v0.af2
+NACA
+2500
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -74,8 +81,10 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 0 6.6399465 0 2.4899799 0
 
-AFIL
-JVL_files/1682_v0.af3
+!AFIL
+!JVL_files/1682_v0.af3
+NACA
+2500
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -94,22 +103,26 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 0 9.9599197 0 2.4899799 0
 
-AFIL
-JVL_files/1682_v0.af4
+!AFIL
+!JVL_files/1682_v0.af4
+NACA
+2500
 
 #===============================================================================
 SURFACE
 Vertical Tail
 #Nchord  Cspace  [ Nspan Sspace  Nujet Cusp  Nwjet Cwsp ]
-25   1   25   1   0.2   0.0   12   -2.0
+8   1   10   1   0.2   0.0   12   -2.0
 
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 9.0853493 0 0 2.8694135 0
 
-AFIL
-JVL_files/1682_v0.af5
+!AFIL
+!JVL_files/1682_v0.af5
+NACA
+2500
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -120,14 +133,16 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 10.724934 0 3.4432962 2.8694135 0
 
-AFIL
-JVL_files/1682_v0.af6
+!AFIL
+!JVL_files/1682_v0.af6
+NACA
+0000
 
 #===============================================================================
 SURFACE
 Horizontal Tail
 #Nchord  Cspace  [ Nspan Sspace  Nujet Cusp  Nwjet Cwsp ]
-25   1   25   1   0.2   0.0   12   -2.0
+8   1   10   1   0.2   0.0   12   -2.0
 
 YDUPLICATE
 0
@@ -137,29 +152,23 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 10.724934 0 3.4432962 2.8694135 0
 
-AFIL
-JVL_files/1682_v0.af7
+!AFIL
+!JVL_files/1682_v0.af7
+NACA
+0000
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
-Elevator 1 0.7 0 0 0 1
+Elevator 1 0.7 0 1 0 1
 
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 11.544446 4.919315 3.4432962 2.0499015 0
 
-AFIL
-JVL_files/1682_v0.af8
+NACA
+0000
 
-#==================================================
-BODY
-Fuselage
-24 1
-
-BFIL
-JVL_files/1682_v0.fuse0
-
-TRANSLATE
-0 0 0
-
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Elevator 1 0.7 0 1 0 1
