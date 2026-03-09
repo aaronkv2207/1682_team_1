@@ -19,7 +19,7 @@ class Wing():
     def __init__(self, aero, loading, materials, weight_estimate):
         self.aero = aero
         self.loading = loading
-        self.material = materials
+        self.materials = materials
         self.weight_estimate = weight_estimate
 
     def axial_stress(self, L, T, D):
@@ -210,7 +210,7 @@ class Wing():
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
         climb_spar_cap_area = self.spar_cap_area(L_climb, 0, axial_stress_climb)
-        climb_spar_web_area = self.spar_web_area(L, 0, shear_stress_climb)
+        climb_spar_web_area = self.spar_web_area(L_climb, 0, shear_stress_climb)
         climb_skin_thickness = self.skin_thickness(q_climb, shear_stress_climb)
         climb_tube_thickness = self.tube_thickness()
 
@@ -231,7 +231,7 @@ class Wing():
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
         cruise_spar_cap_area = self.spar_cap_area(L_cruise, 0, axial_stress_cruise)
-        cruise_spar_web_area = self.spar_web_area(L, 0, shear_stress_cruise)
+        cruise_spar_web_area = self.spar_web_area(L_cruise, 0, shear_stress_cruise)
         cruise_skin_thickness = self.skin_thickness(q_cruise, shear_stress_cruise)
         cruise_tube_thickness = self.tube_thickness()
 
@@ -252,7 +252,7 @@ class Wing():
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
         descent_spar_cap_area = self.spar_cap_area(L_descent, 0, axial_stress_descent)
-        descent_spar_web_area = self.spar_web_area(L, 0, shear_stress_descent)
+        descent_spar_web_area = self.spar_web_area(L_descent, 0, shear_stress_descent)
         descent_skin_thickness = self.skin_thickness(q_descent, shear_stress_descent)
         descent_tube_thickness = self.tube_thickness()
 
@@ -273,7 +273,7 @@ class Wing():
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
         landing_spar_cap_area = self.spar_cap_area(L_landing, self.aero["a_z"], axial_stress_landing)
-        landing_spar_web_area = self.spar_web_area(L, self.aero["a_z"], shear_stress_landing)
+        landing_spar_web_area = self.spar_web_area(L_landing, self.aero["a_z"], shear_stress_landing)
         landing_skin_thickness = self.skin_thickness(q_landing, shear_stress_landing)
         landing_tube_thickness = self.tube_thickness()
 
@@ -303,8 +303,10 @@ class Wing():
         skin_weight = sizing[2]*self.aero["airfoil_surface_area"]*self.materials["skin_density"]
         tube_weight = sizing[3]*b*self.materials["tube_density"]
 
+        spar_weight = max(spar_cap_weight + spar_web_weight, tube_weight)
+
         # should this weight just be structural stuff or also fuel and motors?
-        return spar_cap_weight + spar_web_weight + skin_weight + tube_weight
+        return spar_weight + skin_weight
         # spar_cap_weight + spar_web_weight should = tube_weight right??
 
 
@@ -450,6 +452,71 @@ class LandingGear():
     pass
 
 
+if __name__ == "__main__":
+    # Create dictionaries for testing
+    # NOTE: h here is spar height which is maybe something we calculate ourselves
+    aero = {
+        "b":,
+        "h":,
+        "S":,
+        "c_tip":,
+        "c_0":,
+        "b_ail":,
+        "c_ail":,
+        "c_m":,
+        "A":,
+        "y_ail":,
+        "s_tot":,
+        "x_1":,
+        "x_2":,
+        "t_x1":,
+        "t_x2":,
+        "W_total":,
+        "w_b_max":,
+        "twist_max":,
+        "airfoil_surface_area":,
+        "CL_takeoff":,
+        "CL_climb":,
+        "CL_cruise":,
+        "CL_descent":,
+        "CL_landing":,
+        "CD_takeoff":,
+        "CD_climb":,
+        "CD_cruise":,
+        "CD_descent":,
+        "CD_landing":,
+        "v_takeoff":,
+        "v_climb":,
+        "v_cruise":,
+        "v_descent":,
+        "v_landing":,
+        "drag_area":,
+        "a_z":,
+        "b_vert":,
+        "b_ho":,
+        "t_x1_v":,
+        "t_x2_v":,
+        "x_1_v":,
+        "x_2_v":,
+    }
+
+    loading = {
+        "T_takeoff":,
+        "T_climb":,
+        "T_cruise":,
+        "T_descent":,
+        "T_landing":,
+    }
+
+    materials = {
+        "spar_cap_E":,
+        "skin_G":,
+    }
+
+    # wing weight estimate
+    weight_estimate = 0.07*aero["W_total"]
+
+    test_wing = Wing(aero, loading, materials, weight_estimate)
 
 
 # # Assumptions/variables
@@ -465,7 +532,7 @@ class LandingGear():
 # q = 0.5*rho*V**2 # dynamic pressure
 # twist_max = ... # maximum tolerable tip twist angle
 
-# # Sizing Parameters
+# # Sizing Parameters - done
 # b = ... # span
 # h = ... # spar height
 # c_tip = ... # chord at the tip
