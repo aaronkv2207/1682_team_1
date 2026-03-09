@@ -6,6 +6,7 @@ from ambiance import Atmosphere
 from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
 from drag import C_Dp
 from scipy.interpolate import interp1d
+# get jvl cg --> mset, run file, input file, ...; can shift around masses to shift cg in .mass file
 
 
 # TODO: update constants in dataclass
@@ -60,43 +61,56 @@ class AircraftConfig:
     CM_landing: float = ...  # TODO: fill-in based on JVL outputs
 
 
+# v, alpha, delta_flap angle --> takeoff
+
+
 class TakeoffCoeff:
     """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
     Defines functions based on fit of operating points --> CL, CD, CM."""
 
     df = pd.read_csv("./takeoff_coefficients")
     alphas = df["ALPHA"]
-    betas = df["BETAS"]
+    flap_angle = df["BETAS"]
+    velocities = df["VELOCITY"]
 
-    CL_alpha_fn = interp1d(alphas, df["CL"])
-    CD_alpha_fn = interp1d(alphas, df["CD"])
-    CM_alpha_fn = interp1d(alphas, df["CM"])
+    CL_alpha = np.vstack((alphas, df["CL"]))
+    CD_alpha = np.vstack((alphas, df["CD"]))
+    CM_alpha = np.vstack((alphas, df["CM"]))
 
-    CL_beta_fn = interp1d(betas, df["CL"])
-    CD_beta_fn = interp1d(betas, df["CD"])
-    CM_beta_fn = interp1d(betas, df["CM"])
+    CL_flap = np.vstack((flap_angle, df["CL"]))
+    CD_flap = np.vstack((flap_angle, df["CD"]))
+    CM_flap = np.vstack((flap_angle, df["CM"]))
+
+    CL_velocity = np.vstack((velocities, df["CL"]))
+    CD_velocity = np.vstack((velocities, df["CD"]))
+    CM_velocity = np.vstack((velocities, df["CM"]))
 
 
-class ClimbCoeff:
+class ClimbCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
     """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
     Defines functions based on fit of operating points --> CL, CD, CM."""
 
 
-class CruiseCoeff:
+class CruiseCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
     """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
     Defines functions based on fit of operating points --> CL, CD, CM."""
 
     df = pd.read_csv("./cruise_coefficients")
     alphas = df["ALPHA"]
-    betas = df["BETAS"]
+    flap_angle = df["BETAS"]
+    velocities = df["VELOCITY"]
 
-    CL_alpha_fn = interp1d(alphas, df["CL"])
-    CD_alpha_fn = interp1d(alphas, df["CD"])
-    CM_alpha_fn = interp1d(alphas, df["CM"])
+    CL_alpha = np.vstack((alphas, df["CL"]))
+    CD_alpha = np.vstack((alphas, df["CD"]))
+    CM_alpha = np.vstack((alphas, df["CM"]))
 
-    CL_beta_fn = interp1d(betas, df["CL"])
-    CD_beta_fn = interp1d(betas, df["CD"])
-    CM_beta_fn = interp1d(betas, df["CM"])
+    CL_flap = np.vstack((flap_angle, df["CL"]))
+    CD_flap = np.vstack((flap_angle, df["CD"]))
+    CM_flap = np.vstack((flap_angle, df["CM"]))
+
+    CL_velocity = np.vstack((velocities, df["CL"]))
+    CD_velocity = np.vstack((velocities, df["CD"]))
+    CM_velocity = np.vstack((velocities, df["CM"]))
 
 
 class CruiseModel:
@@ -132,21 +146,26 @@ class CruiseModel:
         return self.cd_total() * self.q * self.s_ref
 
 
-class LandingCoeff:
+class LandingCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
     """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
     Defines functions based on fit of operating points --> CL, CD, CM."""
 
     df = pd.read_csv("./landing_coefficients")
     alphas = df["ALPHA"]
-    betas = df["BETAS"]
+    flap_angle = df["BETAS"]
+    velocities = df["VELOCITY"]
 
-    CL_alpha_fn = interp1d(alphas, df["CL"])
-    CD_alpha_fn = interp1d(alphas, df["CD"])
-    CM_alpha_fn = interp1d(alphas, df["CM"])
+    CL_alpha = np.vstack((alphas, df["CL"]))
+    CD_alpha = np.vstack((alphas, df["CD"]))
+    CM_alpha = np.vstack((alphas, df["CM"]))
 
-    CL_beta_fn = interp1d(betas, df["CL"])
-    CD_beta_fn = interp1d(betas, df["CD"])
-    CM_beta_fn = interp1d(betas, df["CM"])
+    CL_flap = np.vstack((flap_angle, df["CL"]))
+    CD_flap = np.vstack((flap_angle, df["CD"]))
+    CM_flap = np.vstack((flap_angle, df["CM"]))
+
+    CL_velocity = np.vstack((velocities, df["CL"]))
+    CD_velocity = np.vstack((velocities, df["CD"]))
+    CM_velocity = np.vstack((velocities, df["CM"]))
 
 
 # Runner script
