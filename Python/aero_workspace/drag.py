@@ -116,19 +116,21 @@ def C_Dp(rho, V, mu, l, x_tr):
     Re_l = rho * V * l / mu
     Re_x_tr = rho * V * x_tr / mu
 
-    C_fl = 1.328 / Re_l ** (1 / 2)
-    C_ft = 0.455 / (np.log10(Re_l) ** 2.58)
+    # C_fl = 1.328 / Re_l ** (1 / 2)
+    C_ft = 0.455 / (np.log10(Re_l) ** 2.58) # assuming fully turbulent flow for a conservative and realistic estimate!
 
-    Cf = max(C_fl, C_ft - (Re_x_tr / 320 - 39) / Re_l)
+    # Cf = max(C_fl, C_ft - (Re_x_tr / 320 - 39) / Re_l)
+    Cf = C_ft - (Re_x_tr / 320 - 39) / Re_l
 
     CDA = S_wet * C_f * Kf
+
+    C_Dp = sum(CDA * 1/2 * Vi**3)
 
     return C_Dp
 
 
-# = sum(CDA * 1/2 * Vi**3)
-
 # calculate induced drag
 def C_Di(C_L):
-    C_Di = C_L**2 / (np.pi*AR*e)
+    C_Di = C_L**2 / (np.pi * AR * e)
     return C_Di
+

@@ -1,5 +1,6 @@
 # Team 1 - Structural Sizing
 import numpy as np
+import math as math
 # from ... import ... as ... # elasticity stuff
 
 class Wing():
@@ -30,6 +31,7 @@ class Wing():
         t_x2 = self.aero["t_x2"]
         x_1 = self.aero["x_1"]
         x_2 = self.aero["x_2"]
+        b = self.aero["b"]
 
         h = 0.5*(t_x1+t_x2)
         w = x_2-x_1
@@ -40,10 +42,14 @@ class Wing():
         y = h/2
 
 
-        # Moment equations
-        M_y = T*(x_T1+x_T2+x_T3+x_T4) # - drag integral
-        M_z = self.weight_estimate*(b/4) + W_duct*(x_T1+x_T2+x_T3+x_T4) # - lift integral
-        # TODO: add actual integral stuff for D, L, W
+        # # Moment equations for final model:
+        # M_y = T*(x_T1+x_T2+x_T3+x_T4) # - drag integral
+        # M_z = self.weight_estimate*(b/4) + W_duct*(x_T1+x_T2+x_T3+x_T4) # - lift integral
+        # # TODO: add actual integral stuff for D, L, W
+
+        # Moment equations as of now (3/8) to test model, assume uniform distribution:
+        M_y = T*(x_T1+x_T2+x_T3+x_T4) - (D*(b/2)**2)/2
+        M_z = self.weight_estimate*(b/4) + W_duct*(x_T1+x_T2+x_T3+x_T4) - (L*(b/2)**2)/2
 
         # Moments of inertia
         I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
@@ -69,6 +75,7 @@ class Wing():
         t_x2 = self.aero["t_x2"]
         x_1 = self.aero["x_1"]
         x_2 = self.aero["x_2"]
+        b = self.aero["b"]
 
         h = 0.5*(t_x1+t_x2)
         w = x_2-x_1
@@ -150,6 +157,7 @@ class Wing():
         s_tot = self.aero["s_tot"] # not sure what this is
         G = self.materials["skin_G"]
         twist_max = self.aero["twist_max"]
+        A = self.aero["airfoil_surface_area"]
 
 
         # Calculate skin thickness requirements
@@ -178,7 +186,7 @@ class Wing():
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
         takeoff_spar_cap_area = self.spar_cap_area(L_takeoff, 0, axial_stress_takeoff)
-        takeoff_spar_web_area = self.spar_web_area(L, 0, shear_stress_takeoff)
+        takeoff_spar_web_area = self.spar_web_area(L_takeoff, 0, shear_stress_takeoff)
         takeoff_skin_thickness = self.skin_thickness(q_takeoff, shear_stress_takeoff)
         takeoff_tube_thickness = self.tube_thickness() # still not sure what this is for
 
@@ -285,6 +293,7 @@ class Wing():
 
 
     def wing_weight(self):
+        b = self.aero["b"]
         # for one of two wings
         sizing = self.max_load_sizing()
         spar_cap_weight = sizing[0]*b*self.materials["spar_cap_density"]
@@ -301,8 +310,94 @@ class Tail():
     # should this be a subclass of wing so that it inherits a lot of the functions?
     pass
 
-class Fuselage():
-    pass
+class Fuselage:
+
+    def __init__(self, length, radius, n):
+        self.length = length
+        self.R = radius
+        self.n = n
+        self.weight = 0.0 # to be derived
+
+
+    def pressure_at_altitude(self, h):
+        """
+        Returns atmospheric pressure (Pa) at altitude h (meters)
+        Valid up to 11 km (troposphere)
+        """
+        P0 = 101325      # Sea level pressure (Pa)
+        T0 = 288.15      # Sea level temperature (K)
+        L  = 0.0065      # Lapse rate (K/m)
+        g  = 9.80665     # Gravity (m/s^2)
+        R  = 287.05      # Gas constant for air (J/kg*K)
+
+        return P0 * (1 - (L * h) / T0)**(g / (R * L))
+
+    def required_thickness_hoop(self,
+                        yield_strength,
+                        safety_factor=2):
+        """
+        Computes required wall thickness required (meters)
+
+        radius: cabin radius (m)
+        altitude: flight altitude (m)
+        cabin_pressure: desired internal pressure (Pa)
+        yield_strength: material yield strength (Pa)
+        safety_factor: structural safety factor
+        """
+
+        max_altitude = 5500 # m (~18,000 ft)
+        cabin_pressure = 75150   # Pa (~8,000 ft)
+
+        # Outside pressure
+        P_out = self.pressure_at_altitude(max_altitude)
+
+        # Pressure differential
+        delta_P = cabin_pressure - P_out
+
+        # Allowable stress
+        sigma_allow = yield_strength / safety_factor
+
+        # Thin wall hoop stress formula
+        self.hoop_t = (delta_P * self.R) / sigma_allow
+
+        return self.hoop_t
+    
+    def required_thickness_moment(self, yield_stress, safety_factor=2):
+        pass
+    
+    def get_dead_weight(self):
+        seat_weight = self.n*13.0 # kg (average modern aircraft seat weight)
+        person_weight = self.n*100.0 # kg
+        return seat_weight + person_weight
+
+
+    def get_structural_weight(self, safety_factor):
+        # assume some materials
+
+        # skin material aluminum 7075-T6
+        yield_strength = 490e6    # Pa
+        skin_rho = 2810    # kg/m^3
+        # skin weight
+        self.thickness = self.required_thickness_hoop(yield_strength)+self.required_thickness_moments(yield_stress)
+        self.skin_volume = self.length*2*math.pi*self.R*self.thickness
+        self.skin_weight = self.skin_volume*self.skin_rho
+
+        # frame weight
+        self.frame_weight
+
+        # stringer weight
+        self.stringer_weight
+
+        return self.skin_weight+self.frame_weight+self.stringer_weight
+
+
+    def get_total_weight(self, n, safety_factor):
+        g  = 9.80665     # Gravity (m/s^2)
+        self.dead_weight = self.get_dead_weight()
+        self.structural_weight = self.get_structural_weight(safety_factor)
+        return self.dead_weight*g + self.structural_weight*g
+
+
 
 class LandingGear():
     pass
