@@ -76,7 +76,8 @@ class TakeoffCoeff:
     flap_angle = df["BETAS"]
     velocities = df["VELOCITY"]
 
-    CL_alpha = np.vstack((alphas, df["CL"]))
+    # TODO: Will need definitions for every control surface
+    CL_alpha = np.vstack((alphas, df["CL"]))  # convert from degrees --> radians
     CD_alpha = np.vstack((alphas, df["CD"]))
     CM_alpha = np.vstack((alphas, df["CM"]))
 
