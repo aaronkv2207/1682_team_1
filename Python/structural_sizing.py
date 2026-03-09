@@ -308,7 +308,52 @@ class Wing():
 
 class Tail():
     # should this be a subclass of wing so that it inherits a lot of the functions?
-    pass
+    def __init__(self, aero, loading, materials, weight_estimate):
+        self.aero = aero
+        self.loading = loading
+        self.material = materials
+        self.weight_estimate = weight_estimate
+    
+    def axial_stress_vert (self, Lv, Lh, Dv, Dh, hweight):
+        # Get required variables
+        b_vert = self.aero["b_vert"]
+        b_ho = self.aero["b_ho"]
+        t_x1_v = self.aero["t_x1_v"]
+        t_x2_v = self.aero["t_x2_v"]
+        x_1_v = self.aero["x_1_v"]
+        x_2_v = self.aero["x_2_v"]
+
+        #vertical tail calcs: 
+        h = 0.5*(t_x1_v+t_x2_v) #along y axis
+        w = x_2_v-x_1_v #along x axis
+        t = ... # box thickness - estimate
+        crossA_v = (h*w)-(h-2*t)*(w-2*t)
+
+        # NOTE: not sure if this is right z and y are dist. from the neutral axis
+        z = w/2
+        y = h/2
+
+        # Moment for vertical tail (accounting for T-tail, but not including angle):
+        M_yv = (Dv*(b_vert/2)**2)/2 #moment from drag of v and h
+        M_xv = (Lv*(b_vert/2)**2)/2 #lift moment 
+
+        #compressive and tensile loads on vertical tail along z (not including angle): 
+        V_compress = hweight  #h weight 
+        V_tensile = Lh #h lift 
+
+        # Moments of inertia vertical 
+        I_y_v = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
+        I_x_v = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
+
+        # Stress equations vertical NOTE check again 
+        axial_yy_v = -(M_xv*y)/I_x_v
+        axial_xx_v = ((M_yv*z)/I_y_v)+(V_tensile/crossA_v)-(V_compress/crossA_v)
+
+        axial_max_v = max(abs(axial_xx_v), abs(axial_yy_v))
+
+        # return axial_yy + axial_zz
+        return axial_max_v
+
 
 class Fuselage:
 
