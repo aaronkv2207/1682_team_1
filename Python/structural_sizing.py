@@ -1,5 +1,6 @@
 # Team 1 - Structural Sizing
 import numpy as np
+import math as math
 # from ... import ... as ... # elasticity stuff
 
 class Wing():
@@ -307,9 +308,10 @@ class Tail():
 
 class Fuselage:
 
-    def __init__(self, length, radius):
+    def __init__(self, length, radius, n):
         self.length = length
         self.R = radius
+        self.n = n
         self.weight = 0.0 # to be derived
 
 
@@ -326,9 +328,9 @@ class Fuselage:
 
         return P0 * (1 - (L * h) / T0)**(g / (R * L))
 
-    def required_thickness_hoop(self, altitude,
+    def required_thickness_hoop(self,
                         yield_strength,
-                        safety_factor):
+                        safety_factor=2):
         """
         Computes required wall thickness required (meters)
 
@@ -339,10 +341,11 @@ class Fuselage:
         safety_factor: structural safety factor
         """
 
+        max_altitude = 5500 # m (~18,000 ft)
         cabin_pressure = 75150   # Pa (~8,000 ft)
 
         # Outside pressure
-        P_out = self.pressure_at_altitude(altitude)
+        P_out = self.pressure_at_altitude(max_altitude)
 
         # Pressure differential
         delta_P = cabin_pressure - P_out
@@ -351,12 +354,44 @@ class Fuselage:
         sigma_allow = yield_strength / safety_factor
 
         # Thin wall hoop stress formula
-        t = (delta_P * self.R) / sigma_allow
+        self.hoop_t = (delta_P * self.R) / sigma_allow
 
-        return t, delta_P
+        return self.hoop_t
     
-    def get_total_weight(self):
+    def required_thickness_moment(self, yield_stress, safety_factor=2):
         pass
+    
+    def get_dead_weight(self):
+        seat_weight = self.n*13.0 # kg (average modern aircraft seat weight)
+        person_weight = self.n*100.0 # kg
+        return seat_weight + person_weight
+
+
+    def get_structural_weight(self, safety_factor):
+        # assume some materials
+
+        # skin material aluminum 7075-T6
+        yield_strength = 490e6    # Pa
+        skin_rho = 2810    # kg/m^3
+        # skin weight
+        self.thickness = self.required_thickness_hoop(yield_strength)+self.required_thickness_moments(yield_stress)
+        self.skin_volume = self.length*2*math.pi*self.R*self.thickness
+        self.skin_weight = self.skin_volume*self.skin_rho
+
+        # frame weight
+        self.frame_weight
+
+        # stringer weight
+        self.stringer_weight
+
+        return self.skin_weight+self.frame_weight+self.stringer_weight
+
+
+    def get_total_weight(self, n, safety_factor):
+        g  = 9.80665     # Gravity (m/s^2)
+        self.dead_weight = self.get_dead_weight()
+        self.structural_weight = self.get_structural_weight(safety_factor)
+        return self.dead_weight*g + self.structural_weight*g
 
 
 
