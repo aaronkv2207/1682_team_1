@@ -6,7 +6,6 @@ from ambiance import Atmosphere
 
 # from aero_workspace.aero_main import AircraftConfig, TakeoffCoeff
 
-w_dot_list=[]
 #eigenmodes can be calculated from JVL!
 @dataclass
 class Mass:
@@ -189,9 +188,6 @@ class Aircraft:
             if theta <= 0 and q < 0:
                 q_dot = 0
                 theta_dot = 0
-
-
-        w_dot_list.append(w_dot)
 
 
         # print(u_dot, -w_dot, q_dot, theta_dot, x_dot, -z_dot)
