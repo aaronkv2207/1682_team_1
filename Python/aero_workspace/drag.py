@@ -9,6 +9,7 @@ Created on Mon Mar  2 15:34:04 2026
 import numpy as np
 from ambiance import Atmosphere
 from conceptual_design import V_STALL, cl_max, ureg
+from aero_main import AircraftConfig
 
 # parameters
 AR = 8  # from twin otter
@@ -23,7 +24,6 @@ x_to = 366  # [m]
 
 m = 5670  # [kg]
 W = m * 9.81  # [N]
-
 
 # fuselage (roskam pt 2)
 D_f = 1.75  # [m] taken from the twin otter
@@ -76,7 +76,7 @@ C_L_cruise = W / (1 / 2 * rho_cruise * V_cruise**2 * S)
 # takeoff
 rho_sl = Atmosphere(h=0).density[0]
 mu_sl = Atmosphere(h=0).dynamic_viscosity[0]  # [Ns/m^2] dynamic viscosity at sea level
-V_takeoff = 1.2 * V_STALL  # [m/s]
+V_takeoff = 1.1 * V_STALL  # [m/s]
 C_L_takeoff = cl_max  # from wt data???
 
 
@@ -102,26 +102,26 @@ def C_D0():  # roskam's method
 C_D_cruise = C_D0()
 
 
-# # calculate profile drag (dissipation summation buildup)
-# def C_Dp(rho, V, mu, l, x_tr):
-#     Re_l = rho * V * l / mu
-#     Re_x_tr = rho * V * x_tr / mu
+# calculate profile drag (dissipation summation buildup)
+def C_Dp(rho, V, mu, l, x_tr):
+    Re_l = rho * V * l / mu
+    Re_x_tr = rho * V * x_tr / mu
 
-#     # C_fl = 1.328 / Re_l ** (1 / 2)
-#     C_ft = 0.455 / (np.log10(Re_l) ** 2.58) # assuming fully turbulent flow for a conservative and realistic estimate!
+    # C_fl = 1.328 / Re_l ** (1 / 2)
+    C_ft = 0.455 / (np.log10(Re_l) ** 2.58) # assuming fully turbulent flow for a conservative and realistic estimate!
 
-#     # Cf = max(C_fl, C_ft - (Re_x_tr / 320 - 39) / Re_l)
-#     Cf = C_ft - (Re_x_tr / 320 - 39) / Re_l
+    # Cf = max(C_fl, C_ft - (Re_x_tr / 320 - 39) / Re_l)
+    Cf = C_ft - (Re_x_tr / 320 - 39) / Re_l
 
-#     CDA = S_wet * C_f * K_f
+    CDA = S_wet * C_f * K_f
 
-#     C_Dp = sum(CDA * 1/2 * Vi**3)
+    C_Dp = sum(CDA * 1/2 * Vi**3)
 
-#     return C_Dp
+    return C_Dp
 
 
-# # calculate induced drag
-# def C_Di(C_L):
-#     C_Di = C_L**2 / (np.pi * AR * e)
-#     return C_Di
+# calculate induced drag
+def C_Di(C_L):
+    C_Di = C_L**2 / (np.pi * AR * e)
+    return C_Di
 
