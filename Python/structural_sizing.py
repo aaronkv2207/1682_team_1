@@ -502,7 +502,7 @@ class Fuselage:
 
         return self.hoop_t
 
-    def required_thickness_moment(self, yield_stress, safety_factor=2):
+    def required_thickness_moments(self, yield_stress, safety_factor=2):
         pass
 
     def get_dead_weight(self):
@@ -518,7 +518,7 @@ class Fuselage:
         yield_strength = 490e6    # Pa
         skin_rho = 2810    # kg/m^3
         # skin weight
-        self.thickness = self.required_thickness_hoop(yield_strength)+self.required_thickness_moments(yield_stress)
+        self.thickness = self.required_thickness_hoop(yield_strength)+self.required_thickness_moments(yield_strength)
         self.skin_volume = self.length*2*math.pi*self.R*self.thickness
         self.skin_weight = self.skin_volume*self.skin_rho
 
