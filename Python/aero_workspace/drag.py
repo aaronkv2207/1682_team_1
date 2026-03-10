@@ -57,16 +57,7 @@ V_v = S_v * l_v / (S * b)
 
 # wetted area
 S_wet_fuse = np.pi * D_f * l_f * (1 - 2 / lambda_f) ** (2 / 3) * (1 + 1 / lambda_f**2)
-S_wet_fancowl = (
-    l_n
-    * D_n
-    * (
-        2
-        + 0.35 * l_1 * l_n
-        + 0.8 * l_1 * D_hl / l_n * D_n
-        + 1.15 * (1 - l_1 / l_n) * D_ef / D_n
-    )
-)
+S_wet_fancowl = (l_n * D_n * (2 + 0.35 * l_1 * l_n + 0.8 * l_1 * D_hl / l_n * D_n + 1.15 * (1 - l_1 / l_n) * D_ef / D_n))
 S_wet_wing = S * 2
 S_wet_htail = S_h * 2
 S_wet_vtail = S_v * 2
@@ -78,7 +69,7 @@ f = 3  # estimated equivalent parasite area (Roskam Airplane Design I, pg 119)
 
 # cruise
 mu_cruise = Atmosphere(h=h_cruise).dynamic_viscosity[0]
-V_cruise = 93.63  # [m/s]
+V_cruise = 125  # [m/s]
 C_L_cruise = W / (1 / 2 * rho_cruise * V_cruise**2 * S)
 
 
@@ -111,26 +102,26 @@ def C_D0():  # roskam's method
 C_D_cruise = C_D0()
 
 
-# calculate profile drag (dissipation summation buildup)
-def C_Dp(rho, V, mu, l, x_tr):
-    Re_l = rho * V * l / mu
-    Re_x_tr = rho * V * x_tr / mu
+# # calculate profile drag (dissipation summation buildup)
+# def C_Dp(rho, V, mu, l, x_tr):
+#     Re_l = rho * V * l / mu
+#     Re_x_tr = rho * V * x_tr / mu
 
-    # C_fl = 1.328 / Re_l ** (1 / 2)
-    C_ft = 0.455 / (np.log10(Re_l) ** 2.58) # assuming fully turbulent flow for a conservative and realistic estimate!
+#     # C_fl = 1.328 / Re_l ** (1 / 2)
+#     C_ft = 0.455 / (np.log10(Re_l) ** 2.58) # assuming fully turbulent flow for a conservative and realistic estimate!
 
-    # Cf = max(C_fl, C_ft - (Re_x_tr / 320 - 39) / Re_l)
-    Cf = C_ft - (Re_x_tr / 320 - 39) / Re_l
+#     # Cf = max(C_fl, C_ft - (Re_x_tr / 320 - 39) / Re_l)
+#     Cf = C_ft - (Re_x_tr / 320 - 39) / Re_l
 
-    CDA = S_wet * C_f * Kf
+#     CDA = S_wet * C_f * K_f
 
-    C_Dp = sum(CDA * 1/2 * Vi**3)
+#     C_Dp = sum(CDA * 1/2 * Vi**3)
 
-    return C_Dp
+#     return C_Dp
 
 
-# calculate induced drag
-def C_Di(C_L):
-    C_Di = C_L**2 / (np.pi * AR * e)
-    return C_Di
+# # calculate induced drag
+# def C_Di(C_L):
+#     C_Di = C_L**2 / (np.pi * AR * e)
+#     return C_Di
 
