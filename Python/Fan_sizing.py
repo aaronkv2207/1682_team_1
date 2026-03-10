@@ -21,7 +21,7 @@ S = W / wing_loading  # Wing area [m^2]
 AR = 8  # Aspect ratio [-]
 e = 0.8  # Oswald efficiency factor [-]
 
-CL = 6  # Lift coefficient (TO config) [-]
+CL = 6.1  # Lift coefficient (TO config) [-]
 CD0 = 0.032  # Parasite drag coefficient [-]
 
 mu = 0.02  # Rolling friction coefficient [-]
@@ -33,12 +33,7 @@ V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
 RPM = 2100 # 2100               # RPM of propeller [rev/min]
 omega = RPM * 2 * np.pi / 60  # [rad/s]
-
-# ============================================================
-# PROPULSION CONFIGURATION
-# ============================================================
-
-N_fans = 8   # number of fans
+N_fans = 10  # number of fans
 
 
 # ============================================================
@@ -81,6 +76,7 @@ def T(v):
 
 
 print("Thrust at takeoff:", T(V_to))
+
 # ============================================================
 # CRUISE MODEL (STEADY LEVEL FLIGHT)
 # ============================================================
@@ -325,40 +321,20 @@ ax1.set_ylabel("Power (kW)")
 motor_power = 2000  # kW (CHANGE THIS)
 ax1.axhline(motor_power, linestyle=":", label="Motor Power Limit")
 
-# Second axis for tip Mach
-ax2 = ax1.twinx()
-ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
-ax2.set_ylabel("Tip Mach Number")
+# # Second axis for tip Mach
+# ax2 = ax1.twinx()
+# ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
+# ax2.set_ylabel("Tip Mach Number")
 
 # Mach limits
-ax2.axhline(1.1, color="red", linestyle="--", label=f"Mach Limit={1.1}")
+# ax2.axhline(1.1, color="red", linestyle="--", label=f"Mach Limit={1.1}")
 
 # Combine legends
 lines1, labels1 = ax1.get_legend_handles_labels()
-lines2, labels2 = ax2.get_legend_handles_labels()
-ax1.legend(lines1 + lines2, labels1 + labels2)
+# lines2, labels2 = ax2.get_legend_handles_labels()
+# ax1.legend(lines1 + lines2, labels1 + labels2)
+ax1.legend(lines1, labels1)
 
 plt.title("Propeller Radius Trade Study")
 plt.grid(True)
 plt.show()
-
-
-
-# # ============================================================
-# # PLOT: Efficiency vs RPM at cruise
-# # ============================================================
-
-# R = 1.8  # chosen prop radius in meters
-# RPM_range = np.linspace(1000, 3000, 200)  # RPM sweep
-# omega_range = RPM_range * 2 * np.pi / 60   # convert to rad/s
-
-# J_vals = V_cruise / (omega_range * R)      # Advance ratio at each RPM
-# eta_vals = [Eta_ideal_cruise(V_cruise, R) for omega in omega_range]  # efficiency
-
-# plt.figure(figsize=(8,6))
-# plt.plot(RPM_range, eta_vals)
-# plt.xlabel("Propeller RPM")
-# plt.ylabel("Ideal Propulsive Efficiency η")
-# plt.title(f"Propulsive Efficiency vs RPM at Cruise (R={R} m)")
-# plt.grid(True)
-# plt.show()
