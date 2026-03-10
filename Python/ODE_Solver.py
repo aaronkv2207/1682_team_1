@@ -2,6 +2,10 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
+from ambiance import Atmosphere
+
+# from aero_workspace.aero_main import AircraftConfig, TakeoffCoeff
+
 
 #eigenmodes can be calculated from JVL!
 @dataclass
@@ -28,6 +32,9 @@ class Aero:
     cd_t: float
     CL: np.ndarray #[CLa, CLq, CLde, CLdf]
     Cm: np.ndarray #[CMa, Cmq, Cmde, Cmddf]
+    cl: float
+    cm: float
+    cx:float
 
 @dataclass
 class Propulsion:
@@ -52,6 +59,8 @@ class Aircraft:
     def controls(self, t):
         if t<3: #chang delta_e to change based off takeoff velcoity, maybe have CL_max known
             delta_e=0
+        # elif t<5:
+        #     delta_e=np.radians(-10)*(t-3)/2 #ermoving pitch spike
         else:
             delta_e=np.radians(-10)
         if t<20:
@@ -60,6 +69,7 @@ class Aircraft:
             delta_f=np.radians(10)*(1-(t-20)/5)
         else:
             delta_f=0
+
         throttle=1-np.exp(-t/2)
         return delta_e, delta_f, throttle
 
@@ -69,33 +79,44 @@ class Aircraft:
 
         V = np.sqrt(u**2 + w**2)
         alpha=np.arctan2(w, u)
-        if V<1e-6:
-            q_bar=0
-        else:
-            q_bar=(q*self.c)/(2*V)
+        # if V<1e-6:
+        #     q_bar=0
+        # else:
+        #     q_bar=(q*self.c)/(2*V)
 
-        delta_dele=delta_e-self.deltae0
-        delta_delf=delta_f-self.deltaf0
-        delta_alpha=alpha-self.alpha0
-        delta_qbar=q_bar-self.qbar0
+        # delta_dele=delta_e-self.deltae0
+        # delta_delf=delta_f-self.deltaf0
+        # delta_alpha=alpha-self.alpha0
+        # delta_qbar=q_bar-self.qbar0
 
-        state_vec=np.array([delta_alpha, delta_qbar, delta_dele, delta_delf])
+        # state_vec=np.array([delta_alpha, delta_qbar, delta_dele, delta_delf])
 
-        CL=self.aero.CL0+self.aero.CL@state_vec
-        Cm=self.aero.Cm0+self.aero.Cm@state_vec
+        # CL=self.aero.CL0+self.aero.CL@state_vec
+        # Cm=self.aero.Cm0+self.aero.Cm@state_vec
 
-        if ze<=0: #include ground effect factor due to rolling resistance
-            phi=(16*self.geom.h/self.b)**2/(1+(16*self.geom.h/self.b)**2)
-        else:
-            phi=1
 
-        Sv=self.geom.Vv*self.geom.S*self.b/self.geom.lv
-        vt_c=np.sqrt(Sv/self.geom.vt_ar)
-        lh=self.geom.lv+vt_c/3
-        Sh=self.geom.Vh*self.geom.S*self.c/lh
+        # if ze<=0: #include ground effect factor due to rolling resistance
+        #     phi=(16*self.geom.h/self.b)**2/(1+(16*self.geom.h/self.b)**2)
+        # else:
+        #     phi=1
 
-        CD=self.aero.CD0+self.aero.cd_w+self.aero.cd_t*Sh/self.geom.S+phi*CL**2/(np.pi*self.geom.AR)
+        # Sv=self.geom.Vv*self.geom.S*self.b/self.geom.lv
+        # vt_c=np.sqrt(Sv/self.geom.vt_ar)
+        # lh=self.geom.lv+vt_c/3
+        # Sh=self.geom.Vh*self.geom.S*self.c/lh
 
+        # CD=self.aero.CD0+self.aero.cd_w+self.aero.cd_t*Sh/self.geom.S+phi*CL**2/(np.pi*self.geom.AR)
+        CL=2*np.pi*alpha
+        if CL>1.5:
+            CL=1.5
+
+        Cm=0
+        CD=CL**2/(np.pi*self.geom.AR)+.02
+
+
+        # CL=TakeoffCoeff.CL_alpha(alpha)+TakeoffCoeff.CL_flap(delta_f)+TakeoffCoeff.CL_velocity(V)
+        # Cm=TakeoffCoeff.CM_alpha(alpha)+TakeoffCoeff.CM_flap(delta_f)+TakeoffCoeff.CM_velocity(V)
+        # CD=TakeoffCoeff.CD_alpha(alpha)+TakeoffCoeff.CD_flap(delta_f)+TakeoffCoeff.CD_velocity(V)
         return CL, Cm, CD
 
     #Forces
@@ -107,27 +128,34 @@ class Aircraft:
         delta_e, delta_f, throttle = controls
 
         V = np.sqrt(u**2 + w**2)
-        alpha = np.arctan2(w, u)
 
-        Q = 0.5 * self.rho * V**2
+        alpha = np.arctan2(w, u)
+        rho=Atmosphere(h=-ze).density[0]
+        Q = 0.5 * rho * V**2
 
         CL, Cm, CD= self.aero_coefficents(x, controls)
+
 
         L = Q * self.geom.S * CL
         D = Q * self.geom.S * CD
 
-        T = self.prop.Tmax * throttle
+        # T = self.prop.Tmax * throttle
+        omega=200
+        T_W=0.3
+        T=omega*T_W
 
         W = self.mass.m * 9.81
 
-        if ze <= 0:
-            mu = 0.02
-            R = mu * max(W - L, 0)
-        else:
-            R = 0
+        # if ze <= 0:
+        #     mu = 0.02
+        #     R = mu * max(W - L, 0)
+        # else:
+        #     R = 0
 
-        X = (T - D)*np.cos(alpha) + L*np.sin(alpha) - R
-        Z = (T - D)*np.sin(alpha) - L*np.cos(alpha)
+        # X and Z  are only the components of the aerodynamic force
+        # X = (T_D)*np.cos(alpha) + L*np.sin(alpha) - R
+        X=L*np.sin(alpha)+(T-D)*np.cos(alpha)
+        Z = -L*np.cos(alpha)+(T-D)*np.sin(alpha)
 
         M = Q * self.geom.S * self.c * Cm
 
@@ -138,7 +166,7 @@ class Aircraft:
 
         X, Z, M = self.forces(x, t)
 
-        u_dot = X/self.mass.m - 9.81*np.sin(theta)
+        u_dot = X/self.mass.m - 9.81*np.sin(theta) -w*q
         w_dot = Z/self.mass.m + 9.81*np.cos(theta) + u*q
         q_dot = M/self.mass.Iy
         theta_dot = q
@@ -147,18 +175,18 @@ class Aircraft:
         w_e = w*np.cos(theta) - u*np.sin(theta)
 
         x_dot = u_e
-        z_dot = -w_e
-
-        if ze <= 0 and z_dot < 0:
-            z_dot = 0
+        z_dot = w_e
 
         return [u_dot, w_dot, q_dot, theta_dot, x_dot, z_dot]
 
     def takeoff_event(self, t, x):
         u, w = x[0], x[1]
+        ze=x[5]
         V = np.sqrt(u**2 + w**2)
-        Q = 0.5 * self.rho * V**2
+        rho=Atmosphere(h=-ze).density[0]
+        Q = 0.5 * rho * V**2
         CL, Cm, CD= self.aero_coefficents(x, self.controls(t))
+
         L=Q*self.geom.S*CL
         W = self.mass.m * 9.81
         return L - W
@@ -172,7 +200,7 @@ Aircraft.takeoff_event.direction=1 #ensures that crossing goes from L-W<0 to L-W
 u0 = 0       # forward velocity in m/s
 w0 = 0        # vertical velocity in m/s
 q0 = 0        # pitch rate in rad/s
-theta0 = np.radians(5)   # pitch angle in rad
+theta0 = np.radians(0)   # pitch angle in rad
 x_e0 = 0      # initial x-position in meters
 z_e0 = 0  # initial altitude in meters
 x0 = [u0, w0, q0, theta0, x_e0, z_e0]
@@ -185,6 +213,9 @@ geom = Geometry(
     Vv=.1,
     vt_ar=1.2,
     Vh=1.05,
+    # S=AircraftConfig.s_ref
+    # AR=AircraftConfig.AR
+
     )
 
 mass = Mass(
@@ -192,7 +223,7 @@ mass = Mass(
     Iy=40000
     )
 
-prop = Propulsion(Tmax=15000)
+prop = Propulsion(Tmax=77000)
 
 aero = Aero(
     CL0=0.3,
@@ -201,14 +232,19 @@ aero = Aero(
     cd_w=0,
     cd_t=0.01,
     CL=np.array([6.5, 5, 0.4, 1.2]),
-    Cm=np.array([-1.2, -12, -1, -0.1])
+    Cm=np.array([-1.2, -12, -1, -0.1]),
+    cl=4,
+    cm=-0.3,
+    cx=-0.6
+
+    # CD0=AircraftConfig.Cd0_takeoff
 )
 
 plane_1=Aircraft(mass, geom, aero, prop, rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0)
 
 #Intergate for 20 seconds
-t_span = (0, 15)
-t_eval = np.linspace(0, 15, 1000)
+t_span = (0, 20)
+t_eval = np.linspace(0, 20, 1000)
 
 sol = solve_ivp(
     plane_1.dynamics,
@@ -216,6 +252,9 @@ sol = solve_ivp(
     plane_1.ic,
     t_eval=t_eval,
     events=plane_1.takeoff_event,
+    rtol=1e-8,
+    atol=1e-8,
+    max_step=.02
 )
 
 # sol.y[i] gives time series of ith state
@@ -234,13 +273,16 @@ if sol.t_events[0].size > 0:
 else:
     print("Aircraft did not lift off.")
 
+alpha=np.arctan2(sol.y[1], sol.y[0])
+
 # --- Plot results ---
 # Positions
 
-plt.plot(sol.y[4], sol.y[5])
-plt.xlabel("x Position (m)")
-plt.ylabel(" z Position (m)")
-plt.title("Trajectory")
+plt.plot(sol.y[4], -sol.y[5])
+# plt.scatter(x_to, 0, label='Takeoff')
+plt.xlabel("Downrange DIstance (m)")
+plt.ylabel("Altitude (m)")
+plt.title("Takeoff Trajectory")
 plt.grid(True)
 plt.axis("equal")
 plt.show()
@@ -250,11 +292,20 @@ u = sol.y[0]
 w = sol.y[1]
 v = np.sqrt(u**2 + w**2)
 
-plt.plot(sol.t, sol.y[4], label='x Position')
-plt.plot(sol.t, v, label='Velocity')
+# plt.plot(sol.t, sol.y[4], label='x Position')
+plt.plot(sol.t, u, label='Forward Velocity (u)')
+plt.plot(sol.t, w, label='Vertical Velocity (w)')
+plt.plot(sol.t, v, label='Total Velocity (v)')
 plt.xlabel("Time (s)")
 plt.ylabel("Velocity (m/s)")
 plt.title("Kinematics")
 plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.plot(sol.t, np.degrees(alpha))
+plt.xlabel("Time (s)")
+plt.ylabel("Angle of Attack (deg)")
+plt.title("Angle of Attack")
 plt.grid(True)
 plt.show()
