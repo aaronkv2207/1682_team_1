@@ -6,7 +6,6 @@ from ambiance import Atmosphere
 
 # from aero_workspace.aero_main import AircraftConfig, TakeoffCoeff
 
-
 #eigenmodes can be calculated from JVL!
 @dataclass
 class Mass:
@@ -79,6 +78,7 @@ class Aircraft:
 
         V = np.sqrt(u**2 + w**2)
         alpha=np.arctan2(w, u)
+        alpha=np.clip(alpha, np.radians(-15), np.radians(15))
         # if V<1e-6:
         #     q_bar=0
         # else:
@@ -106,9 +106,8 @@ class Aircraft:
         # Sh=self.geom.Vh*self.geom.S*self.c/lh
 
         # CD=self.aero.CD0+self.aero.cd_w+self.aero.cd_t*Sh/self.geom.S+phi*CL**2/(np.pi*self.geom.AR)
-        CL=2*np.pi*alpha
-        if CL>1.5:
-            CL=1.5
+        CL=2*np.pi*alpha+0.3
+        CL=np.clip(CL, -1.5, 1.5)
 
         Cm=0
         CD=CL**2/(np.pi*self.geom.AR)+.02
@@ -130,7 +129,10 @@ class Aircraft:
         V = np.sqrt(u**2 + w**2)
 
         alpha = np.arctan2(w, u)
-        rho=Atmosphere(h=-ze).density[0]
+        alpha=np.clip(alpha, np.radians(-15), np.radians(15))
+
+
+        rho=Atmosphere(h=ze*-1).density[0]
         Q = 0.5 * rho * V**2
 
         CL, Cm, CD= self.aero_coefficents(x, controls)
@@ -139,10 +141,10 @@ class Aircraft:
         L = Q * self.geom.S * CL
         D = Q * self.geom.S * CD
 
-        # T = self.prop.Tmax * throttle
-        omega=200
-        T_W=0.3
-        T=omega*T_W
+        T = self.prop.Tmax * throttle
+        # # omega=200
+        # # T_W=0.3
+        # T=omega*T_W
 
         W = self.mass.m * 9.81
 
@@ -154,8 +156,8 @@ class Aircraft:
 
         # X and Z  are only the components of the aerodynamic force
         # X = (T_D)*np.cos(alpha) + L*np.sin(alpha) - R
-        X=L*np.sin(alpha)+(T-D)*np.cos(alpha)
-        Z = -L*np.cos(alpha)+(T-D)*np.sin(alpha)
+        X = -L*np.sin(alpha)+ T - D*np.cos(alpha)
+        Z = -L*np.cos(alpha) - D*np.sin(alpha)
 
         M = Q * self.geom.S * self.c * Cm
 
@@ -163,6 +165,7 @@ class Aircraft:
 
     def dynamics(self, t, x):
         u, w, q, theta, xe, ze = x
+        # print(f'u: {u}, w: {w}')
 
         X, Z, M = self.forces(x, t)
 
@@ -172,24 +175,40 @@ class Aircraft:
         theta_dot = q
 
         u_e = u*np.cos(theta) + w*np.sin(theta)
-        w_e = w*np.cos(theta) - u*np.sin(theta)
+        w_e = -u*np.sin(theta) + w*np.cos(theta)
 
         x_dot = u_e
         z_dot = w_e
 
+        # For simplicity, if we are on the ground and not lifting off:
+        L_minus_W = self.takeoff_event(t, x)
+        if L_minus_W < 0:
+            w_dot = 0
+            # Force pitch rate to zero if you don't want it to 'nose dive' into the dirt
+            if theta <= 0 and q < 0:
+                q_dot = 0
+                theta_dot = 0
+
+
+        # print(u_dot, -w_dot, q_dot, theta_dot, x_dot, -z_dot)
+
         return [u_dot, w_dot, q_dot, theta_dot, x_dot, z_dot]
+
+
+
 
     def takeoff_event(self, t, x):
         u, w = x[0], x[1]
         ze=x[5]
         V = np.sqrt(u**2 + w**2)
-        rho=Atmosphere(h=-ze).density[0]
+        rho=Atmosphere(h=ze*-1).density[0]
         Q = 0.5 * rho * V**2
         CL, Cm, CD= self.aero_coefficents(x, self.controls(t))
 
         L=Q*self.geom.S*CL
         W = self.mass.m * 9.81
         return L - W
+
 
 
 Aircraft.takeoff_event.terminal=False # doesn't stop integrating with ivp once takeoff occurs but records when event happens
@@ -200,10 +219,11 @@ Aircraft.takeoff_event.direction=1 #ensures that crossing goes from L-W<0 to L-W
 u0 = 0       # forward velocity in m/s
 w0 = 0        # vertical velocity in m/s
 q0 = 0        # pitch rate in rad/s
-theta0 = np.radians(0)   # pitch angle in rad
+theta0 = np.radians(5)   # pitch angle in rad
 x_e0 = 0      # initial x-position in meters
 z_e0 = 0  # initial altitude in meters
 x0 = [u0, w0, q0, theta0, x_e0, z_e0]
+
 
 geom = Geometry(
     S=49.5,
@@ -243,8 +263,8 @@ aero = Aero(
 plane_1=Aircraft(mass, geom, aero, prop, rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0)
 
 #Intergate for 20 seconds
-t_span = (0, 20)
-t_eval = np.linspace(0, 20, 1000)
+t_span = (0, 10)
+t_eval = np.linspace(0, 10, 1000)
 
 sol = solve_ivp(
     plane_1.dynamics,
@@ -274,7 +294,12 @@ else:
     print("Aircraft did not lift off.")
 
 alpha=np.arctan2(sol.y[1], sol.y[0])
+alpha = np.clip(alpha, np.radians(-15), np.radians(15))
 
+
+# print(f'w_dot: {w_dot_list}')
+# print(f'w: {sol.y[1]}') #without a clamp the vertical acceleration of gravity allows the plane to go to negative z
+#if w_dot>0 then acceleration will be downwards
 # --- Plot results ---
 # Positions
 
@@ -294,7 +319,7 @@ v = np.sqrt(u**2 + w**2)
 
 # plt.plot(sol.t, sol.y[4], label='x Position')
 plt.plot(sol.t, u, label='Forward Velocity (u)')
-plt.plot(sol.t, w, label='Vertical Velocity (w)')
+plt.plot(sol.t, -w, label='Vertical Velocity (w)')
 plt.plot(sol.t, v, label='Total Velocity (v)')
 plt.xlabel("Time (s)")
 plt.ylabel("Velocity (m/s)")
