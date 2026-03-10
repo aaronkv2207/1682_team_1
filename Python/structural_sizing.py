@@ -325,6 +325,7 @@ class Wing():
         # x2= self.aero["x2"]
         # tx1 = self.aero["tx1"]
         # tx2 = self.aero["tx2"]
+        t_avg = self.aero["t_avg"] # Average thickness to chord of the airfoil
         s_tot = 2 * c_ail
         # s_tot = self.aero["airfoil_perimeter"] # we'll estimate this as 2 * c_ail for now
         G = self.materials["skin_G"]
@@ -335,7 +336,7 @@ class Wing():
         print("T:", T)
 
         if A is None:
-            A = b_ail * c_ail
+            A = t_avg * c_ail
 
         if s_tot is None:
             s_tot = 2 * c_ail
