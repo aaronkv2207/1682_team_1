@@ -162,19 +162,28 @@ class Wing():
         c_ail = self.aero["c_ail"]
         y_ail = self.aero["y_ail"]
         c_m = self.aero["c_m"] # I don't think this changes based on flight conditions but not sure
-        x1 = self.aero["x1"]
-        x2= self.aero["x2"]
-        tx1 = self.aero["tx1"]
-        tx2 = self.aero["tx2"]
-        s_tot = self.aero["s_tot"] # not sure what this is
+        # x1 = self.aero["x1"]
+        # x2= self.aero["x2"]
+        # tx1 = self.aero["tx1"]
+        # tx2 = self.aero["tx2"]
+        s_tot = self.aero["airfoil_perimeter"] # we'll estimate this as 2 * c_ail for now
         G = self.materials["skin_G"]
         twist_max = self.aero["twist_max"]
-        A = self.aero["airfoil_surface_area"]
+        A = self.aero["airfoil_cross_section_area"] # we'll estimate this as b_ail * c_ail for now
+        T = self.aero["max_torque"] # not sure where this will come from exactly, takeoff, landing, or pull-up
 
+        if A is None:
+            A = b_ail * c_ail
 
-        # Calculate skin thickness requirements
+        if s_tot is None:
+            s_tot = 2 * c_ail
+
+        # Calculate torsional stiffness J per thickness assuming the wing skin is a box beam with width b_ail and height c_ail, and perimeter 2*c_ail
+        J_over_thickness = 4 * A ** 2 / s_tot
+        # Calculate skin strength requirement
         t_skin_strength = q*b_ail*c_ail**2*c_m*1/(2*A)*1/(1/shear_stress)
-        t_skin_stiffness = 1*b_ail*c_ail**2*y_ail*c_m*s_tot/(4*A**2*G)*(1/twist_max)
+        # Calculate skin stiffness requirement
+        t_skin_stiffness = T/G * y_ail / J_over_thickness * 1 / twist_max
 
         # Return max thickness
         return np.max(t_skin_strength, t_skin_stiffness)
