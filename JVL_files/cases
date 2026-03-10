@@ -1,0 +1,112 @@
+
+ ---------------------------------------------
+ Run case  1:  takeoff                                 
+
+ alpha        ->  alpha           =   20.0000    
+ beta         ->  beta            =   0.00000    
+ pb/2V        ->  pb/2V           =   0.00000    
+ qc/2V        ->  qc/2V           =   0.00000    
+ rb/2V        ->  rb/2V           =   0.00000    
+ Flap1        ->  Flap1           =   50.0000    
+ Flap2        ->  Flap2           =   50.0000    
+ Aileron      ->  Aileron         =   0.00000    
+ Rudder       ->  Rudder          =   0.00000    
+ Elevator     ->  Cm pitchmom     =   0.00000    
+ FlapJet1     ->  FlapJet1        =   3.00000    
+ FlapJet2     ->  FlapJet2        =   3.00000    
+
+ alpha     =   20.0000     deg                             
+ beta      =  -0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     = -0.229405E-25                                 
+ rb/2V     =  -0.00000                                     
+ CL        =   5.52682                                     
+ CDo       =   0.00000                                     
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   30.0000     Lunit/Tunit                     
+ density   =   1.22500     Munit/Lunit^3                   
+ grav.acc. =   9.81000     Lunit/Tunit^2                   
+ turn_rad. =   0.00000     Lunit                           
+ load_fac. =   1.00000                                     
+ X_cg      =  0.622500     Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =   7500.00     Munit                           
+ Ixx       =   1.00000     Munit-Lunit^2                   
+ Iyy       =   1.00000     Munit-Lunit^2                   
+ Izz       =   1.00000     Munit-Lunit^2                   
+ Ixy       =   0.00000     Munit-Lunit^2                   
+ Iyz       =   0.00000     Munit-Lunit^2                   
+ Izx       =   0.00000     Munit-Lunit^2                   
+ hx        =   0.00000     Munit-Lunit^2/Tunit             
+ hy        =   0.00000     Munit-Lunit^2/Tunit             
+ hz        =   0.00000     Munit-Lunit^2/Tunit             
+ DVj exp.  =   0.00000                                     
+ add. CL_a =   0.00000                                     
+ add. CL_u =   0.00000                                     
+ CL_adot   =   0.00000                                     
+ add. CD_a =   0.00000                                     
+ add. CD_u =   0.00000                                     
+ CD_adot   =   0.00000                                     
+ add. CM_a =   0.00000                                     
+ add. CM_u =   0.00000                                     
+ CM_adot   =   0.00000                                     
+
+ ---------------------------------------------
+ Run case  2:  cruise                                  
+
+ alpha        ->  CL              =  0.237339    
+ beta         ->  beta            =   0.00000    
+ pb/2V        ->  pb/2V           =   0.00000    
+ qc/2V        ->  qc/2V           =   0.00000    
+ rb/2V        ->  rb/2V           =   0.00000    
+ Flap1        ->  Flap1           =   0.00000    
+ Flap2        ->  Flap2           =   0.00000    
+ Aileron      ->  Aileron         =   0.00000    
+ Rudder       ->  Rudder          =   0.00000    
+ Elevator     ->  Cm pitchmom     =   0.00000    
+ FlapJet1     ->  FlapJet1        =   0.00000    
+ FlapJet2     ->  FlapJet2        =   0.00000    
+
+ alpha     =   1.48628     deg                             
+ beta      =  -0.00000     deg                             
+ pb/2V     =   0.00000                                     
+ qc/2V     =  0.517136E-31                                 
+ rb/2V     =  -0.00000                                     
+ CL        =  0.237339                                     
+ CDo       =   0.00000                                     
+ bank      =   0.00000     deg                             
+ elevation =   0.00000     deg                             
+ heading   =   0.00000     deg                             
+ Mach      =   0.00000                                     
+ velocity  =   125.000     Lunit/Tunit                     
+ density   =  0.800000     Munit/Lunit^3                   
+ grav.acc. =   9.81000     Lunit/Tunit^2                   
+ turn_rad. =   0.00000     Lunit                           
+ load_fac. =   1.00000                                     
+ X_cg      =  0.622500     Lunit                           
+ Y_cg      =   0.00000     Lunit                           
+ Z_cg      =   0.00000     Lunit                           
+ mass      =   7500.00     Munit                           
+ Ixx       =   1.00000     Munit-Lunit^2                   
+ Iyy       =   1.00000     Munit-Lunit^2                   
+ Izz       =   1.00000     Munit-Lunit^2                   
+ Ixy       =   0.00000     Munit-Lunit^2                   
+ Iyz       =   0.00000     Munit-Lunit^2                   
+ Izx       =   0.00000     Munit-Lunit^2                   
+ hx        =   0.00000     Munit-Lunit^2/Tunit             
+ hy        =   0.00000     Munit-Lunit^2/Tunit             
+ hz        =   0.00000     Munit-Lunit^2/Tunit             
+ DVj exp.  =   0.00000                                     
+ add. CL_a =   0.00000                                     
+ add. CL_u =   0.00000                                     
+ CL_adot   =   0.00000                                     
+ add. CD_a =   0.00000                                     
+ add. CD_u =   0.00000                                     
+ CD_adot   =   0.00000                                     
+ add. CM_a =   0.00000                                     
+ add. CM_u =   0.00000                                     
+ CM_adot   =   0.00000                                     
