@@ -25,7 +25,7 @@ CL = 6.1  # Lift coefficient (TO config) [-]
 CD0 = 0.032  # Parasite drag coefficient [-]
 
 mu = 0.02  # Rolling friction coefficient [-]
-x_runway = 52  # Runway length (171 ft) [m]
+x_runway = 104  # Runway length (171 ft) [m]
 
 V_stall = 19.933  # Stall speed [m/s]
 V_to = 1.1 * V_stall  # Takeoff speed [m/s]
@@ -71,11 +71,12 @@ def acc(v):
 
 def T(v):
     """Thrust required during ground roll [N]."""
+    print("Acceleration componenet,", acc(v))
     return D(v) + mu * (W - L(v)) + m * acc(v)
 
 
 
-print("Thrust at takeoff:", T(V_to))
+print("Thrust at takeoff:", D(V_to) + acc(V_to))
 
 # ============================================================
 # CRUISE MODEL (STEADY LEVEL FLIGHT)
@@ -291,50 +292,85 @@ def P_shaft_required(v, R):
 
 
 
+# # ============================================================
+# # PLOT 5: Tradeoff Plot
+# # ============================================================
+
+# R_plot = np.linspace(0.5, 5, 200)  # M
+
+# vel = np.linspace(0.1, V_to, 200)
+
+# P_vals = []
+# for r in R_plot:
+#     P_curve = N_fans * P_shaft_required(vel, r)
+#     P_vals.append(np.max(P_curve) / 1000)
+
+# eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
+# M_vals = [M_tip(r) for r in R_plot]
+
+# fig, ax1 = plt.subplots(figsize=(9, 6))
+
+# # Power curve
+# ax1.plot(R_plot, P_vals, label="Takeoff Power Required (kW)")
+# ax1.set_xlabel("Propeller Radius [m]")
+# ax1.set_ylabel("Power (kW)")
+
+# # Efficiency curve
+# # ax1.plot(R_plot, eta_vals, linestyle="--", label="Cruise Efficiency about .73")
+
+# # Example motor power limit
+# motor_power = 2000  # kW (CHANGE THIS)
+# ax1.axhline(motor_power, linestyle=":", label="Motor Power Limit")
+
+# # # Second axis for tip Mach
+# # ax2 = ax1.twinx()
+# # ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
+# # ax2.set_ylabel("Tip Mach Number")
+
+# # Mach limits
+# # ax2.axhline(1.1, color="red", linestyle="--", label=f"Mach Limit={1.1}")
+
+# # Combine legends
+# lines1, labels1 = ax1.get_legend_handles_labels()
+# # lines2, labels2 = ax2.get_legend_handles_labels()
+# # ax1.legend(lines1 + lines2, labels1 + labels2)
+# ax1.legend(lines1, labels1)
+
+# plt.title("Propeller Radius Trade Study")
+# plt.grid(True)
+# plt.show()
+
+
+
+# # =================================================================
+# # PLOT 5: FUNCTION TO CALL IN ODE SOLVER FOR TAKEOFF THRUST PROFILE
+# # ==================================================================
+
+
+
 # ============================================================
-# PLOT 5: Tradeoff Plot
+# THRUST INTERPOLATOR FOR TAKEOFF (0–22 m/s)
 # ============================================================
 
-R_plot = np.linspace(0.5, 5, 200)  # M
+V_data = np.array([0, 10, 20, 30])
+T_data = np.array([709.4, 414.2, 303.2, 257.9])
+degree = 4   # change this to 1,2,3,4,... to test fits
+coeffs = np.polyfit(V_data, T_data, degree)
+T_poly = np.poly1d(coeffs)
 
-vel = np.linspace(0.1, V_to, 200)
+def T_fan_interp(v):
+    """Interpolated thrust per fan [N]"""
+    return T_poly(v)
 
-P_vals = []
-for r in R_plot:
-    P_curve = N_fans * P_shaft_required(vel, r)
-    P_vals.append(np.max(P_curve) / 1000)
+vel = np.linspace(0,22,200)
 
-eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
-M_vals = [M_tip(r) for r in R_plot]
+plt.figure(figsize=(8,6))
 
-fig, ax1 = plt.subplots(figsize=(9, 6))
-
-# Power curve
-ax1.plot(R_plot, P_vals, label="Takeoff Power Required (kW)")
-ax1.set_xlabel("Propeller Radius [m]")
-ax1.set_ylabel("Power (kW)")
-
-# Efficiency curve
-# ax1.plot(R_plot, eta_vals, linestyle="--", label="Cruise Efficiency about .73")
-
-# Example motor power limit
-motor_power = 2000  # kW (CHANGE THIS)
-ax1.axhline(motor_power, linestyle=":", label="Motor Power Limit")
-
-# # Second axis for tip Mach
-# ax2 = ax1.twinx()
-# ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
-# ax2.set_ylabel("Tip Mach Number")
-
-# Mach limits
-# ax2.axhline(1.1, color="red", linestyle="--", label=f"Mach Limit={1.1}")
-
-# Combine legends
-lines1, labels1 = ax1.get_legend_handles_labels()
-# lines2, labels2 = ax2.get_legend_handles_labels()
-# ax1.legend(lines1 + lines2, labels1 + labels2)
-ax1.legend(lines1, labels1)
-
-plt.title("Propeller Radius Trade Study")
+plt.scatter(V_data, T_data, label="Original Data")
+plt.plot(vel, T_fan_interp(vel), label=f"Polynomial Fit (deg={degree})")
+plt.xlabel("Velocity [m/s]")
+plt.ylabel("Thrust per fan [N]")
+plt.title("Fan Thrust Interpolation")
+plt.legend()
 plt.grid(True)
 plt.show()
