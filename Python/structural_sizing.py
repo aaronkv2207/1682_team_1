@@ -68,62 +68,66 @@ class Wing():
         self.materials = materials
         self.weight_estimate = weight_estimate
 
-    def trapz_manual(self, y_vals, x_vals):
-        """Manual trapezoidal integration: y_vals over x_vals"""
-        integral = 0
-        for i in range(len(y_vals) - 1):
-            dx = x_vals[i+1] - x_vals[i]
-            integral += 0.5 * (y_vals[i] + y_vals[i+1]) * dx
-        return integral
+    # NOTE: commented out functions do better estimations for stresses uses distributed loads
+    # but give pretty seem values to the functions currently being used
 
-    def axial_stress(self, L, T, D):
-        # Span and chord
-        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
-        c = np.sqrt(aircraft.s_ref/aircraft.AR)
-        x_1 = 0.1*c
-        x_2 = 0.7*c
+    # def trapz_manual(self, y_vals, x_vals):
+    #     """Manual trapezoidal integration: y_vals over x_vals"""
+    #     integral = 0
+    #     for i in range(len(y_vals) - 1):
+    #         dx = x_vals[i+1] - x_vals[i]
+    #         integral += 0.5 * (y_vals[i] + y_vals[i+1]) * dx
+    #     return integral
 
-        t_x1 = self.aero["t_x1"]
-        t_x2 = self.aero["t_x2"]
-        h = 0.5*(t_x1 + t_x2)
-        w = x_2 - x_1
-        t = t_x1 * 0.1  # box thickness estimate
+    # def axial_stress(self, L, T, D):
+    #     # Span and chord
+    #     b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
+    #     c = np.sqrt(aircraft.s_ref/aircraft.AR)
+    #     x_1 = 0.1*c
+    #     x_2 = 0.7*c
 
-        # Span discretization
-        n_span = 50
-        y_span = np.linspace(0, b, n_span)
+    #     t_x1 = self.aero["t_x1"]
+    #     t_x2 = self.aero["t_x2"]
+    #     h = 0.5*(t_x1 + t_x2)
+    #     w = x_2 - x_1
+    #     t = t_x1 * 0.1  # box thickness estimate
+    #     print("thickness of box:", t)
 
-        # Elliptical distributions along half-span
-        lift_dist = L * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
-        drag_dist = D * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
-        weight_dist = self.weight_estimate * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
+    #     # Span discretization
+    #     n_span = 50
+    #     y_span = np.linspace(0, b, n_span)
 
-        # Add point masses for ducted fans
-        thrust_dist = np.zeros_like(y_span)
-        fan_positions = [b/6, b*2/6, b*4/6, b*5/6]  # example positions
-        thrust_per_fan = T
-        for pos in fan_positions:
-            idx = (np.abs(y_span - pos)).argmin()
-            thrust_dist[idx] += thrust_per_fan
+    #     # Elliptical distributions along half-span
+    #     lift_dist = L * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
+    #     drag_dist = D * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
+    #     weight_dist = self.weight_estimate * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
 
-        # Bending moments
-        M_y = self.trapz_manual(drag_dist * y_span, y_span)  # about y-axis
-        M_z = self.trapz_manual(lift_dist * y_span, y_span) + self.trapz_manual(weight_dist * y_span, y_span) - self.trapz_manual(thrust_dist * y_span, y_span)
+    #     # Add point masses for ducted fans
+    #     thrust_dist = np.zeros_like(y_span)
+    #     fan_positions = [b/6, b*2/6, b*4/6, b*5/6]  # example positions
+    #     thrust_per_fan = T
+    #     for pos in fan_positions:
+    #         idx = (np.abs(y_span - pos)).argmin()
+    #         thrust_dist[idx] += thrust_per_fan
 
-        # Moments of inertia
-        I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
-        I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
+    #     # Bending moments
+    #     M_y = self.trapz_manual(drag_dist * y_span, y_span)  # about y-axis
+    #     M_z = self.trapz_manual(lift_dist * y_span, y_span) + self.trapz_manual(weight_dist * y_span, y_span) - self.trapz_manual(thrust_dist * y_span, y_span)
 
-        # Section distances from neutral axis
-        z = w/2
-        y = h/2
+    #     # Moments of inertia
+    #     I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
+    #     I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
 
-        # Axial stresses
-        axial_yy = -(M_z * y)/I_z
-        axial_zz = (M_y * z)/I_y
-        axial_max = max(abs(axial_yy), abs(axial_zz))
+    #     # Section distances from neutral axis
+    #     z = w/2
+    #     y = h/2
 
-        return axial_max
+    #     # Axial stresses
+    #     axial_yy = -(M_z * y)/I_z
+    #     axial_zz = (M_y * z)/I_y
+    #     axial_max = max(abs(axial_yy), abs(axial_zz))
+
+    #     return axial_max
 
     def shear_stress(self, L, T, D):
         # Span and chord
@@ -173,89 +177,89 @@ class Wing():
 
         return shear_max
 
-    # def axial_stress(self, L, T, D):
-    #     # Get required variables
-    #     b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
-    #     c = np.sqrt(aircraft.s_ref/aircraft.AR)
-    #     x_T1 = b/6
-    #     x_T2 = b*(2/6)
-    #     x_T3 = b*(3/6)
-    #     x_T4 = b*(4/6)
-    #     x_T5 = b*(5/6)
-    #     t_x1 = self.aero["t_x1"]
-    #     t_x2 = self.aero["t_x2"]
-    #     x_1 = 0.1*c
-    #     x_2 = 0.7*c
+    def axial_stress(self, L, T, D):
+        # Get required variables
+        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
+        c = np.sqrt(aircraft.s_ref/aircraft.AR)
+        x_T1 = b/6
+        x_T2 = b*(2/6)
+        x_T3 = b*(3/6)
+        x_T4 = b*(4/6)
+        x_T5 = b*(5/6)
+        t_x1 = self.aero["t_x1"]
+        t_x2 = self.aero["t_x2"]
+        x_1 = 0.1*c
+        x_2 = 0.7*c
 
-    #     h = 0.5*(t_x1+t_x2)
-    #     w = x_2-x_1
-    #     t = t_x1*0.1 # box thickness - estimate
+        h = 0.5*(t_x1+t_x2)
+        w = x_2-x_1
+        t = t_x1*0.1 # box thickness - estimate
 
-    #     # NOTE: not sure if this is right z and y are dist. from the neutral axis
-    #     z = w/2
-    #     y = h/2
+        # NOTE: not sure if this is right z and y are dist. from the neutral axis
+        z = w/2
+        y = h/2
 
 
-    #     # # Moment equations for final model:
-    #     # M_y = T*(x_T1+x_T2+x_T3+x_T4) # - drag integral
-    #     # M_z = self.weight_estimate*(b/4) + W_duct*(x_T1+x_T2+x_T3+x_T4) # - lift integral
-    #     # # TODO: add actual integral stuff for D, L, W
+        # # Moment equations for final model:
+        # M_y = T*(x_T1+x_T2+x_T3+x_T4) # - drag integral
+        # M_z = self.weight_estimate*(b/4) + W_duct*(x_T1+x_T2+x_T3+x_T4) # - lift integral
+        # # TODO: add actual integral stuff for D, L, W
 
-    #     # Moment equations as of now (3/8) to test model, assume uniform distribution:
-    #     M_y = T*(x_T1+x_T2+x_T3+x_T4+x_T5) - (D*(b/2)**2)/2
-    #     M_z = self.weight_estimate*(b/4) + self.W_duct*(x_T1+x_T2+x_T3+x_T4+x_T5) - (L*(b/2)**2)/2
+        # Moment equations as of now (3/8) to test model, assume uniform distribution:
+        M_y = T*(x_T1+x_T2+x_T3+x_T4+x_T5) - (D*(b/2)**2)/2
+        M_z = self.weight_estimate*(b/4) + self.W_duct*(x_T1+x_T2+x_T3+x_T4+x_T5) - (L*(b/2)**2)/2
 
-    #     # Moments of inertia
-    #     I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
-    #     I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
+        # Moments of inertia
+        I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
+        I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
 
-    #     # Stress equations
-    #     axial_yy = -(M_z*y)/I_z
-    #     axial_zz = (M_y*z)/I_y
+        # Stress equations
+        axial_yy = -(M_z*y)/I_z
+        axial_zz = (M_y*z)/I_y
 
-    #     axial_max = max(abs(axial_yy), abs(axial_zz))
+        axial_max = max(abs(axial_yy), abs(axial_zz))
 
-    #     # return axial_yy + axial_zz
-    #     return axial_max
+        # return axial_yy + axial_zz
+        return axial_max
 
-    # def shear_stress(self, L, T, D):
-    #     # Get required variables
-    #     b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
-    #     c = np.sqrt(aircraft.s_ref/aircraft.AR)
-    #     x_T1 = b/6
-    #     x_T2 = b*(2/6)
-    #     x_T3 = b*(3/6)
-    #     x_T4 = b*(4/6)
-    #     x_T5 = b*(5/6)
-    #     t_x1 = self.aero["t_x1"]
-    #     t_x2 = self.aero["t_x2"]
-    #     x_1 = 0.1*c
-    #     x_2 = 0.7*c
+    def shear_stress(self, L, T, D):
+        # Get required variables
+        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
+        c = np.sqrt(aircraft.s_ref/aircraft.AR)
+        x_T1 = b/6
+        x_T2 = b*(2/6)
+        x_T3 = b*(3/6)
+        x_T4 = b*(4/6)
+        x_T5 = b*(5/6)
+        t_x1 = self.aero["t_x1"]
+        t_x2 = self.aero["t_x2"]
+        x_1 = 0.1*c
+        x_2 = 0.7*c
 
-    #     h = 0.5*(t_x1+t_x2)
-    #     w = x_2-x_1
-    #     t = t_x1*0.1 # box thickness - estimate
+        h = 0.5*(t_x1+t_x2)
+        w = x_2-x_1
+        t = t_x1*0.1 # box thickness - estimate
 
-    #     # Force equations
-    #     F_y = self.weight_estimate*(b/2) + 5*self.W_duct - L # - lift integral
-    #     F_z = -4*T + D # + drag integral
-    #     # TODO: add actual integral stuff for D, L, W
+        # Force equations
+        F_y = self.weight_estimate*(b/2) + 5*self.W_duct - L # - lift integral
+        F_z = -4*T + D # + drag integral
+        # TODO: add actual integral stuff for D, L, W
 
-    #     # 1st moments of area
-    #     Q_y = (h*w**2)/8 - ((h-2*t)*(w-2*t)**2)/8
-    #     Q_z = (w*h**2)/8 - ((w-2*t)*(h-2*t)**2)/8
+        # 1st moments of area
+        Q_y = (h*w**2)/8 - ((h-2*t)*(w-2*t)**2)/8
+        Q_z = (w*h**2)/8 - ((w-2*t)*(h-2*t)**2)/8
 
-    #     # Moments of inertia
-    #     I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
-    #     I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
+        # Moments of inertia
+        I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
+        I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
 
-    #     shear_xy = (F_y*Q_z)/(I_z*t)
-    #     shear_xz = (F_z*Q_y)/(I_y*t)
+        shear_xy = (F_y*Q_z)/(I_z*t)
+        shear_xz = (F_z*Q_y)/(I_y*t)
 
-    #     shear_max = max(abs(shear_xy), abs(shear_xz))
+        shear_max = max(abs(shear_xy), abs(shear_xz))
 
-    #     # return shear_xy + shear_xz
-    #     return shear_max
+        # return shear_xy + shear_xz
+        return shear_max
 
 
     def get_N(self, L, a_z):
@@ -352,8 +356,8 @@ class Wing():
         print("t_skin_stiffness:", t_skin_stiffness)
 
         max_skin_thickness = max(t_skin_strength, t_skin_stiffness)
-        if max(t_skin_strength, t_skin_stiffness) < 0.002:
-            max_skin_thickness = 0.002
+        if max(t_skin_strength, t_skin_stiffness) < 0.0035:
+            max_skin_thickness = 0.0035
         # Return max thickness
         return max_skin_thickness
 
