@@ -809,7 +809,7 @@ if __name__ == "__main__":
     # wing weight estimate
     # weight_estimate = 0.07*aero["W_total"]
 
-    test_wing = Wing(aero, loading, materials, 1800*9.81)
+    test_wing = Wing(aero, loading, materials)
 
     test_wing_weight = test_wing.wing_weight()
     print("Wing weight (kg)", test_wing_weight/9.81)
