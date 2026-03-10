@@ -18,9 +18,10 @@ class Wing():
     g = 9.81
     rho_ground = 1.225
     rho_cruise = 0.699 # at 18,000 ft
-    W_total = 7500
+    W_total = 7438.9149
+    W_duct = 30 # kg - guess
 
-    def __init__(self, aero, loading, materials, weight_estimate):
+    def __init__(self, aero, loading, materials, weight_estimate = 0.07*W_total):
         self.aero = aero
         self.loading = loading
         self.materials = materials
@@ -29,15 +30,15 @@ class Wing():
     def axial_stress(self, L, T, D):
         # Get required variables
         b = np.sqrt(aircraft.AR*aircraft.s_ref)
+        c = np.sqrt(aircraft.S/aircraft.AR)
         x_T1 = b/5
         x_T2 = b*(2/5)
         x_T3 = b*(3/5)
         x_T4 = b*(4/5)
-        W_duct = ... # estimate ourselves?
         t_x1 = self.aero["t_x1"]
         t_x2 = self.aero["t_x2"]
-        x_1 = self.aero["x_1"]
-        x_2 = self.aero["x_2"]
+        x_1 = 0.1*c
+        x_2 = 0.7*c
 
         h = 0.5*(t_x1+t_x2)
         w = x_2-x_1
@@ -55,7 +56,7 @@ class Wing():
 
         # Moment equations as of now (3/8) to test model, assume uniform distribution:
         M_y = T*(x_T1+x_T2+x_T3+x_T4) - (D*(b/2)**2)/2
-        M_z = self.weight_estimate*(b/4) + W_duct*(x_T1+x_T2+x_T3+x_T4) - (L*(b/2)**2)/2
+        M_z = self.weight_estimate*(b/4) + self.W_duct*(x_T1+x_T2+x_T3+x_T4) - (L*(b/2)**2)/2
 
         # Moments of inertia
         I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
@@ -73,22 +74,22 @@ class Wing():
     def shear_stress(self, L, T, D):
         # Get required variables
         b = np.sqrt(aircraft.AR*aircraft.s_ref)
+        c = np.sqrt(aircraft.S/aircraft.AR)
         x_T1 = b/5
         x_T2 = b*(2/5)
         x_T3 = b*(3/5)
         x_T4 = b*(4/5)
-        W_duct = ... # estimate ourselves?
         t_x1 = self.aero["t_x1"]
         t_x2 = self.aero["t_x2"]
-        x_1 = self.aero["x_1"]
-        x_2 = self.aero["x_2"]
+        x_1 = 0.1*c
+        x_2 = 0.7*c
 
         h = 0.5*(t_x1+t_x2)
         w = x_2-x_1
         t = ... # box thickness - estimate
 
         # Force equations
-        F_y = self.weight_estimate*(b/2) + 4*W_duct - L # - lift integral
+        F_y = self.weight_estimate*(b/2) + 4*self.W_duct - L # - lift integral
         F_z = -4*T + D # + drag integral
         # TODO: add actual integral stuff for D, L, W
 
@@ -124,13 +125,18 @@ class Wing():
     def spar_cap_area(self, L, a_z, axial_stress):
         """Find necessary spar cap area based on loading"""
         # Get required variables
-        c_tip = self.aero["c_tip"]
-        c_0 = self.aero["c_0"]
+        c = np.sqrt(aircraft.S/aircraft.AR)
+        c_tip = c
+        c_0 = c
         taper_ratio = c_tip/c_0
         N_max = self.get_N(L, a_z)[2]
         W_cent = self.W_total - self.weight_estimate
-        b = self.aero["b"] # NOTE: might need to do b/2 for half of wing?
-        h = self.aero["h"]
+        b = np.sqrt(aircraft.AR*aircraft.s_ref)
+        t_x1 = self.aero["t_x1"]
+        t_x2 = self.aero["t_x2"]
+        x_1 = 0.1*c
+        x_2 = 0.7*c
+        h = 0.5*(t_x1+t_x2)
         N = self.get_N(L, a_z)[0]
         E = self.materials["spar_car_E"] # maybe remain this variable if it shows up again just for clarity
         w_b_max = self.aero["w_b_max"] # not sure where we'll actually get this
@@ -179,8 +185,8 @@ class Wing():
 
     def takeoff(self):
         # Find forces - do we need to incorporate some takeoff angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
-        q_takeoff = 0.5*self.rho_ground*self.aero["v_takeoff"]**2
-        L_takeoff = self.aero["CL_takeoff"]*q_takeoff*self.aero["S"] # or lift distribution from aero
+        q_takeoff = 0.5*self.rho_ground*aircraft.v_takeoff**2
+        L_takeoff = self.aero["CL_takeoff"]*q_takeoff*aircraft.S # or lift distribution from aero
         T_takeoff = self.loading["T_takeoff"] # not sure where this will come from exactly
         D_takeoff = self.aero["CD_takeoff"]*q_takeoff*self.aero["drag_area"]
 
@@ -202,7 +208,7 @@ class Wing():
     def climb(self):
         # Find forces - do we need to incorporate climb angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
         q_climb = 0.5*(0.5*(self.rho_ground+self.rho_cruise))*self.aero["v_climb"]**2
-        L_climb = self.aero["CL_climb"]*q_climb*self.aero["S"] # or lift distribution from aero
+        L_climb = self.aero["CL_climb"]*q_climb*aircraft.S # or lift distribution from aero
         T_climb = self.loading["T_climb"] # not sure where this will come from exactly
         D_climb = self.aero["CD_climb"]*q_climb*self.aero["drag_area"]
 
@@ -222,8 +228,8 @@ class Wing():
 
     def cruise(self):
         # Find forces
-        q_cruise = 0.5*self.rho_cruise*self.aero["v_cruise"]**2
-        L_cruise = self.aero["CL_cruise"]*q_cruise*self.aero["S"] # or lift distribution from aero
+        q_cruise = 0.5*self.rho_cruise*aircraft.v_cruise**2
+        L_cruise = self.aero["CL_cruise"]*q_cruise*aircraft.S # or lift distribution from aero
         T_cruise = self.loading["T_cruise"] # not sure where this will come from exactly
         D_cruise = self.aero["CD_cruise"]*q_cruise*self.aero["drag_area"]
 
@@ -244,7 +250,7 @@ class Wing():
     def descent(self):
         # Find forces - do we need to incorporate descent angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
         q_descent = 0.5*(0.5*(self.rho_ground+self.rho_cruise))*self.aero["v_descent"]**2
-        L_descent = self.aero["CL_descent"]*q_descent*self.aero["S"] # or lift distribution from aero
+        L_descent = self.aero["CL_descent"]*q_descent*aircraft.S # or lift distribution from aero
         T_descent = self.loading["T_descent"] # not sure where this will come from exactly
         D_descent = self.aero["CD_descent"]*q_descent*self.aero["drag_area"]
 
@@ -265,7 +271,7 @@ class Wing():
     def landing(self):
         # Find forces - do we need to incorporate landing angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
         q_landing = 0.5*self.rho_ground*self.aero["v_landing"]**2
-        L_landing = self.aero["CL_landing"]*q_landing*self.aero["S"] # or lift distribution from aero
+        L_landing = self.aero["CL_landing"]*q_landing*aircraft.S # or lift distribution from aero
         T_landing = self.loading["T_landing"] # not sure where this will come from exactly
         D_landing = self.aero["CD_landing"]*q_landing*self.aero["drag_area"]
 
@@ -551,21 +557,14 @@ if __name__ == "__main__":
     # Create dictionaries for testing
     # NOTE: h here is spar height which is maybe something we calculate ourselves
     aero = {
-        "b": ,
-        "h":,
-        "S":,
-        "c_tip":,
-        "c_0":,
         "b_ail":,
         "c_ail":,
         "c_m":,
         "A":,
         "y_ail":,
         "s_tot":,
-        "x_1":,
-        "x_2":,
-        "t_x1":,
-        "t_x2":,
+        "t_x1": 0.7279684E-01 + 0.2596068E-01,
+        "t_x2": 0.2139701E-01 + 0.4671981E-01,
         "W_total":,
         "w_b_max":,
         "twist_max":,
@@ -608,14 +607,14 @@ if __name__ == "__main__":
     }
 
     materials = {
-        "spar_cap_E":,
-        "skin_G":,
+        "spar_cap_E": 6.9 * 10**9,
+        "skin_G": 26 * 10**9
     }
 
     # wing weight estimate
-    weight_estimate = 0.07*aero["W_total"]
+    # weight_estimate = 0.07*aero["W_total"]
 
-    test_wing = Wing(aero, loading, materials, weight_estimate)
+    test_wing = Wing(aero, loading, materials)
 
 
 # # Assumptions/variables
