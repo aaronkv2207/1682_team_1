@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 from ambiance import Atmosphere
 from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
-from drag import C_Dp
+from drag import C_Dp, V_v, V_h
 from scipy.interpolate import interp1d
+
 # get jvl cg --> mset, run file, input file, ...; can shift around masses to shift cg in .mass file
 
 
@@ -17,6 +18,8 @@ class AircraftConfig:
     #### GLOBAL DEFINITIONS ###
     AR: int = 8
     s_ref: float = S  # NOTE: S_ref may change after Brenda's drag update
+    V_h: float = V_h  # TODO: will need to update Brenda's script
+    V_v: float = V_v
 
     #### TAKEOFF DEFINITIONS ###
     v_takeoff: float = 1.2 * V_STALL
@@ -40,7 +43,7 @@ class AircraftConfig:
     #### CRUISE DEFINITIONS ###
     v_cruise: int = V_CRUISE
     weight_cruise: ...  # TODO: update to varied model
-    h_cruise: ...
+    h_cruise: int = 18000 * ureg("ft").to("m")
 
     # TODO: see if Brenda's model can define all stage parameters at the top, so function call only takes in a stage
     # Her script will also add up the drags for all components
@@ -73,17 +76,18 @@ class TakeoffCoeff:
     flap_angle = df["BETAS"]
     velocities = df["VELOCITY"]
 
-    CL_alpha = np.vstack((alphas, df["CL"]))
-    CD_alpha = np.vstack((alphas, df["CD"]))
-    CM_alpha = np.vstack((alphas, df["CM"]))
+    # TODO: Will need definitions for every control surface
+    CL_alpha = np.hstack((alphas, df["CL"]))  # convert from degrees --> radians
+    CD_alpha = np.hstack((alphas, df["CD"]))
+    CM_alpha = np.hstack((alphas, df["CM"]))
 
-    CL_flap = np.vstack((flap_angle, df["CL"]))
-    CD_flap = np.vstack((flap_angle, df["CD"]))
-    CM_flap = np.vstack((flap_angle, df["CM"]))
+    CL_flap = np.hstack((flap_angle, df["CL"]))
+    CD_flap = np.hstack((flap_angle, df["CD"]))
+    CM_flap = np.hstack((flap_angle, df["CM"]))
 
-    CL_velocity = np.vstack((velocities, df["CL"]))
-    CD_velocity = np.vstack((velocities, df["CD"]))
-    CM_velocity = np.vstack((velocities, df["CM"]))
+    CL_velocity = np.hstack((velocities, df["CL"]))
+    CD_velocity = np.hstack((velocities, df["CD"]))
+    CM_velocity = np.hstack((velocities, df["CM"]))
 
 
 class ClimbCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
@@ -100,17 +104,17 @@ class CruiseCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
     flap_angle = df["BETAS"]
     velocities = df["VELOCITY"]
 
-    CL_alpha = np.vstack((alphas, df["CL"]))
-    CD_alpha = np.vstack((alphas, df["CD"]))
-    CM_alpha = np.vstack((alphas, df["CM"]))
+    CL_alpha = np.hstack((alphas, df["CL"]))
+    CD_alpha = np.hstack((alphas, df["CD"]))
+    CM_alpha = np.hstack((alphas, df["CM"]))
 
-    CL_flap = np.vstack((flap_angle, df["CL"]))
-    CD_flap = np.vstack((flap_angle, df["CD"]))
-    CM_flap = np.vstack((flap_angle, df["CM"]))
+    CL_flap = np.hstack((flap_angle, df["CL"]))
+    CD_flap = np.hstack((flap_angle, df["CD"]))
+    CM_flap = np.hstack((flap_angle, df["CM"]))
 
-    CL_velocity = np.vstack((velocities, df["CL"]))
-    CD_velocity = np.vstack((velocities, df["CD"]))
-    CM_velocity = np.vstack((velocities, df["CM"]))
+    CL_velocity = np.hstack((velocities, df["CL"]))
+    CD_velocity = np.hstack((velocities, df["CD"]))
+    CM_velocity = np.hstack((velocities, df["CM"]))
 
 
 class CruiseModel:
@@ -155,17 +159,17 @@ class LandingCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
     flap_angle = df["BETAS"]
     velocities = df["VELOCITY"]
 
-    CL_alpha = np.vstack((alphas, df["CL"]))
-    CD_alpha = np.vstack((alphas, df["CD"]))
-    CM_alpha = np.vstack((alphas, df["CM"]))
+    CL_alpha = np.hstack((alphas, df["CL"]))
+    CD_alpha = np.hstack((alphas, df["CD"]))
+    CM_alpha = np.hstack((alphas, df["CM"]))
 
-    CL_flap = np.vstack((flap_angle, df["CL"]))
-    CD_flap = np.vstack((flap_angle, df["CD"]))
-    CM_flap = np.vstack((flap_angle, df["CM"]))
+    CL_flap = np.hstack((flap_angle, df["CL"]))
+    CD_flap = np.hstack((flap_angle, df["CD"]))
+    CM_flap = np.hstack((flap_angle, df["CM"]))
 
-    CL_velocity = np.vstack((velocities, df["CL"]))
-    CD_velocity = np.vstack((velocities, df["CD"]))
-    CM_velocity = np.vstack((velocities, df["CM"]))
+    CL_velocity = np.hstack((velocities, df["CL"]))
+    CD_velocity = np.hstack((velocities, df["CD"]))
+    CM_velocity = np.hstack((velocities, df["CM"]))
 
 
 # Runner script

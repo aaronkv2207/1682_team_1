@@ -38,7 +38,7 @@ weight_pgen = (
 mtow_ot = 12500 * ureg("lbs").to_base_units()
 # mlw_ot = 12300 * ureg("lbs").to_base_units()
 weight_pay_fuel = (
-    4400 * ureg("lb").to_base_units() * 1.75
+    4400 * ureg("lb").to_base_units() * 2.0
 )  # https://www.nohrsc.noaa.gov/snowsurvey/twin_otter.html; added fuel weight for improved range
 
 
@@ -47,7 +47,7 @@ weight_fixed = (
     PAYLOAD * 1.10
 )  # assumed slight mass increase for other equipment (avionics, e.g.)
 weight_pow = weight_pgen + (weight_pay_fuel - weight_fixed)
-weight_struct = mtow_ot * 0.7
+weight_struct = mtow_ot * 0.6
 
 # xcg = ...  # TODO
 MTOW = weight_pow + weight_fixed + weight_struct
@@ -69,7 +69,7 @@ atm = Atmosphere(h=0)
 rho = atm.density[0] * ureg("kg/m^3")
 
 # NOTE: x_to proportional to v^3 (1st order approx.)
-beta = (1 / 7) ** (1 / 3)  # will enable ~33% reduction in takeoff length
+beta = (1 / 7) ** (1 / 3)  # will enable for reduction in takeoff length
 V_STALL = v_stall_ot * beta
 
 W_S = ((0.5 * rho * V_STALL**2) * cl_max).to("N/m^2")

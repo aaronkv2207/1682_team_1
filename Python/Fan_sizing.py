@@ -8,29 +8,37 @@ import matplotlib.pyplot as plt
 # ============================================================
 
 rho = 1.225  # Air density [kg/m^3]
+rho_cruise = .549 # 
 g = 9.81  # Gravity [m/s^2]
 a = 343  # Speed of Sound [m/s^2]
 
 W = 73618.07  # Aircraft weight [N] --> 16550 lbs
 m = W / g  # Aircraft mass [kg]
 
-wing_loading = 14.8456  # Wing loading [N/m^2]
+wing_loading = 1484.56  # Wing loading [N/m^2]
 S = W / wing_loading  # Wing area [m^2]
-AR = 8  # Aspect ratio [-]
-e = 0.7  # Oswald efficiency factor [-]
 
-CL = 6.1  # Lift coefficient (TO config) [-]
+AR = 8  # Aspect ratio [-]
+e = 0.8  # Oswald efficiency factor [-]
+
+CL = 6  # Lift coefficient (TO config) [-]
 CD0 = 0.032  # Parasite drag coefficient [-]
 
 mu = 0.02  # Rolling friction coefficient [-]
 x_runway = 52  # Runway length (171 ft) [m]
 
 V_stall = 19.933  # Stall speed [m/s]
-V_to = 1.2 * V_stall  # Takeoff speed [m/s]
+V_to = 1.1 * V_stall  # Takeoff speed [m/s]
 V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
-RPM = 1000  # 2100               # RPM of propeller [rev/min]
+RPM = 2100 # 2100               # RPM of propeller [rev/min]
 omega = RPM * 2 * np.pi / 60  # [rad/s]
+
+# ============================================================
+# PROPULSION CONFIGURATION
+# ============================================================
+
+N_fans = 8   # number of fans
 
 
 # ============================================================
@@ -71,6 +79,8 @@ def T(v):
     return D(v) + mu * (W - L(v)) + m * acc(v)
 
 
+
+print("Thrust at takeoff:", T(V_to))
 # ============================================================
 # CRUISE MODEL (STEADY LEVEL FLIGHT)
 # ============================================================
@@ -78,7 +88,7 @@ def T(v):
 
 def CL_cruise(v):
     """Lift coefficient required for steady level flight [-]"""
-    return W / (0.5 * rho * v**2 * S)
+    return W / (0.5 * rho_cruise * v**2 * S)
 
 
 def CD_cruise(v):
@@ -90,7 +100,7 @@ def CD_cruise(v):
 
 def D_cruise(v):
     """Drag force at cruise [N]"""
-    return 0.5 * rho * v**2 * S * CD_cruise(v)
+    return 0.5 * rho_cruise * v**2 * S * CD_cruise(v)
 
 
 def T_cruise(v):
@@ -101,7 +111,8 @@ def T_cruise(v):
 def Tc_cruise(v, R):
     """Velocity-based thrust coefficient at cruise [-]"""
     A = Disk_area(R)
-    return T_cruise(v) / (0.5 * rho * v**2 * A)
+    T_per_fan = T_cruise(v) / N_fans
+    return T_per_fan / (0.5 * rho * v**2 * A)
 
 
 def Eta_ideal_cruise(v, R):
@@ -142,7 +153,8 @@ def T_c(v, R):
     dynamic_mask = ~small_mask
 
     if np.any(dynamic_mask):
-        Tc[dynamic_mask] = T(v[dynamic_mask]) / (0.5 * rho * v[dynamic_mask] ** 2 * A)
+        T_per_fan = T(v[dynamic_mask]) / N_fans
+        Tc[dynamic_mask] = T_per_fan / (0.5 * rho * v[dynamic_mask] ** 2 * A)
 
     # For very small velocity → treat as large loading
     Tc[small_mask] = 1e6
@@ -158,7 +170,10 @@ def Eta_ideal(v, R):
 
 # print(Eta_ideal_cruise(125,3.5))
 
-
+print("Cl=", CL_cruise(130))
+print("Cd=", CD_cruise(130))
+print("T_cruise=",T_cruise(130))
+print("P_cruise=", P_cruise(130, 1.8)/1000)
 # ============================================================
 # POWER FUNCTION (FIXED FOR ARRAYS)
 # ============================================================
@@ -173,7 +188,7 @@ def P_shaft_required(v, R):
     # Static case (v very small)
     static_mask = v < 1e-6
     if np.any(static_mask):
-        T_static = T(0)
+        T_static = T(0) / N_fans
         A = Disk_area(R)
         delta_V = np.sqrt(2 * T_static / (rho * A))
         P[static_mask] = T_static * delta_V / 2
@@ -182,10 +197,10 @@ def P_shaft_required(v, R):
     dynamic_mask = ~static_mask
     if np.any(dynamic_mask):
         eta = Eta_ideal(v[dynamic_mask], R)
-        P[dynamic_mask] = T(v[dynamic_mask]) * v[dynamic_mask] / eta
+        T_per_fan = T(v[dynamic_mask]) / N_fans
+        P[dynamic_mask] = T_per_fan * v[dynamic_mask] / eta
 
     return P
-
 
 # # ============================================================
 # # Sanity Check Plot: CRUISE EFFICIENCY VS RADIUS
@@ -279,15 +294,21 @@ def P_shaft_required(v, R):
 # plt.show()
 
 
+
 # ============================================================
 # PLOT 5: Tradeoff Plot
 # ============================================================
 
-R_plot = np.linspace(1.0, 5, 200)  # M
+R_plot = np.linspace(0.5, 5, 200)  # M
 
-P_vals = [P_shaft_required(V_to, r) / 1000 for r in R_plot]  # kW
+vel = np.linspace(0.1, V_to, 200)
+
+P_vals = []
+for r in R_plot:
+    P_curve = N_fans * P_shaft_required(vel, r)
+    P_vals.append(np.max(P_curve) / 1000)
+
 eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
-# print(eta_vals)
 M_vals = [M_tip(r) for r in R_plot]
 
 fig, ax1 = plt.subplots(figsize=(9, 6))
@@ -301,7 +322,7 @@ ax1.set_ylabel("Power (kW)")
 # ax1.plot(R_plot, eta_vals, linestyle="--", label="Cruise Efficiency about .73")
 
 # Example motor power limit
-motor_power = 1.1e6  # kW (CHANGE THIS)
+motor_power = 2000  # kW (CHANGE THIS)
 ax1.axhline(motor_power, linestyle=":", label="Motor Power Limit")
 
 # Second axis for tip Mach
@@ -310,7 +331,7 @@ ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
 ax2.set_ylabel("Tip Mach Number")
 
 # Mach limits
-ax2.axhline(0.85, color="red", linestyle="--", label=f"Mach Limit={0.85}")
+ax2.axhline(1.1, color="red", linestyle="--", label=f"Mach Limit={1.1}")
 
 # Combine legends
 lines1, labels1 = ax1.get_legend_handles_labels()
@@ -320,3 +341,24 @@ ax1.legend(lines1 + lines2, labels1 + labels2)
 plt.title("Propeller Radius Trade Study")
 plt.grid(True)
 plt.show()
+
+
+
+# # ============================================================
+# # PLOT: Efficiency vs RPM at cruise
+# # ============================================================
+
+# R = 1.8  # chosen prop radius in meters
+# RPM_range = np.linspace(1000, 3000, 200)  # RPM sweep
+# omega_range = RPM_range * 2 * np.pi / 60   # convert to rad/s
+
+# J_vals = V_cruise / (omega_range * R)      # Advance ratio at each RPM
+# eta_vals = [Eta_ideal_cruise(V_cruise, R) for omega in omega_range]  # efficiency
+
+# plt.figure(figsize=(8,6))
+# plt.plot(RPM_range, eta_vals)
+# plt.xlabel("Propeller RPM")
+# plt.ylabel("Ideal Propulsive Efficiency η")
+# plt.title(f"Propulsive Efficiency vs RPM at Cruise (R={R} m)")
+# plt.grid(True)
+# plt.show()
