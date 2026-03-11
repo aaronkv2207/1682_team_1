@@ -4,8 +4,11 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from ambiance import Atmosphere
 
+# Imports from other subteam dependencies
+from ThrustVelocity import ThrustVelocity
+
 # from aero_workspace.aero_main import AircraftConfig, TakeoffCoeff
-#eigenmodes can be calculated from JVL!
+#eigenmodes can be calculated from JVL!  lowkey might still caculate them in this
 @dataclass
 class Mass:
     m: float
@@ -142,7 +145,9 @@ class Aircraft:
         L = Q * self.geom.S * CL
         D = Q * self.geom.S * CD
 
-        T = self.prop.Tmax * throttle
+        # Setup Thrust using interpolation from Fan Sizing
+        airplane_thrust = ThrustVelocity()
+        T = airplane_thrust.get_T(V) * throttle # TODO: This isn't exactly how a propeller works, can't just "throttle" it, but it's a start.
         # # omega=200
         # # T_W=0.3
         # T=omega*T_W
@@ -264,9 +269,10 @@ aero = Aero(
 
 plane_1=Aircraft(mass, geom, aero, prop, rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0)
 
-#Intergate for 20 seconds
-t_span = (0, 9.5)
-t_eval = np.linspace(0, 9.5, 1000)
+#Integrate for 20 seconds
+t = 20.0
+t_span = (0, t)
+t_eval = np.linspace(0, t, 1000)
 
 sol = solve_ivp(
     plane_1.dynamics,
@@ -306,7 +312,7 @@ alpha = np.clip(alpha, np.radians(-15), np.radians(15))
 # Positions
 
 plt.plot(sol.y[4], -sol.y[5])
-plt.scatter(x_to, 0, label='Takeoff',c='red', marker='*')
+# plt.scatter(x_to, 0, label='Takeoff',c='red', marker='*')
 plt.xlabel("Downrange Distance (m)")
 plt.ylabel("Altitude (m)")
 plt.title("Takeoff Trajectory")
