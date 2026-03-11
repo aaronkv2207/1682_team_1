@@ -992,7 +992,7 @@ class Fuselage:
 
         return self.hoop_t
 
-    def required_thickness_moments(self, yield_stress, safety_factor=2):
+    def required_thickness_bending(self, yield_stress, safety_factor=2):
         pass
 
 
@@ -1033,7 +1033,7 @@ class Fuselage:
         # stringer mass
         # stringer specs
         stringer_area = 1e-4 # assumed
-        stringer_spacing = 0.25 # assumed
+        stringer_spacing = 0.5 # assumed
         # stringer mass
         n_stringers = self.count_members(self.circumference(), stringer_spacing)
         total_volume = n_stringers * self.length * stringer_area
@@ -1081,7 +1081,324 @@ class Fuselage:
 
 
 class LandingGear():
-    pass
+
+    # =========================================================
+    # Geometry helpers for a hollow circular tube
+    # =========================================================
+    def tube_inner_diameter(D_outer, t):
+        D_inner = D_outer - 2.0 * t
+        if D_inner <= 0:
+            raise ValueError("Invalid geometry: thickness too large for outer diameter.")
+        return D_inner
+
+
+    def tube_area(D_outer, t):
+        """
+        Cross-sectional area [m^2]
+        """
+        D_inner = tube_inner_diameter(D_outer, t)
+        return (np.pi / 4.0) * (D_outer**2 - D_inner**2)
+
+
+    def tube_I(D_outer, t):
+        """
+        Area moment of inertia for bending [m^4]
+        """
+        D_inner = tube_inner_diameter(D_outer, t)
+        return (np.pi / 64.0) * (D_outer**4 - D_inner**4)
+
+
+    def tube_c(D_outer):
+        """
+        Outer fiber distance from neutral axis [m]
+        """
+        return D_outer / 2.0
+
+
+    def tube_mass(D_outer, t, L, rho):
+        """
+        Mass of one strut [kg]
+        """
+        A = tube_area(D_outer, t)
+        return A * L * rho
+
+
+    # =========================================================
+    # Core analysis for one rear strut
+    # =========================================================
+    def analyze_rear_strut(
+        Fz,                 # vertical wheel load on one rear strut [N]
+        theta_deg,          # strut angle from vertical [deg]
+        L,                  # strut length [m]
+        D_outer,            # tube outer diameter [m]
+        t,                  # tube thickness [m]
+        E,                  # Young's modulus [Pa]
+        sigma_allow,        # allowable normal stress [Pa]
+        rho=None,           # density [kg/m^3], optional
+        buckling_sf=1.5     # required buckling safety factor
+    ):
+        """
+        Analyze one rear landing gear strut treated as an angled cantilever tube.
+
+        Returns a dictionary of loads, stresses, deflections, and pass/fail checks.
+        """
+        theta = np.radians(theta_deg)
+
+        # Section properties
+        A = tube_area(D_outer, t)
+        I = tube_I(D_outer, t)
+        c = tube_c(D_outer)
+
+        # Resolve wheel load into strut coordinates
+        F_axial = Fz * np.cos(theta)   # compression along strut
+        F_perp  = Fz * np.sin(theta)   # transverse load causing bending
+
+        # Root bending moment
+        M_root = F_perp * L
+
+        # Stresses
+        sigma_axial = F_axial / A
+        sigma_bending = M_root * c / I
+        sigma_max = sigma_axial + sigma_bending
+        sigma_min = sigma_axial - sigma_bending
+
+        # Deflection
+        delta_perp = F_perp * L**3 / (3.0 * E * I)
+        delta_axial = F_axial * L / (A * E)
+
+        # Approximate vertical wheel deflection
+        delta_v_bending = delta_perp * np.sin(theta)
+        delta_v_axial = delta_axial * np.cos(theta)
+        delta_v_total = delta_v_bending + delta_v_axial
+
+        # Euler buckling for cantilever column: K = 2
+        K = 2.0
+        P_cr = (np.pi**2 * E * I) / ((K * L)**2)
+        buckling_ok = P_cr / buckling_sf >= F_axial
+
+        # Stress check
+        stress_ok = sigma_max <= sigma_allow
+
+        # Optional mass
+        mass = tube_mass(D_outer, t, L, rho) if rho is not None else None
+
+        return {
+            "F_axial_N": F_axial,
+            "F_perp_N": F_perp,
+            "Area_m2": A,
+            "I_m4": I,
+            "M_root_Nm": M_root,
+            "sigma_axial_Pa": sigma_axial,
+            "sigma_bending_Pa": sigma_bending,
+            "sigma_max_Pa": sigma_max,
+            "sigma_min_Pa": sigma_min,
+            "delta_perp_m": delta_perp,
+            "delta_axial_m": delta_axial,
+            "delta_v_bending_m": delta_v_bending,
+            "delta_v_axial_m": delta_v_axial,
+            "delta_v_total_m": delta_v_total,
+            "Pcr_N": P_cr,
+            "stress_ok": stress_ok,
+            "buckling_ok": buckling_ok,
+            "feasible": stress_ok and buckling_ok,
+            "mass_kg": mass
+        }
+
+
+    # =========================================================
+    # Solve thickness for a given outer diameter and length
+    # =========================================================
+    def find_min_thickness_for_design(
+        Fz,
+        theta_deg,
+        L,
+        D_outer,
+        E,
+        sigma_allow,
+        rho=None,
+        buckling_sf=1.5,
+        t_min=0.001,
+        t_max=None,
+        n_steps=400
+    ):
+        """
+        For a fixed outer diameter and length, find the minimum wall thickness
+        that satisfies stress and buckling.
+        """
+        if t_max is None:
+            t_max = 0.49 * D_outer
+
+        thicknesses = np.linspace(t_min, t_max, n_steps)
+
+        for t in thicknesses:
+            try:
+                res = analyze_rear_strut(
+                    Fz=Fz,
+                    theta_deg=theta_deg,
+                    L=L,
+                    D_outer=D_outer,
+                    t=t,
+                    E=E,
+                    sigma_allow=sigma_allow,
+                    rho=rho,
+                    buckling_sf=buckling_sf
+                )
+            except ValueError:
+                continue
+
+            if res["feasible"]:
+                res["D_outer_m"] = D_outer
+                res["t_m"] = t
+                res["L_m"] = L
+                res["theta_deg"] = theta_deg
+                return res
+
+        return None
+
+
+    # =========================================================
+    # Sweep a design space
+    # =========================================================
+    def sweep_design_space(
+        Fz,
+        theta_deg,
+        E,
+        sigma_allow,
+        D_outer_list,
+        L_list,
+        rho=None,
+        buckling_sf=1.5,
+        t_min=0.001,
+        max_vertical_deflection=None
+    ):
+        """
+        Sweep through candidate outer diameters and lengths, and solve for the
+        minimum thickness that works for each combination.
+        """
+        feasible_designs = []
+
+        for D_outer in D_outer_list:
+            for L in L_list:
+                res = find_min_thickness_for_design(
+                    Fz=Fz,
+                    theta_deg=theta_deg,
+                    L=L,
+                    D_outer=D_outer,
+                    E=E,
+                    sigma_allow=sigma_allow,
+                    rho=rho,
+                    buckling_sf=buckling_sf,
+                    t_min=t_min
+                )
+
+                if res is None:
+                    continue
+
+                if max_vertical_deflection is not None:
+                    if res["delta_v_total_m"] > max_vertical_deflection:
+                        continue
+
+                feasible_designs.append(res)
+
+        return feasible_designs
+
+
+    # =========================================================
+    # Pretty print
+    # =========================================================
+    def print_design(res):
+        print("\n--- Rear Strut Design ---")
+        print(f"Outer diameter      : {res['D_outer_m']*1000:.2f} mm")
+        print(f"Wall thickness      : {res['t_m']*1000:.2f} mm")
+        print(f"Length              : {res['L_m']:.3f} m")
+        print(f"Angle from vertical : {res['theta_deg']:.1f} deg")
+        print(f"Axial force         : {res['F_axial_N']:.1f} N")
+        print(f"Transverse force    : {res['F_perp_N']:.1f} N")
+        print(f"Root moment         : {res['M_root_Nm']:.1f} N*m")
+        print(f"Axial stress        : {res['sigma_axial_Pa']/1e6:.2f} MPa")
+        print(f"Bending stress      : {res['sigma_bending_Pa']/1e6:.2f} MPa")
+        print(f"Max stress          : {res['sigma_max_Pa']/1e6:.2f} MPa")
+        print(f"Vertical deflection : {res['delta_v_total_m']*1000:.2f} mm")
+        print(f"Buckling load Pcr   : {res['Pcr_N']:.1f} N")
+        print(f"Stress OK?          : {res['stress_ok']}")
+        print(f"Buckling OK?        : {res['buckling_ok']}")
+        print(f"Feasible?           : {res['feasible']}")
+        if res["mass_kg"] is not None:
+            print(f"Mass per strut      : {res['mass_kg']:.3f} kg")
+
+
+    # =========================================================
+    # Example usage
+    # =========================================================
+    def test_LandingGear():
+        # -----------------------------------------------------
+        # Inputs you should edit
+        # -----------------------------------------------------
+        Fz = 12000.0            # N, assumed hard landing load on ONE rear strut
+        theta_deg = 25.0        # strut angle from vertical
+        E = 71.7e9              # Pa, aluminum-ish
+        sigma_y = 505e6         # Pa
+        FS_yield = 1.5
+        sigma_allow = sigma_y / FS_yield
+        rho = 2810.0            # kg/m^3
+
+        # -----------------------------------------------------
+        # Check one design directly
+        # -----------------------------------------------------
+        D_outer = 0.060         # 60 mm
+        t = 0.004               # 4 mm
+        L = 0.85                # m
+
+        one_design = analyze_rear_strut(
+            Fz=Fz,
+            theta_deg=theta_deg,
+            L=L,
+            D_outer=D_outer,
+            t=t,
+            E=E,
+            sigma_allow=sigma_allow,
+            rho=rho,
+            buckling_sf=1.5
+        )
+
+        one_design["D_outer_m"] = D_outer
+        one_design["t_m"] = t
+        one_design["L_m"] = L
+        one_design["theta_deg"] = theta_deg
+
+        print_design(one_design)
+
+        # -----------------------------------------------------
+        # Sweep design space
+        # -----------------------------------------------------
+        D_outer_list = np.linspace(0.040, 0.090, 11)   # 40 mm to 90 mm
+        L_list = np.linspace(0.60, 1.00, 9)            # 0.60 m to 1.00 m
+
+        feasible = sweep_design_space(
+            Fz=Fz,
+            theta_deg=theta_deg,
+            E=E,
+            sigma_allow=sigma_allow,
+            D_outer_list=D_outer_list,
+            L_list=L_list,
+            rho=rho,
+            buckling_sf=1.5,
+            t_min=0.0015,
+            max_vertical_deflection=0.120   # optional, meters
+        )
+
+        # Sort by lightest design
+        feasible = sorted(
+            feasible,
+            key=lambda r: r["mass_kg"] if r["mass_kg"] is not None else 1e99
+        )
+
+        print(f"\nFound {len(feasible)} feasible designs.")
+
+        for i, res in enumerate(feasible[:5], start=1):
+            print(f"\nBest candidate #{i}")
+            print_design(res)
+
 
 
 if __name__ == "__main__":
