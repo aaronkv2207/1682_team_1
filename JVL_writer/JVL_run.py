@@ -19,7 +19,7 @@ jvl_plane = JVL(
         q=0,
         r=0,
     ),
-    avl_command="/Users/osahon/codes/JVL2.16/bin/jvl",  # NOTE: may change depending on your executable
+    avl_command="jvl",  # NOTE: may change depending on your executable
 )
 jvl_plane.default_analysis_specific_options = {
     asb.Airplane: dict(profile_drag_coefficient=0),
@@ -53,7 +53,8 @@ jvl_plane.default_analysis_specific_options = {
         cl_alpha_factor=None,  # This is a float
         drag_polar=None,
     ),
-    asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"),
+    # asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"), # NOTE: fuselage creation doesn't work on Mac silicon jvl version
 }
 
-result = jvl_plane.run()
+result = jvl_plane.run() # dictionary of results
+print(result)
