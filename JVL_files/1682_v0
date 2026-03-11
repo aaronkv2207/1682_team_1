@@ -6,7 +6,7 @@ Initial Aircraft
 #Sref    Cref    Bref
 49.599999999999994 2.4899799195977463 19.91983935678197
 #Xref    Yref    Zref
-0.62249 0 0
+0.6225 0 0
 # CDp
 0
 #===============================================================================
@@ -20,27 +20,14 @@ YDUPLICATE
 
 JETPARAM
 #hdisk   fh   djet0   djet1   djet3
-0.188 0.000 0.000 0.000 0.000000
+0.5 0.000 1 1 1
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 0 0 0 2.4899799 0
 
-!AFIL
-!JVL_files/1682_v0.af0
-NACA
-2500
-
-#--------------------------------------------------
-SECTION
-#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-0 1.25 0 2.4899799 0
-
-!AFIL
-!JVL_files/1682_v0.af1
-NACA
-2500
-
+AFIL
+1682_v0.af0
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -55,10 +42,8 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 0 3.9449732 0 2.4899799 0
 
-!AFIL
-!JVL_files/1682_v0.af2
-NACA
-2500
+AFIL
+1682_v0.af1
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -81,10 +66,8 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 0 6.6399465 0 2.4899799 0
 
-!AFIL
-!JVL_files/1682_v0.af3
-NACA
-2500
+AFIL
+1682_v0.af2
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -103,10 +86,12 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 0 9.9599197 0 2.4899799 0
 
-!AFIL
-!JVL_files/1682_v0.af4
-NACA
-2500
+AFIL
+1682_v0.af3
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Aileron 1 0.8 0 0 0 -1
 
 #===============================================================================
 SURFACE
@@ -119,10 +104,8 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 9.0853493 0 0 2.8694135 0
 
-!AFIL
-!JVL_files/1682_v0.af5
-NACA
-2500
+AFIL
+1682_v0.af4
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -133,10 +116,12 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 10.724934 0 3.4432962 2.8694135 0
 
-!AFIL
-!JVL_files/1682_v0.af6
-NACA
-0000
+AFIL
+1682_v0.af5
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Rudder 1 0.7 0 0 0 1
 
 #===============================================================================
 SURFACE
@@ -152,23 +137,33 @@ SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 10.724934 0 3.4432962 2.8694135 0
 
-!AFIL
-!JVL_files/1682_v0.af7
-NACA
-0000
+AFIL
+1682_v0.af6
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
-Elevator 1 0.7 0 1 0 1
+Elevator 1 0.7 0 0 0 1
 
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
 11.544446 4.919315 3.4432962 2.0499015 0
 
-NACA
-0000
+AFIL
+1682_v0.af7
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
-Elevator 1 0.7 0 1 0 1
+Elevator 1 0.7 0 0 0 1
+
+#==================================================
+BODY
+Fuselage
+24 1
+
+BFIL
+1682_v0.fuse0
+
+TRANSLATE
+0 0 0
+

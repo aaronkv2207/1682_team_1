@@ -9,7 +9,7 @@ g = 9.81 * ureg("m/s^2")
 PAYLOAD = 19 * 100 * ureg("kg")
 RANGE = 1500 * ureg("miles").to("m")
 V_CRUISE = 125 * ureg("m/s")
-X_TAKEOFF = 300 * ureg("ft").to("m")  # will need to be larger
+X_TAKEOFF = 150 * ureg("ft").to("m")  # will need to be larger
 
 # twin otter 300 model: https://www.719skvadron.no/dhc6/dhc6-spec.htm
 wing_span_ot = 65 * ureg("feet").to_base_units()
@@ -75,7 +75,7 @@ V_STALL = v_stall_ot * beta
 W_S = ((0.5 * rho * V_STALL**2) * cl_max).to("N/m^2")
 S = (MTOW * g).to("N") / W_S
 
-print_bool = True
+print_bool = False
 if print_bool:
     print(
         f"{35 * '='}\nMass Fractions from correlation\n"

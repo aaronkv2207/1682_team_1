@@ -20,7 +20,6 @@ root_chord = 2*MAC - tip_chord #root chord needs to be adjusted for lost area fr
 
 # vertical tail geometry
 lv = 10 #distance from wing quarter chord to vertical tail quarter chord
-#TODO: update VT moment arm to account for the sweep
 Vv = .1 #Vertical tail volume coefficient 
 vt_ar = 1.2
 tail_hinge = 0.7
@@ -55,12 +54,6 @@ wing = JWing(
     xsecs=[
         WingJSec(
             xyz_le=[0, 0, 0],
-            chord=root_chord,
-            twist=0,
-            airfoil=main_foil,
-        ),
-        WingJSec(
-            xyz_le=[0, 1/2*fuse_width, 0],
             chord=root_chord,
             twist=0,
             airfoil=main_foil,
@@ -147,27 +140,25 @@ def generate_fuselage_xsecs(N: int) -> List[asb.FuselageXSec]:
     """
     fuse_end = vt_x - vt_sweep_x + vt_c #end of the fuselage, at the end of the vertical tail
     x_positions = np.linspace(nose_x, fuse_end, N)  # Generate N sections along the fuselage
-    r = np.array([0.3, 2/3*fuse_width, fuse_width, fuse_width, fuse_width, 3/4*fuse_width, 1.0])
+    r = np.array([0.3, 2/3*fuse_width, fuse_width, fuse_width, fuse_width, 3/4*fuse_width, 0.5])
     z = -r/2
     zs = np.interp(x_positions, [nose_x, 7.8*nose_x, nose_x/2, 0, vt_x/2, vt_x, fuse_end], z)  # Interpolate z position
-    widths = np.interp(x_positions, [nose_x, 7/8*nose_x, 1/2*nose_x, 0, vt_x/2, vt_x, fuse_end], r)  # Width transition
-    heights = Akima1DInterpolator([nose_x, 7/8*nose_x, 1/2*nose_x, 0, vt_x/2, vt_x, fuse_end], r, method="akima")(x_positions)
-    # heights = np.interp(x_positions, [nose_x, 7/8*nose_x, nose_x/2, vt_x/2, vt_x, vt_x + vt_c], [0, 2, 3, 3, 2.5, 2.0])  # Height transition
+    radius = np.interp(x_positions, [nose_x, 7/8*nose_x, 1/2*nose_x, 0, vt_x/2, vt_x, fuse_end], r)  # Width transition
     shapes = np.interp(x_positions, [nose_x, nose_x/2, vt_x/2, vt_x, vt_x + vt_c], [1, 2.5, 2.5, 2, 1])  # Shape transition
 
     xsecs = []
-    for x, z, width, height, shape in zip(x_positions, zs, widths, heights, shapes):
+    for x, z, r, shape in zip(x_positions, zs, radius, shapes):
         xsecs.append(asb.FuselageXSec(
             xyz_c=[x, 0, z],
             xyz_normal=[1, 0, 0],  # Assume fuselage is aligned along x-axis
-            width=width,
-            height=height,  # Rectangular cross-section
-            shape=shape
+            width=r,
+            height=r,
+            shape=2
         ))
 
     return xsecs
 
-fuselage_xsecs = generate_fuselage_xsecs(15)
+fuselage_xsecs = generate_fuselage_xsecs(10)
 fuselage = asb.Fuselage(
     name='Fuselage',
     xsecs=fuselage_xsecs
@@ -197,7 +188,7 @@ jvl_plane.default_analysis_specific_options = {
             wing_level_spanwise_spacing=True,
             spanwise_resolution=25,
             spanwise_spacing="cosine",
-            chordwise_resolution=25,
+            chordwise_resolution=16,
             chordwise_spacing="cosine",
             component=None,  # This is an int
             no_wake=False,
@@ -207,9 +198,9 @@ jvl_plane.default_analysis_specific_options = {
         ),
         asb.Wing: dict(
             wing_level_spanwise_spacing=True,
-            spanwise_resolution=12,
+            spanwise_resolution=10,
             spanwise_spacing="cosine",
-            chordwise_resolution=12,
+            chordwise_resolution=8,
             chordwise_spacing="cosine",
             component=None,  # This is an int
             no_wake=False,
