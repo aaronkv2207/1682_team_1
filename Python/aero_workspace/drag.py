@@ -9,18 +9,18 @@ Created on Mon Mar  2 15:34:04 2026
 import numpy as np
 from ambiance import Atmosphere
 from conceptual_design import V_STALL, cl_max, ureg
-from aero_main import AircraftConfig
+from aero_dict import AircraftConfig
 
 # parameters
-AR = 8  # from twin otter
-h_cruise = 10000 * ureg("ft").to("m").magnitude
+AR = AircraftConfig.AR # [m^2]
+h_cruise = AircraftConfig.h_cruise # [m]
 rho_cruise = Atmosphere(h=h_cruise).density[0]  # [kg/m^2]
 
 b = 19.9  # [m]
 c = 1.98  # [m]
 S = b**2 / AR
-R = 2.39 / 2  # estimated
-x_to = 366  # [m]
+# R = 2.39 / 2  # estimated
+x_to = 45  # [m]
 
 m = 5670  # [kg]
 W = m * 9.81  # [N]
@@ -62,7 +62,7 @@ S_wet_wing = S * 2
 S_wet_htail = S_h * 2
 S_wet_vtail = S_v * 2
 
-S_wet_total = S_wet_fuse + S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail
+S_wet_total = S_wet_fuse + 8*S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail
 
 f = 3  # estimated equivalent parasite area (Roskam Airplane Design I, pg 119)
 
@@ -102,26 +102,26 @@ def C_D0():  # roskam's method
 C_D_cruise = C_D0()
 
 
-# calculate profile drag (dissipation summation buildup)
-def C_Dp(rho, V, mu, l, x_tr):
-    Re_l = rho * V * l / mu
-    Re_x_tr = rho * V * x_tr / mu
+# # calculate profile drag (dissipation summation buildup)
+# def C_Dp(rho, V, mu, l, x_tr):
+#     Re_l = rho * V * l / mu
+#     Re_x_tr = rho * V * x_tr / mu
 
-    # C_fl = 1.328 / Re_l ** (1 / 2)
-    C_ft = 0.455 / (np.log10(Re_l) ** 2.58) # assuming fully turbulent flow for a conservative and realistic estimate!
+#     # C_fl = 1.328 / Re_l ** (1 / 2)
+#     C_ft = 0.455 / (np.log10(Re_l) ** 2.58) # assuming fully turbulent flow for a conservative and realistic estimate!
 
-    # Cf = max(C_fl, C_ft - (Re_x_tr / 320 - 39) / Re_l)
-    Cf = C_ft - (Re_x_tr / 320 - 39) / Re_l
+#     # Cf = max(C_fl, C_ft - (Re_x_tr / 320 - 39) / Re_l)
+#     Cf = C_ft - (Re_x_tr / 320 - 39) / Re_l
 
-    CDA = S_wet * C_f * K_f
+#     CDA = S_wet * C_f * K_f
 
-    C_Dp = sum(CDA * 1/2 * Vi**3)
+#     C_Dp = sum(CDA * 1/2 * Vi**3)
 
-    return C_Dp
+#     return C_Dp
 
 
-# calculate induced drag
-def C_Di(C_L):
-    C_Di = C_L**2 / (np.pi * AR * e)
-    return C_Di
+# # calculate induced drag
+# def C_Di(C_L):
+#     C_Di = C_L**2 / (np.pi * AR * e)
+#     return C_Di
 
