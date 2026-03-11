@@ -900,11 +900,13 @@ class Tail():
 
 class Fuselage:
 
-    def __init__(self, length, radius, n):
+    def __init__(self, length, radius, n_people, cabin_width):
         self.length = length
         self.R = radius
-        self.n = n
+        self.n = n_people
+        self.cabin_width = cabin_width
         self.weight = 0.0 # to be derived
+
 
 
     def pressure_at_altitude(self, h):
@@ -919,6 +921,22 @@ class Fuselage:
         R  = 287.05      # Gas constant for air (J/kg*K)
 
         return P0 * (1 - (L * h) / T0)**(g / (R * L))
+
+
+
+
+    # -------------------------
+    # Geometry functions
+    # -------------------------
+
+    def shell_area(self):
+        return self.circumference() * self.length
+
+    def circumference(self):
+        return 2.0 * np.pi * self.R
+
+    def count_members(self, length, spacing):
+        return int(np.floor(length / spacing)) + 1
 
     def required_thickness_hoop(self,
                         yield_strength,
@@ -953,37 +971,88 @@ class Fuselage:
     def required_thickness_moments(self, yield_stress, safety_factor=2):
         pass
 
-    def get_dead_weight(self):
+
+
+    
+    # -------------------------
+    # Component mass functions
+    # -------------------------
+
+
+    def get_structural_mass(self):
+        # assume some materials
+        # aluminum 7075-T6
+        yield_strength_al70 = 490e6    # Pa
+        rho_al70 = 2810    # kg/m^3
+
+        # honey comb fiberglass/carbonfiber
+        rho_hc = 3 # kg/m^3
+
+        # skin mass
+        # skin mass
+        # self.thickness = self.required_thickness_hoop(yield_strengths)+self.required_thickness_moments(yield_strengths) # solve for later
+        thickness = 0.002 # meter
+        skin_volume = self.cylinder_area(self.R)*thickness
+        self.skin_mass = skin_volume*rho_al70
+
+        # frame mass
+        # frame specs
+        frame_spacing = .5 # assumed
+        frame_disk_depth = .1 # assumed
+        frame_thickness = 0.002 # assumed
+        frame_area = (np.pi*self.R**2-np.pi*(self.R-frame_disk_depth)**2)
+        n_frames = self.count_members(self.length, frame_spacing)
+        total_volume = n_frames * frame_thickness * frame_area
+        self.frame_mass = total_volume * rho_al70
+
+
+        # stringer mass
+        # stringer specs
+        stringer_area = 1e-4 # assumed
+        stringer_spacing = 0.25 # assumed
+        # stringer mass
+        n_stringers = self.count_members(self.circumference(), stringer_spacing)
+        total_volume = n_stringers * self.length * stringer_area
+        self.stringer_mass = total_volume * rho_al70
+
+        # floor panel mass
+        # floor specs
+        floor_thickness = 0.01 # assumed
+        area = self.length * self.cabin_width
+        self.fpanel_mass = area * floor_thickness * rho_hc
+    
+
+        # floor fframe mass
+        # floor fframe specs
+        n_fframes = n_frames # assume beams at every frame
+        fframe_depth = 0.07 # assumed
+        fframe_thickness = 0.002 # assumed
+        total_volume = n_fframes * self.cabin_width * fframe_thickness * fframe_depth
+        self.fframe_mass = total_volume * rho_al70
+
+
+        
+        # floor beam mass
+        # floor beam specs
+        beam_spacing = .5
+        n_fbeams = self.count_members(self.cabin_width, beam_spacing)
+        fbeam_depth = 0.07 # assumed
+        fbeam_thickness= 0.002 # assumed
+        total_volume = n_fbeams * self.length * fbeam_thickness * fbeam_depth
+        self.fbeam_mass = total_volume * rho_al70
+
+
+        return self.skin_mass+self.frame_mass+self.stringer_mass+self.fpanel_mass+self.fframe_mass+self.fbeam_mass
+    
+    def get_dead_mass(self):
         seat_weight = self.n*13.0 # kg (average modern aircraft seat weight)
-        person_weight = self.n*100.0 # kg
+        person_weight = self.n*100.0 # kg (person + luggage)
         return seat_weight + person_weight
 
 
-    def get_structural_weight(self, safety_factor):
-        # assume some materials
-
-        # skin material aluminum 7075-T6
-        yield_strength = 490e6    # Pa
-        skin_rho = 2810    # kg/m^3
-        # skin weight
-        self.thickness = self.required_thickness_hoop(yield_strength)+self.required_thickness_moments(yield_strength)
-        self.skin_volume = self.length*2*math.pi*self.R*self.thickness
-        self.skin_weight = self.skin_volume*self.skin_rho
-
-        # frame weight
-        self.frame_weight
-
-        # stringer weight
-        self.stringer_weight
-
-        return self.skin_weight+self.frame_weight+self.stringer_weight
-
-
-    def get_total_weight(self, n, safety_factor):
+    def get_total_weight(self):
         g  = 9.80665     # Gravity (m/s^2)
-        self.dead_weight = self.get_dead_weight()
-        self.structural_weight = self.get_structural_weight(safety_factor)
-        return self.dead_weight*g + self.structural_weight*g
+        return self.get_dead_mass()*g + self.get_structural_mass()*g
 
 
 
