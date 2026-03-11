@@ -45,6 +45,8 @@ Sv = Vv*S*b/lv
 vt_c = np.sqrt(Sv/vt_ar) #constant chord
 vt_b = vt_ar*vt_c
 vt_x = lv + 1/4 * MAC - 1/4 * vt_c #distance from wing LE to tail (avg) LE
+print(f'Vertical tail area: {Sv:.2f} m^2')
+print(f'Vertical tail chord: {vt_c:.2f} m')
 
 # horizontal tail geometry
 lh = lv + 0.25*vt_c #include some sweep in the vertical tail to extend the ht moment arm
@@ -60,6 +62,9 @@ ht_b = ht_ar*ht_mac
 ht_x = lh + 1/4 * MAC - 1/4 * ht_mac
 vt_sweep_x = ht_x - vt_x
 
+print(f'Horizontal tail area: {Sh:.2f} m^2')
+print(f'Horizontal tail MA chord: {ht_mac:.2f} m')
+
 wing = JWing(
     name="Main Wing",
     symmetric=True,
@@ -74,20 +79,44 @@ wing = JWing(
             JetControls= [JetControl(jet_name="FlapJet1", gain=1, sgn_dup=1)],
         ),
         WingJSec(
-            xyz_le=[0, (aileron_y + 1/2*fuse_width)/2, 0],
+            xyz_le=[0, fuse_width/2 + blowing_dy, 0],
+            chord=root_chord,
+            twist=0,
+            airfoil=main_foil,
+            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0)],
+            JetControls= [JetControl(jet_name="FlapJet1", gain=1, sgn_dup=1), JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1)],
+        ),
+        WingJSec(
+            xyz_le=[0, fuse_width/2 + 2*blowing_dy, 0],
+            chord=root_chord,
+            twist=0,
+            airfoil=main_foil,
+            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0)],
+            JetControls = [JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1), JetControl(jet_name="FlapJet3", gain=1, sgn_dup=1)],
+        ),
+        WingJSec( #flap1 goes to end of 3rd duct
+            xyz_le=[0, fuse_width/2 + 3*blowing_dy, 0],
             chord=root_chord,
             twist=0,
             airfoil=main_foil,
             control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0), asb.ControlSurface(name="Flap2", hinge_point=flap_hinge, deflection=0)],
-            JetControls= [JetControl(jet_name="FlapJet1", gain=1, sgn_dup=1), JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1)],
+            JetControls = [JetControl(jet_name="FlapJet3", gain=1, sgn_dup=1), JetControl(jet_name="FlapJet4", gain=1, sgn_dup=1)],
         ),
+        # WingJSec(
+        #     xyz_le=[0, fuse_width/2 + 4*blowing_dy, 0],
+        #     chord=root_chord,
+        #     twist=0,
+        #     airfoil=main_foil,
+        #     control_surfaces = [asb.ControlSurface(name="Flap2", hinge_point=flap_hinge, deflection=0)],
+        #     JetControls= [JetControl(jet_name="FlapJet4", gain=1, sgn_dup=1), JetControl(jet_name="FlapJet5", gain=1, sgn_dup=1)],
+        # ),
         WingJSec(
             xyz_le=[0, aileron_y, 0],
             chord=root_chord,
             twist=0,
             airfoil=main_foil,
-            control_surfaces = [asb.ControlSurface(name="Flap2", hinge_point=flap_hinge, deflection=0), asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=ail_hinge, deflection=0)],
-            JetControls= [JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1)],
+            control_surfaces = [asb.ControlSurface(name="Flap2", hinge_point=0.8, deflection=0), asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=0.8, deflection=0)],
+            JetControls = [JetControl(jet_name="FlapJet4", gain=1, sgn_dup=1)],
         ),
         WingJSec(
             xyz_le=[ail_hinge*root_chord-ail_hinge*tip_chord, 1/2*b, 0],
@@ -95,7 +124,7 @@ wing = JWing(
             twist=0,
             airfoil=main_foil,
             control_surfaces = [asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=ail_hinge, deflection=0)],
-        )
+        ),
     ]
 )
 vertical_tail = JWing(
@@ -230,7 +259,7 @@ jvl_plane.default_analysis_specific_options = {
         asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"),
     }
 
-jvl_plane.write_jvl('./JVL_files/1682_v0', CLAF=False, j=True)
+jvl_plane.write_jvl('./JVL_files/1682_v0_8ducts', CLAF=False, j=True)
 # jvl_plane.run()
 
 plane.draw_three_view(show=False)
