@@ -323,7 +323,7 @@ planeB = asb.Airplane(
     name="Initial Aircraft",
     xyz_ref=[MAC/4, 0, 0],
     wings=[wingB, vertical_tail, horizinatal_tail],
-    fuselages=[fuselage]
+    # fuselages=[fuselage] # NOTE: fuselage creation doesn't work on Mac silicon jvl version
 )
 
 jvl_planeB = JVL(

@@ -53,7 +53,8 @@ jvl_plane.default_analysis_specific_options = {
         cl_alpha_factor=None,  # This is a float
         drag_polar=None,
     ),
-    asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"),
+    # asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"), # NOTE: fuselage creation doesn't work on Mac silicon jvl version
 }
 
-result = jvl_plane.run()
+result = jvl_plane.run() # dictionary of results
+print(result)
