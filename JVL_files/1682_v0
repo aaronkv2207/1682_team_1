@@ -77,6 +77,10 @@ CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
 Aileron 1 0.7 0 0 0 -1
 
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flaperon 1 0.7 0 0 0 1
+
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
 FlapJet2 1.000 1.000
@@ -93,6 +97,10 @@ CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
 Aileron 1 0.7 0 0 0 -1
 
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flaperon 1 0.7 0 0 0 1
+
 #===============================================================================
 SURFACE
 Vertical Tail
@@ -102,7 +110,7 @@ Vertical Tail
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-6.9518176 0 0 3.0434726 0
+7.0466731 0 0 2.8694135 0
 
 AFIL
 1682_v0.af4
@@ -114,7 +122,7 @@ Rudder 1 0.7 0 0 0 1
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-8.7714361 0 3.6521671 3.0434726 0
+8.7636101 0 3.4432962 2.8694135 0
 
 AFIL
 1682_v0.af5
@@ -135,7 +143,7 @@ YDUPLICATE
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-8.7714361 0 3.6521671 3.0434726 0
+8.7636101 0 3.4432962 2.8694135 0
 
 AFIL
 1682_v0.af6
@@ -147,7 +155,7 @@ Elevator 1 0.7 0 0 0 1
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-9.9629647 4.8954165 3.6521671 1.851944 0
+9.8925311 4.6099059 3.4432962 1.7404925 0
 
 AFIL
 1682_v0.af7
@@ -155,7 +163,6 @@ AFIL
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
 Elevator 1 0.7 0 0 0 1
-
 #==================================================
 BODY
 Fuselage
