@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
+from aero_dict import AircraftConfig
 from ambiance import Atmosphere
 from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
-from drag import C_Dp, V_v, V_h
+from drag import C_Dp, V_h, V_v
 from scipy.interpolate import interp1d
-from aero_dict import AircraftConfig
+
 # get jvl cg --> mset, run file, input file, ...; can shift around masses to shift cg in .mass file
 
 

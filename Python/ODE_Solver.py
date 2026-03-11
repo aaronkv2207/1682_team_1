@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from ambiance import Atmosphere
 
-# from aero_workspace.aero_main import AircraftConfig, TakeoffCoeff
+# Imports from other subteam dependencies
+from ThrustVelocity import ThrustVelocity
 
-#eigenmodes can be calculated from JVL!
+# from aero_workspace.aero_main import AircraftConfig, TakeoffCoeff
+#eigenmodes can be calculated from JVL!  lowkey might still caculate them in this
 @dataclass
 class Mass:
     m: float
@@ -60,11 +62,13 @@ class Aircraft:
             delta_e=0
         # elif t<5:
         #     delta_e=np.radians(-10)*(t-3)/2 #ermoving pitch spike
+        elif t<6:
+            delta_e = np.radians(-10) * (1/(1+np.exp(-(t-4)))) #negative elevator deflection -> pitch up
         else:
             delta_e=np.radians(-10)
-        if t<20:
+        if t<6:
             delta_f=np.radians(10)
-        elif t<25:
+        elif t<9:
             delta_f=np.radians(10)*(1-(t-20)/5)
         else:
             delta_f=0
@@ -79,38 +83,38 @@ class Aircraft:
         V = np.sqrt(u**2 + w**2)
         alpha=np.arctan2(w, u)
         alpha=np.clip(alpha, np.radians(-15), np.radians(15))
-        # if V<1e-6:
-        #     q_bar=0
-        # else:
-        #     q_bar=(q*self.c)/(2*V)
+        if V<1e-6:
+            q_bar=0
+        else:
+            q_bar=(q*self.c)/(2*V)
 
-        # delta_dele=delta_e-self.deltae0
-        # delta_delf=delta_f-self.deltaf0
-        # delta_alpha=alpha-self.alpha0
-        # delta_qbar=q_bar-self.qbar0
+        delta_dele=delta_e-self.deltae0
+        delta_delf=delta_f-self.deltaf0
+        delta_alpha=alpha-self.alpha0
+        delta_qbar=q_bar-self.qbar0
 
-        # state_vec=np.array([delta_alpha, delta_qbar, delta_dele, delta_delf])
+        state_vec=np.array([delta_alpha, delta_qbar, delta_dele, delta_delf])
 
-        # CL=self.aero.CL0+self.aero.CL@state_vec
-        # Cm=self.aero.Cm0+self.aero.Cm@state_vec
+        CL=self.aero.CL0+self.aero.CL@state_vec
+        Cm=self.aero.Cm0+self.aero.Cm@state_vec
 
 
-        # if ze<=0: #include ground effect factor due to rolling resistance
-        #     phi=(16*self.geom.h/self.b)**2/(1+(16*self.geom.h/self.b)**2)
-        # else:
-        #     phi=1
+        if ze>=0: #include ground effect factor due to rolling resistance
+            phi=(16*self.geom.h/self.b)**2/(1+(16*self.geom.h/self.b)**2)
+        else:
+            phi=1
 
-        # Sv=self.geom.Vv*self.geom.S*self.b/self.geom.lv
-        # vt_c=np.sqrt(Sv/self.geom.vt_ar)
-        # lh=self.geom.lv+vt_c/3
-        # Sh=self.geom.Vh*self.geom.S*self.c/lh
+        Sv=self.geom.Vv*self.geom.S*self.b/self.geom.lv
+        vt_c=np.sqrt(Sv/self.geom.vt_ar)
+        lh=self.geom.lv+vt_c/3
+        Sh=self.geom.Vh*self.geom.S*self.c/lh
 
-        # CD=self.aero.CD0+self.aero.cd_w+self.aero.cd_t*Sh/self.geom.S+phi*CL**2/(np.pi*self.geom.AR)
-        CL=2*np.pi*alpha+0.3
-        CL=np.clip(CL, -1.5, 1.5)
+        CD=self.aero.CD0+self.aero.cd_w+self.aero.cd_t*Sh/self.geom.S+phi*CL**2/(np.pi*self.geom.AR)
+        # CL=2*np.pi*alpha+0.3+.5*delta_f
+        # CL=np.clip(CL, -1.5, 1.5)
 
-        Cm=0
-        CD=CL**2/(np.pi*self.geom.AR)+.02
+        # Cm=-.8*alpha-1.2*delta_e
+        # CD=CL**2/(np.pi*self.geom.AR)+.02
 
 
         # CL=TakeoffCoeff.CL_alpha(alpha)+TakeoffCoeff.CL_flap(delta_f)+TakeoffCoeff.CL_velocity(V)
@@ -141,24 +145,26 @@ class Aircraft:
         L = Q * self.geom.S * CL
         D = Q * self.geom.S * CD
 
-        T = self.prop.Tmax * throttle
+        # Setup Thrust using interpolation from Fan Sizing
+        airplane_thrust = ThrustVelocity()
+        T = airplane_thrust.get_T(V) * throttle # TODO: This isn't exactly how a propeller works, can't just "throttle" it, but it's a start.
         # # omega=200
         # # T_W=0.3
         # T=omega*T_W
 
         W = self.mass.m * 9.81
 
-        # if ze <= 0:
-        #     mu = 0.02
-        #     R = mu * max(W - L, 0)
-        # else:
-        #     R = 0
+        if ze >= 0:
+            mu = 0.02
+            Roll_resist = mu * max(W - L, 0)
+            N=max(W-L, 0) #if the altitude is for some reason negative, use normal force to clamp on ground
+        else:
+            Roll_resist = 0
+            N=0 #otherwise, no normal force
 
         # X and Z  are only the components of the aerodynamic force
-        # X = (T_D)*np.cos(alpha) + L*np.sin(alpha) - R
-        X = -L*np.sin(alpha)+ T - D*np.cos(alpha)
-        Z = -L*np.cos(alpha) - D*np.sin(alpha)
-
+        X = L*np.sin(alpha)+ T - D*np.cos(alpha) - Roll_resist
+        Z = -L*np.cos(alpha) + D*np.sin(alpha) - N
         M = Q * self.geom.S * self.c * Cm
 
         return X, Z, M
@@ -180,14 +186,15 @@ class Aircraft:
         x_dot = u_e
         z_dot = w_e
 
+
         # For simplicity, if we are on the ground and not lifting off:
-        L_minus_W = self.takeoff_event(t, x)
-        if L_minus_W < 0:
-            w_dot = 0
-            # Force pitch rate to zero if you don't want it to 'nose dive' into the dirt
-            if theta <= 0 and q < 0:
-                q_dot = 0
-                theta_dot = 0
+        # L_minus_W = self.takeoff_event(t, x)
+        # if L_minus_W < 0:
+        #     w_dot = 0
+            # # Force pitch rate to zero if you don't want it to 'nose dive' into the dirt
+            # if theta <= 0 and q < 0:
+            #     q_dot = 0
+            #     theta_dot = 0
 
 
         # print(u_dot, -w_dot, q_dot, theta_dot, x_dot, -z_dot)
@@ -262,9 +269,10 @@ aero = Aero(
 
 plane_1=Aircraft(mass, geom, aero, prop, rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0)
 
-#Intergate for 20 seconds
-t_span = (0, 10)
-t_eval = np.linspace(0, 10, 1000)
+#Integrate for 20 seconds
+t = 20.0
+t_span = (0, t)
+t_eval = np.linspace(0, t, 1000)
 
 sol = solve_ivp(
     plane_1.dynamics,
@@ -304,8 +312,8 @@ alpha = np.clip(alpha, np.radians(-15), np.radians(15))
 # Positions
 
 plt.plot(sol.y[4], -sol.y[5])
-# plt.scatter(x_to, 0, label='Takeoff')
-plt.xlabel("Downrange DIstance (m)")
+# plt.scatter(x_to, 0, label='Takeoff',c='red', marker='*')
+plt.xlabel("Downrange Distance (m)")
 plt.ylabel("Altitude (m)")
 plt.title("Takeoff Trajectory")
 plt.grid(True)
@@ -318,12 +326,22 @@ w = sol.y[1]
 v = np.sqrt(u**2 + w**2)
 
 # plt.plot(sol.t, sol.y[4], label='x Position')
+plt.plot(sol.t, sol.y[4], label='x Position')
+plt.plot(sol.t, -sol.y[5], label='z Position')
+plt.legend()
+plt.grid(True)
+plt.xlabel('Time (s)')
+plt.ylabel('Position (m)')
+plt.title("Position")
+plt.show()
+
+
 plt.plot(sol.t, u, label='Forward Velocity (u)')
 plt.plot(sol.t, -w, label='Vertical Velocity (w)')
 plt.plot(sol.t, v, label='Total Velocity (v)')
 plt.xlabel("Time (s)")
 plt.ylabel("Velocity (m/s)")
-plt.title("Kinematics")
+plt.title("Velocity")
 plt.legend()
 plt.grid(True)
 plt.show()
