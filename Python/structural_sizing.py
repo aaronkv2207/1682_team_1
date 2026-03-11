@@ -200,6 +200,7 @@ class Wing():
         z = w/2
         y = h/2
 
+        T = T/10
 
         # # Moment equations for final model:
         # M_y = T*(x_T1+x_T2+x_T3+x_T4) # - drag integral
@@ -241,9 +242,11 @@ class Wing():
         w = x_2-x_1
         t = t_x1*0.1 # box thickness - estimate
 
+        T = T/10
+
         # Force equations
         F_y = self.weight_estimate*(b/2) + 5*self.W_duct + self.W_fuel_per_wing - L # - lift integral
-        F_z = -4*T + D # + drag integral
+        F_z = -5*T + D # + drag integral
         # TODO: add actual integral stuff for D, L, W
 
         # 1st moments of area
@@ -479,13 +482,14 @@ class Wing():
         sizing_takeoff = self.takeoff()
         sizing_climb = self.climb()
         sizing_cruise = self.cruise()
-        sizing_descent = self.descent()
+        # sizing_descent = self.descent()
+        sizing_descent = 0,0,0
         sizing_landing = self.landing()
 
         print("sizing_takeoff:", sizing_takeoff)
         print("sizing_climb:", sizing_climb)
         print("sizing_cruise:", sizing_cruise)
-        print("sizing_descent:", sizing_descent)
+        # print("sizing_descent:", sizing_descent)
         print("sizing_landing:", sizing_landing)
 
         spar_cap_area = max(sizing_takeoff[0], sizing_climb[0], sizing_cruise[0], sizing_descent[0], sizing_landing[0])
@@ -511,7 +515,7 @@ class Wing():
         print("skin_weight", skin_weight)
 
         # should this weight just be structural stuff or also fuel and motors?
-        return spar_cap_weight + spar_web_weight + skin_weight
+        return 2*spar_cap_weight + 2*spar_web_weight + skin_weight
         # spar_cap_weight + spar_web_weight should = tube_weight right??
 
 
@@ -1124,8 +1128,8 @@ if __name__ == "__main__":
     }
 
     loading = {
-        "T_takeoff": 60 * 10**3,
-        "T_climb": 40 * 10**3, # guess
+        "T_takeoff": 27 * 10**3,
+        "T_climb": 18 * 10**3, # guess
         "T_cruise": 8.5 * 10**3,
         "T_descent": 5 * 10**3, # guess
         "T_landing": 12 * 10**3, # guess
