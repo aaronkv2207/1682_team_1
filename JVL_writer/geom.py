@@ -98,7 +98,7 @@ wing = JWing(
         )
     ]
 )
-vertical_tail = JWing(
+vertical_tail = asb.Wing(
     name="Vertical Tail",
     symmetric=False,
     xsecs=[
@@ -119,7 +119,7 @@ vertical_tail = JWing(
     ]
 ).translate([vt_x, 0, 0]) #guess
     
-horizinatal_tail = JWing(
+horizinatal_tail = asb.Wing(
     name="Horizontal Tail",
     symmetric=True,
     xsecs=[

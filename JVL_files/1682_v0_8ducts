@@ -137,7 +137,7 @@ Aileron 1 0.8 0 0 0 -1
 SURFACE
 Vertical Tail
 #Nchord  Cspace  [ Nspan Sspace  Nujet Cusp  Nwjet Cwsp ]
-16   1   25   1   0.2   0.0   12   -2.0
+8   1   10   1
 
 #--------------------------------------------------
 SECTION
@@ -167,7 +167,7 @@ Rudder 1 0.7 0 0 0 1
 SURFACE
 Horizontal Tail
 #Nchord  Cspace  [ Nspan Sspace  Nujet Cusp  Nwjet Cwsp ]
-16   1   25   1   0.2   0.0   12   -2.0
+8   1   10   1
 
 YDUPLICATE
 0
