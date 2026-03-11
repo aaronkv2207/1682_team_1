@@ -19,7 +19,7 @@ jvl_plane = JVL(
         q=0,
         r=0,
     ),
-    avl_command="/Users/osahon/codes/JVL2.16/bin/jvl",  # NOTE: may change depending on your executable
+    avl_command="jvl",  # NOTE: may change depending on your executable
 )
 jvl_plane.default_analysis_specific_options = {
     asb.Airplane: dict(profile_drag_coefficient=0),
