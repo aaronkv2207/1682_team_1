@@ -633,7 +633,7 @@ class Tail():
 
         return shear_max_v
 
-    def shear_stress_ho (self, Lv, Lh, Dv, Dh, tv, th, hweight):
+    def shear_stress_ho (self,  Lh,  Dh, th):
         b_vert = self.aero["b_vert"]
         b_ho = self.aero["b_ho"]
 
@@ -783,12 +783,12 @@ class Tail():
 
         # Calculate stresses and torsion
 
-        axial_stress_max_elevator = self.axial_stress_vert_ho(0, L_req, 0, D, 0, th, hweight)
-        shear_stress_max_elevator = self.shear_stress_vert_ho(0, L_req, 0, D, 0, th, hweight)
+        axial_stress_max_elevator = self.axial_stress_ho(L_req, D, th, hweight)
+        shear_stress_max_elevator = self.shear_stress_ho(0, L_req, 0, D, 0, th, hweight)
 
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
-        takeoff_spar_cap_area = self.spar_cap_area_vert_ho(L_takeoff, 0, axial_stress_takeoff)
+        ho_max_spar_cap_area = self.spar_cap_area_vert_ho(L_takeoff, 0, axial_stress_takeoff)
         takeoff_spar_web_area = self.spar_web_area(L_takeoff, 0, shear_stress_takeoff)
         takeoff_skin_thickness = self.skin_thickness(q_takeoff, shear_stress_takeoff)
         takeoff_tube_thickness = self.tube_thickness() # still not sure what this is for
