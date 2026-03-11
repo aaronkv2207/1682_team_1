@@ -1,3 +1,8 @@
+import subprocess
+import tempfile
+import warnings
+from pathlib import Path
+from typing import Dict, List, Union
 import aerosandbox as asb
 from aerosandbox import AVL
 from typing import List
@@ -252,6 +257,142 @@ class JVL(AVL):
             if filepath is not None:
                 with open(filepath, "w+") as f:
                     f.write(jvl_file)
+
+    def run(
+        self,
+        run_command: str = None,
+    ) -> Dict[str, float]:
+
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+
+            if self.working_directory is not None:
+                directory = Path(self.working_directory)
+
+            output_filename = "output.txt"
+
+            # Write JVL geometry
+            airplane_file = "airplane.jvl"
+            self.write_jvl(directory / airplane_file)
+
+            # Build keystroke script
+            keystroke_file_contents = [
+                "oper"
+            ]
+
+            if run_command is not None:
+                keystroke_file_contents.append(run_command)
+
+            keystroke_file_contents += [
+                "x",
+                "st",
+                output_filename,
+                "o",
+                "",
+                "",
+                "quit",
+            ]
+
+            keystrokes = "\n".join(keystroke_file_contents)
+
+            command = [self.avl_command, airplane_file]
+
+            # Execute solver
+            try:
+                proc = subprocess.Popen(
+                    command,
+                    cwd=directory,
+                    stdin=subprocess.PIPE,
+                    stdout=None if self.verbose else subprocess.DEVNULL,
+                    stderr=None if self.verbose else subprocess.DEVNULL,
+                    text=True,
+                )
+
+                outs, errs = proc.communicate(input=keystrokes, timeout=self.timeout)
+                return_code = proc.poll()
+
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                outs, errs = proc.communicate()
+
+                warnings.warn(
+                    "JVL run timed out. Increase timeout if needed.",
+                    stacklevel=2,
+                )
+
+            # Read output file
+            try:
+                with open(directory / output_filename, "r") as f:
+                    output_data = f.read()
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    "JVL did not produce an output file. Check executable path or geometry."
+                )
+
+            # Parse results
+            res = self.parse_unformatted_data_output(
+                output_data,
+                data_identifier=" =",
+                overwrite=False
+            )
+
+            # Normalize keys
+            for key_to_lowerize in ["Alpha", "Beta", "Mach"]:
+                res[key_to_lowerize.lower()] = res.pop(key_to_lowerize)
+
+            for key in list(res.keys()):
+                if "tot" in key:
+                    res[key.replace("tot", "")] = res.pop(key)
+
+            # Compute dimensional forces
+            q = self.op_point.dynamic_pressure()
+            S = self.airplane.s_ref
+            b = self.airplane.b_ref
+            c = self.airplane.c_ref
+
+            res["p"] = res["pb/2V"] * (2 * self.op_point.velocity / b)
+            res["q"] = res["qc/2V"] * (2 * self.op_point.velocity / c)
+            res["r"] = res["rb/2V"] * (2 * self.op_point.velocity / b)
+
+            res["L"] = q * S * res["CL"]
+            res["Y"] = q * S * res["CY"]
+            res["D"] = q * S * res["CD"]
+
+            res["l_b"] = q * S * b * res["Cl"]
+            res["m_b"] = q * S * c * res["Cm"]
+            res["n_b"] = q * S * b * res["Cn"]
+
+            try:
+                res["Clb Cnr / Clr Cnb"] = (
+                    res["Clb"] * res["Cnr"] / (res["Clr"] * res["Cnb"])
+                )
+            except ZeroDivisionError:
+                res["Clb Cnr / Clr Cnb"] = np.nan
+
+            # Force vectors
+            res["F_w"] = [-res["D"], res["Y"], -res["L"]]
+
+            res["F_b"] = self.op_point.convert_axes(
+                *res["F_w"], from_axes="wind", to_axes="body"
+            )
+
+            res["F_g"] = self.op_point.convert_axes(
+                *res["F_b"], from_axes="body", to_axes="geometry"
+            )
+
+            # Moment vectors
+            res["M_b"] = [res["l_b"], res["m_b"], res["n_b"]]
+
+            res["M_g"] = self.op_point.convert_axes(
+                *res["M_b"], from_axes="body", to_axes="geometry"
+            )
+
+            res["M_w"] = self.op_point.convert_axes(
+                *res["M_b"], from_axes="body", to_axes="wind"
+            )
+
+            return res
+
 class JetParam:
     def __init__(self, name = 'JET', hdisk=0.45, fh=1.0, djet0=-2.0, djet1=-0.2, djet3=-0.0003):
         """
@@ -303,4 +444,3 @@ class WingJSec(asb.WingXSec):
         """
         super().__init__(xyz_le=xyz_le, chord=chord, twist=twist, airfoil=airfoil, control_surfaces=control_surfaces)
         self.JetControls = JetControls
-    

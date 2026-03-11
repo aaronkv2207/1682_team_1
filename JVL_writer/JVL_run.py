@@ -5,7 +5,7 @@ import aerosandbox.tools.pretty_plots as p
 from typing import List
 from J import JetParam, JetControl, WingJSec, JVL, JWing
 from scipy.interpolate import Akima1DInterpolator
-from geom import plane#, jvl_plane
+from geom import planeB as plane  # , jvl_plane
 
 # jvl_plane.run()
 
@@ -19,41 +19,41 @@ jvl_plane = JVL(
         q=0,
         r=0,
     ),
-    avl_command='.\\jvl2.20.exe'
-    )
-# jvl_plane.default_analysis_specific_options = {
-#         asb.Airplane: dict(profile_drag_coefficient=0),
-#         JWing: dict(
-#             wing_level_spanwise_spacing=True,
-#             spanwise_resolution=25,
-#             spanwise_spacing="cosine",
-#             chordwise_resolution=25,
-#             chordwise_spacing="cosine",
-#             component=None,  # This is an int
-#             no_wake=False,
-#             no_alpha_beta=False,
-#             no_load=False,
-#             drag_polar=None,
-#         ),
-#         asb.Wing: dict(
-#             wing_level_spanwise_spacing=True,
-#             spanwise_resolution=12,
-#             spanwise_spacing="cosine",
-#             chordwise_resolution=12,
-#             chordwise_spacing="cosine",
-#             component=None,  # This is an int
-#             no_wake=False,
-#             no_alpha_beta=False,
-#             no_load=False,
-#             drag_polar=None,
-#         ),
-#         # WingJSec: dict(
-#         #     spanwise_resolution=12,
-#         #     spanwise_spacing="cosine",
-#         #     cl_alpha_factor=None,  # This is a float
-#         #     drag_polar=None,
-#         # ),
-#         asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"),
-#     }
+    avl_command="/Users/osahon/codes/JVL2.16/bin/jvl",  # NOTE: may change depending on your executable
+)
+jvl_plane.default_analysis_specific_options = {
+    asb.Airplane: dict(profile_drag_coefficient=0),
+    JWing: dict(
+        wing_level_spanwise_spacing=True,
+        spanwise_resolution=25,
+        spanwise_spacing="cosine",
+        chordwise_resolution=16,
+        chordwise_spacing="cosine",
+        component=None,  # This is an int
+        no_wake=False,
+        no_alpha_beta=False,
+        no_load=False,
+        drag_polar=None,
+    ),
+    asb.Wing: dict(
+        wing_level_spanwise_spacing=True,
+        spanwise_resolution=10,
+        spanwise_spacing="cosine",
+        chordwise_resolution=8,
+        chordwise_spacing="cosine",
+        component=None,  # This is an int
+        no_wake=False,
+        no_alpha_beta=False,
+        no_load=False,
+        drag_polar=None,
+    ),
+    WingJSec: dict(
+        spanwise_resolution=12,
+        spanwise_spacing="cosine",
+        cl_alpha_factor=None,  # This is a float
+        drag_polar=None,
+    ),
+    asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"),
+}
 
-jvl_plane.run()
+result = jvl_plane.run()
