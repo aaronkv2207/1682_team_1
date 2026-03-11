@@ -21,11 +21,9 @@ m = 7500  # [kg]
 W = m * 9.81  # [N]
 
 # fuselage (roskam pt 2)
-D_f = 1.6  # [m] taken from the twin otter
-l_f = 15  # [m] taken from the twin otter
+D_f = 1.6  # [m] 
+l_f = 15  # [m] 
 lambda_f = l_f / D_f
-
-C_f = 0.002  # skin friction coefficient, estimated from the graph on pg 4 of airmodels.pdf
 
 
 # nacelles (roskam pt 2)
@@ -51,6 +49,9 @@ V_v = S_v * l_v / (S * b)
 
 
 # landing gear (still need to add!!)
+tire_width = ...
+tire_radius = ...
+trouser_length = ...
 
 
 # wetted area
@@ -59,6 +60,7 @@ S_wet_fancowl = (l_n * D_n * (2 + 0.35 * l_1 * l_n + 0.8 * l_1 * D_hl / l_n * D_
 S_wet_wing = S * 2
 S_wet_htail = S_h * 2
 S_wet_vtail = S_v * 2
+S_wet_gear = ...
 
 S_wet_total = S_wet_fuse + 8*S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail
 
