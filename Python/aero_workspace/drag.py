@@ -51,6 +51,7 @@ V_v = S_v * l_v / (S * b)
 # landing gear (still need to add!!)
 tire_width = ...
 tire_radius = ...
+
 trouser_length = ...
 
 
@@ -60,7 +61,8 @@ S_wet_fancowl = (l_n * D_n * (2 + 0.35 * l_1 * l_n + 0.8 * l_1 * D_hl / l_n * D_
 S_wet_wing = S * 2
 S_wet_htail = S_h * 2
 S_wet_vtail = S_v * 2
-S_wet_gear = ...
+S_wet_gear = tire_width * (np.pi*tire_radius*2)
+s_wet_trousers = ...
 
 S_wet_total = S_wet_fuse + 8*S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail
 
