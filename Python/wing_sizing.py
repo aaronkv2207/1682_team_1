@@ -67,107 +67,108 @@ class Wing():
     # NOTE: commented out functions do better estimations for stresses uses distributed loads
     # but give pretty seem values to the functions currently being used
 
-    def trapz_manual(self, y_vals, x_vals):
-        """Manual trapezoidal integration: y_vals over x_vals"""
-        integral = 0
-        for i in range(len(y_vals) - 1):
-            dx = x_vals[i+1] - x_vals[i]
-            integral += 0.5 * (y_vals[i] + y_vals[i+1]) * dx
-        return integral
-
     def axial_stress(self, L, T, D):
-        # Span and chord
+
+        # Geometry
         b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
         c = np.sqrt(aircraft.s_ref/aircraft.AR)
-        x_1 = 0.1*c
-        x_2 = 0.7*c
+
+        x_T1 = b/5
+        x_T2 = b*(2/5)
+        x_T3 = b*(3/5)
+        x_T4 = b*(4/5)
 
         t_x1 = self.aero["t_x1"]
         t_x2 = self.aero["t_x2"]
-        h = 0.5*(t_x1 + t_x2)
-        w = x_2 - x_1
-        t = t_x1 * 0.1  # box thickness estimate
 
-        # Span discretization
-        n_span = 50
-        y_span = np.linspace(0, b, n_span)
+        x_1 = 0.1*c
+        x_2 = 0.7*c
 
-        # Elliptical distributions along half-span
-        lift_dist = L * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
-        drag_dist = D * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
-        weight_dist = self.weight_estimate * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
+        h = 0.5*(t_x1+t_x2)
+        w = x_2-x_1
+        t = t_x1*0.1
 
-        # Add point masses for ducted fans
-        thrust_dist = np.zeros_like(y_span)
-        fan_positions = [b/5, b*2/5, b*3/5, b*4/5]
-        thrust_per_fan = T/4
-        for pos in fan_positions:
-            idx = (np.abs(y_span - pos)).argmin()
-            thrust_dist[idx] += thrust_per_fan
-
-        # Bending moments
-        M_y = self.trapz_manual(drag_dist * y_span, y_span)  # about y-axis
-        M_z = self.trapz_manual(lift_dist * y_span, y_span) + self.trapz_manual(weight_dist * y_span, y_span) - self.trapz_manual(thrust_dist * y_span, y_span)
-
-        # Moments of inertia
-        I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
-        I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
-
-        # Section distances from neutral axis
         z = w/2
         y = h/2
 
-        # Axial stresses
-        axial_yy = -(M_z * y)/I_z
-        axial_zz = (M_y * z)/I_y
+        # thrust per fan
+        T = T/8
+
+        # weights
+        W_struct = self.weight_estimate
+        W_fuel = self.W_fuel_per_wing
+        W_duct = self.W_duct
+
+        # elliptical moment constants
+        lift_moment = (2*L*b)/(3*np.pi)
+        drag_moment = (2*D*b)/(3*np.pi)
+
+        struct_moment = (2*W_struct*b)/(3*np.pi)
+        fuel_moment = (2*W_fuel*b)/(3*np.pi)
+
+        # root bending moments
+        M_y = (
+            T*(x_T1+x_T2+x_T3+x_T4)
+            - drag_moment
+        )
+
+        M_z = (
+            struct_moment
+            + fuel_moment
+            + W_duct*(x_T1+x_T2+x_T3+x_T4)
+            - lift_moment
+        )
+
+        # inertia
+        I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
+        I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
+
+        # stresses
+        axial_yy = -(M_z*y)/I_z
+        axial_zz = (M_y*z)/I_y
+
         axial_max = max(abs(axial_yy), abs(axial_zz))
 
         return 1.5*axial_max
 
+
     def shear_stress(self, L, T, D):
-        # Span and chord
+
         b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
         c = np.sqrt(aircraft.s_ref/aircraft.AR)
-        x_1 = 0.1*c
-        x_2 = 0.7*c
 
         t_x1 = self.aero["t_x1"]
         t_x2 = self.aero["t_x2"]
-        h = 0.5*(t_x1 + t_x2)
-        w = x_2 - x_1
-        t = t_x1 * 0.1  # box thickness estimate
 
-        # Span discretization
-        n_span = 50
-        y_span = np.linspace(0, b, n_span)
+        x_1 = 0.1*c
+        x_2 = 0.7*c
 
-        # Elliptical distributions along half-span
-        lift_dist = L * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
-        drag_dist = D * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
-        weight_dist = self.weight_estimate * (4 / (np.pi * b**2)) * np.sqrt(b**2 - y_span**2)
+        h = 0.5*(t_x1+t_x2)
+        w = x_2-x_1
+        t = t_x1*0.1
 
-        # Add point thrusts
-        thrust_dist = np.zeros_like(y_span)
-        fan_positions = [b/5, b*2/5, b*3/5, b*4/5]
-        thrust_per_fan = T/4
-        for pos in fan_positions:
-            idx = (np.abs(y_span - pos)).argmin()
-            thrust_dist[idx] += thrust_per_fan
+        T = T/8
 
-        # Shear forces
-        F_y = self.trapz_manual(weight_dist, y_span) + self.trapz_manual(thrust_dist, y_span) - self.trapz_manual(lift_dist, y_span)
-        F_z = self.trapz_manual(drag_dist, y_span)
+        # weights
+        W_struct = self.weight_estimate
+        W_fuel = self.W_fuel_per_wing
+        W_duct = self.W_duct
 
-        # First moments of area
+        # shear forces
+        F_y = W_struct + 4*W_duct + W_fuel - L
+        F_z = -4*T + D
+
+        # first moments
         Q_y = (h*w**2)/8 - ((h-2*t)*(w-2*t)**2)/8
         Q_z = (w*h**2)/8 - ((w-2*t)*(h-2*t)**2)/8
 
-        # Moments of inertia
+        # inertia
         I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
         I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
 
-        shear_xy = (F_y * Q_z)/(I_z * t)
-        shear_xz = (F_z * Q_y)/(I_y * t)
+        shear_xy = (F_y*Q_z)/(I_z*t)
+        shear_xz = (F_z*Q_y)/(I_y*t)
+
         shear_max = max(abs(shear_xy), abs(shear_xz))
 
         return 1.5*shear_max
@@ -389,7 +390,6 @@ class Wing():
         sizing_climb = self.climb()
         sizing_cruise = self.cruise()
         sizing_descent = self.descent()
-        # sizing_descent = 0,0,0
         sizing_landing = self.landing()
 
         print("sizing_takeoff:", sizing_takeoff)
@@ -409,17 +409,19 @@ class Wing():
         b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
         # for one of two wings
         sizing = self.max_load_sizing()
-        print(sizing)
         spar_cap_weight = sizing[0]*b*self.materials["spar_cap_density"]
         spar_web_weight = sizing[1]*b*self.materials["spar_web_density"]
-        skin_weight = sizing[2]*self.aero["airfoil_surface_area"]*self.materials["skin_density"]
+        skin_weight = sizing[2]*self.aero["airfoil_surface_area"]*0.4*self.materials["skin_density"]
 
         print("spar_cap_weight", spar_cap_weight)
         print("spar_web_weight", spar_web_weight)
         print("skin_weight", skin_weight)
 
-        # should this weight just be structural stuff or also fuel and motors?
-        return 2*spar_cap_weight + 2*spar_web_weight + skin_weight
+        spar_and_skin = 2*spar_cap_weight + 2*spar_web_weight + skin_weight
+        print("Spar and skin weight:", spar_and_skin)
+
+        # spar and skin is ~70% of total structural mass of the wing
+        return spar_and_skin/0.7
 
 
 if __name__ == "__main__":
