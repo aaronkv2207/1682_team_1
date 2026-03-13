@@ -222,7 +222,7 @@ class Wing():
         axial_max = max(abs(axial_yy), abs(axial_zz))
 
         # return axial_yy + axial_zz
-        return axial_max
+        return 1.5* axial_max
 
     def shear_stress(self, L, T, D):
         # Get required variables
@@ -263,7 +263,7 @@ class Wing():
         shear_max = max(abs(shear_xy), abs(shear_xz))
 
         # return shear_xy + shear_xz
-        return shear_max
+        return 1.5* shear_max
 
 
     def get_N(self, L, a_z):
@@ -329,11 +329,11 @@ class Wing():
         # tx1 = self.aero["tx1"]
         # tx2 = self.aero["tx2"]
         t_avg = self.aero["t_avg"] # Average thickness to chord of the airfoil
-        s_tot = 2 * c_ail
+        s_tot = None
         # s_tot = self.aero["airfoil_perimeter"] # we'll estimate this as 2 * c_ail for now
         G = self.materials["skin_G"]
         twist_max = self.aero["twist_max"]
-        A = b_ail*c_ail
+        A = None
         # A = self.aero["airfoil_cross_section_area"] # we'll estimate this as b_ail * c_ail for now
         T = abs(c_m) * 0.5*self.rho_cruise*aircraft.v_cruise**2 * aircraft.s_ref * c
         print("T:", T)
@@ -567,7 +567,7 @@ class Tail():
         axial_max_v = max(abs(axial_xx_v), abs(axial_yy_v))
 
         return axial_max_v
-    
+
     def axial_stress_ho (self, Lh, Dh, th):
         # Get required variables
         b_vert = self.aero["b_vert"]
@@ -671,7 +671,7 @@ class Tail():
         shear_max_h = max(abs(shear_yz_h), abs(shear_zx_h))
 
         return shear_max_h
-    
+
 
     def get_N_vert_ho(self, Lh_req):
 
@@ -682,7 +682,7 @@ class Tail():
         # Get required variable
         W_total = self.aero["W_total"]
         # fuse_I = 0.5*W_total*(fuse_rad**2)
-        # # moment = Lh_req*fuse_I = 
+        # # moment = Lh_req*fuse_I =
         # Lh_req = ...
         # Lv_req = ...
         # # Calculate max load factor
@@ -695,10 +695,10 @@ class Tail():
 
     def spar_cap_area_vert(self, L, a_z, axial_stress_v):
         """Find necessary spar cap area based on loading"""
-        # global variables 
+        # global variables
         W_cent = self.aero["W_total"] - self.weight_estimate
 
-        # vertical get required variables 
+        # vertical get required variables
         c_tip_v = self.aero["c_tip_v"]
         c_0_v = self.aero["c_0_v"]
         taper_ratio_v = c_tip_v/c_0_v
@@ -709,7 +709,7 @@ class Tail():
         w_b_max_v = self.aero["w_b_max_v"] # not sure where we'll actually get this
 
 
-        # Vertical Calculate area based on strength and stiffness requirements 
+        # Vertical Calculate area based on strength and stiffness requirements
         A_cap_0_strength_v = (Nv*W_cent)/(12*axial_stress_v)*(bv/hv)*(1+2*taper_ratio_v)/(1+taper_ratio_v)
         A_cap_0_stiffness_v = (Nv*W_cent)/(48*E) * bv**2/hv**2 * 1/w_b_max_v * (1+2*taper_ratio_v)/(1+taper_ratio_v)
 
@@ -717,11 +717,11 @@ class Tail():
 
     def spar_cap_area_ho(self, L, a_z, axial_stress_h):
         """Find necessary spar cap area based on loading"""
-        # global variables 
+        # global variables
         W_cent = self.aero["W_total"] - self.weight_estimate
 
 
-        # horizontal get required variables 
+        # horizontal get required variables
         c_tip_h = self.aero["c_tip_h"]
         c_0_h = self.aero["c_0_h"]
         taper_ratio_h = c_tip_h/c_0_h
@@ -731,7 +731,7 @@ class Tail():
         E = self.material["spar_car_E"] # maybe remain this variable if it shows up again just for clarity
         w_b_max_h = self.aero["w_b_max_h"] # not sure where we'll actually get this
 
-        # Horizontal Calculate area based on strength and stiffness requirements 
+        # Horizontal Calculate area based on strength and stiffness requirements
         A_cap_0_strength_h = (Nh*W_cent)/(12*axial_stress_h)*(bh/hh)*(1+2*taper_ratio_h)/(1+taper_ratio_h)
         A_cap_0_stiffness_h = (Nh*W_cent)/(48*E) * bh**2/hh**2 * 1/w_b_max_h * (1+2*taper_ratio_h)/(1+taper_ratio_h)
         return max(A_cap_0_strength_h, A_cap_0_stiffness_h)
@@ -746,7 +746,7 @@ class Tail():
 
         # Return spar web area
         return (Nv*W_cent)/(2*shear_stress_v)
-    
+
     def spar_web_area_ho(self, L, a_z, shear_stress_h):
         """Find necessary spar web area based on loading"""
         # Get required variables
@@ -758,11 +758,11 @@ class Tail():
 
     def skin_thickness_vert(self, q, shear_stress_v):
         """Find necessary skin thickness based on loading"""
-        # Calculated same way as main wing 
+        # Calculated same way as main wing
         # May need editing since the tail doesn't have ailerons driving torsion
 
-        #global variables 
-        y_ail = self.aero["y_ail"] #not sure how to do this with tail 
+        #global variables
+        y_ail = self.aero["y_ail"] #not sure how to do this with tail
         c_m = self.aero["c_m"] # I don't think this changes based on flight conditions but not sure
         s_tot = self.aero["s_tot"] # not sure what this is
         G = self.material["skin_G"]
@@ -781,14 +781,14 @@ class Tail():
 
         # Return max thickness
         return max(t_skin_strength_v, t_skin_stiffness_v)
-    
+
     def skin_thickness_ho(self, q, shear_stress_h):
         """Find necessary skin thickness based on loading"""
-        # Calculated same way as main wing 
+        # Calculated same way as main wing
         # May need editing since the tail doesn't have ailerons driving torsion
 
-        #global variables 
-        y_ail = self.aero["y_ail"] #not sure how to do this with tail 
+        #global variables
+        y_ail = self.aero["y_ail"] #not sure how to do this with tail
         c_m = self.aero["c_m"] # I don't think this changes based on flight conditions but not sure
         s_tot = self.aero["s_tot"] # not sure what this is
         G = self.material["skin_G"]
@@ -807,8 +807,8 @@ class Tail():
 
         # Return max thickness
         return max(t_skin_strength_h, t_skin_stiffness_h)
-    
-    
+
+
     def ho_max_elevator_velNE_weight(self, velNE, Cl_h_max, Cd_h, th, a_z, q):
         # Find forces - do we need to incorporate some takeoff angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
         bh = (self.aero["b_ho"])
@@ -843,7 +843,7 @@ class Tail():
         # return spar_weight + skin_weight
         return ho_max_spar_cap_area, ho_max_spar_web_area, ho_max_skin_thickness
         # spar_cap_weight + spar_web_weight should = tube_weight right??
-    
+
     def vert_max_rudder_velNE_weight(self, velNE, Cl_v_max, Cd_v, tv, a_z, q):
         # Find forces - do we need to incorporate some takeoff angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
         bv = (self.aero["b_vert"])
@@ -1001,7 +1001,7 @@ class Fuselage:
 
 
 
-    
+
     # -------------------------
     # Component mass functions
     # -------------------------
@@ -1048,7 +1048,7 @@ class Fuselage:
         floor_thickness = 0.01 # assumed
         area = self.length * self.cabin_width
         self.fpanel_mass = area * floor_thickness * rho_hc
-    
+
 
         # floor fframe mass
         # floor fframe specs
@@ -1059,7 +1059,7 @@ class Fuselage:
         self.fframe_mass = total_volume * rho_al70
 
 
-        
+
         # floor beam mass
         # floor beam specs
         beam_spacing = .5
@@ -1071,7 +1071,7 @@ class Fuselage:
 
 
         return self.skin_mass+self.frame_mass+self.stringer_mass+self.fpanel_mass+self.fframe_mass+self.fbeam_mass
-    
+
     def get_dead_mass(self):
         seat_weight = self.n*13.0 # kg (average modern aircraft seat weight)
         person_weight = self.n*100.0 # kg (person + luggage)
@@ -1113,8 +1113,9 @@ if __name__ == "__main__":
         "v_descent": 75,
         "v_landing": 25,
         "drag_area": 2.5,
-        "a_z": 2*9.8,
+        "a_z": 3*9.8,
         "airfoil_surface_area": 100, # m^2
+        "t_avg": 0.12,
         # "b_vert":,
         # "b_ho":,
         # "t_x1_v":,
