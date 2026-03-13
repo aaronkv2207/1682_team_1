@@ -4,8 +4,11 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from ambiance import Atmosphere
 
+# Imports from other subteam dependencies
+from ThrustVelocity import ThrustVelocity
+
 # from aero_workspace.aero_main import AircraftConfig, TakeoffCoeff
-#eigenmodes can be calculated from JVL!
+#eigenmodes can be calculated from JVL!  lowkey might still caculate them in this
 @dataclass
 class Mass:
     m: float
@@ -325,7 +328,7 @@ alpha = np.clip(alpha, np.radians(-15), np.radians(15))
 # Positions
 
 plt.plot(sol.y[4], -sol.y[5])
-plt.scatter(x_to, 0, label='Takeoff',c='red', marker='*')
+# plt.scatter(x_to, 0, label='Takeoff',c='red', marker='*')
 plt.xlabel("Downrange Distance (m)")
 plt.ylabel("Altitude (m)")
 plt.title("Takeoff Trajectory")

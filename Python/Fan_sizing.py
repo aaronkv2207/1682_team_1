@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# GOAL: Look at tradeoffs that occur when changing the radius of the fan
+# GOAL: SIZE & DETERMINE THE AMOUNT OF FANS FOR OUR 19 PAX PLANE
 
 # ============================================================
 # ATMOSPHERE & AIRCRAFT CONSTANTS (SI UNITS)
@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 rho = 1.225   # Air density [kg/m^3]
 rho_cruise = .549 # Air density at 25k ft [kg/m^3]
 g = 9.81  # Gravity [m/s^2]
-a = 343  # Speed of Sound sea level [m/s^2]
-a_cruise = 309 # speed of sound cruise [m/s^2]
+a = 343  # Speed of sound sea level [m/s^2]
+a_cruise = 309 # Speed of sound cruise [m/s^2] --> at 25k ft
 
 W = 73618.07  # Aircraft weight [N] --> 16550 lbs
 m = W / g  # Aircraft mass [kg]
@@ -26,10 +26,10 @@ CL = 6.1  # Lift coefficient (TO config) [-]
 CD0 = 0.032  # Parasite drag coefficient [-]
 
 mu = 0.02  # Rolling friction coefficient [-]
-x_runway = 104  # Runway length (171 ft) [m]
+x_runway = 52  # Runway length (171 ft) [m]
 
 V_stall = 19.933  # Stall speed [m/s]
-V_to = 1.1 * V_stall  # Takeoff speed [m/s]
+V_to = 23.7#1.1 * V_stall  # Takeoff speed [m/s]
 V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
 RPM = 2100 # RPM of propeller [rev/min]
@@ -75,8 +75,10 @@ def T(v):
     return D(v) + mu * (W - L(v)) + m * acc(v)
 
 
-
-print("Thrust at takeoff:", D(V_to) + acc(V_to))
+# At takeoff, (W-L(v)) is not included, as there is no friction force when we are off the ground
+T_to = D(V_to) + acc(V_to)
+print("Thrust at takeoff:", T_to)
+print("T/W at takeoff: ", T_to/W)
 
 # ============================================================
 # CRUISE MODEL (STEADY LEVEL FLIGHT)
@@ -114,12 +116,12 @@ def Tc_cruise(v, R):
 
 def Eta_ideal_cruise(v, R):
     Tc = Tc_cruise(v, R)
-    return 2 / (1 + np.sqrt(1 + Tc))
+    return 2 / (1+np.sqrt(1 + Tc))
 
 
 def P_cruise(v, R):
-    eta = Eta_ideal_cruise(v, R)
-    return T_cruise(v) * v / eta
+    eta_cruise = Eta_ideal_cruise(v, R)
+    return T_cruise(v) * v / eta_cruise
 
 
 def M_tip(R):
@@ -222,14 +224,16 @@ ax1.plot(np.pi * R_plot**2, P_vals, label="Takeoff Power Required (kW)")
 ax1.set_xlabel("Effective Total Propeller Area [m^2]")
 ax1.set_ylabel("Power (kW)")
 
-motor_power = 1300  # kW 
-ax1.axhline(motor_power, linestyle=":", label="Motor Power")
+motor_power = 2050  # kW 
+# ax1.axhline(motor_power, linestyle=":", label="Motor Power")
 
 # Propulsor Values from radius chosen using plots above
-R_selected = .583
-A_selected = N_fans * np.pi * R_selected**2
-J = V_cruise / (omega*R_selected)
-print("Effective Area:", A_selected)
+R_selected = .583 # [m]
+A_selected = N_fans * np.pi * R_selected**2 # [m^2]
+J = V_cruise / (omega*R_selected) 
+print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
+print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
+print("Effective Total Fan Area:", A_selected)
 print("Advance Ratio: ", J)
 print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected))
 
@@ -254,20 +258,29 @@ plt.show()
 
 
 # ============================================================
-# THRUST INTERPOLATOR FOR TAKEOFF (0–22 m/s)
+# THRUST INTERPOLATOR (first used in takeoff model) (0–22 m/s)
 # ============================================================
 
-V_data = np.array([0, 10, 20, 30])
-T_data = np.array([709.4, 414.2, 303.2, 257.9])
-degree = 4          # change this to 1,2,3,4,... to test fits
+V_data = np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130])
+T_data = 8 * 10 * np.array([709.4, 414.2, 303.2, 257.9, 225.0, 200.0, 182.0, 170.0, 160.0, 152.0, 145.0, 139.0, 135.0, 131.0]) # Thrust per fan [N]
+degree = 5          # change this to 1,2,3,4,... to test fits
 coeffs = np.polyfit(V_data, T_data, degree)
 T_poly = np.poly1d(coeffs)
 
-def T_fan_interp(v):
-    """Interpolated thrust per fan [N]"""
-    return T_poly(v)
+class ThrustInterpolator:
+    def __init__(self, V_data=V_data, T_data=T_data, degree=degree):
+        self.coeffs = np.polyfit(V_data, T_data, degree)
+        self.poly = np.poly1d(self.coeffs)
 
-vel = np.linspace(0,22,200)
+    def get_T(self, v):
+        """Interpolated thrust per fan [N]"""
+        return self.poly(v)
+
+def T_fan_interp(v):
+        """Interpolated thrust per fan [N]"""
+        return T_poly(v)
+
+vel = np.linspace(0,130,500)
 plt.figure(figsize=(8,6))
 plt.scatter(V_data, T_data, label="Original Data")
 plt.plot(vel, T_fan_interp(vel), label=f"Polynomial Fit (deg={degree})")
@@ -275,8 +288,7 @@ plt.xlabel("Velocity [m/s]")
 plt.ylabel("Thrust per fan [N]")
 plt.title("Fan Thrust Interpolation")
 plt.legend()
-plt.grid(True)
-# plt.show()
+plt.show()
 
 
 

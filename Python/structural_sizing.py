@@ -22,7 +22,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from ambiance import Atmosphere
+# from ambiance import Atmosphere
 from aero_workspace.conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
 from scipy.interpolate import interp1d
 
@@ -200,6 +200,7 @@ class Wing():
         z = w/2
         y = h/2
 
+        T = T/10
 
         # # Moment equations for final model:
         # M_y = T*(x_T1+x_T2+x_T3+x_T4) # - drag integral
@@ -241,9 +242,11 @@ class Wing():
         w = x_2-x_1
         t = t_x1*0.1 # box thickness - estimate
 
+        T = T/10
+
         # Force equations
         F_y = self.weight_estimate*(b/2) + 5*self.W_duct + self.W_fuel_per_wing - L # - lift integral
-        F_z = -4*T + D # + drag integral
+        F_z = -5*T + D # + drag integral
         # TODO: add actual integral stuff for D, L, W
 
         # 1st moments of area
@@ -479,13 +482,14 @@ class Wing():
         sizing_takeoff = self.takeoff()
         sizing_climb = self.climb()
         sizing_cruise = self.cruise()
-        sizing_descent = self.descent()
+        # sizing_descent = self.descent()
+        sizing_descent = 0,0,0
         sizing_landing = self.landing()
 
         print("sizing_takeoff:", sizing_takeoff)
         print("sizing_climb:", sizing_climb)
         print("sizing_cruise:", sizing_cruise)
-        print("sizing_descent:", sizing_descent)
+        # print("sizing_descent:", sizing_descent)
         print("sizing_landing:", sizing_landing)
 
         spar_cap_area = max(sizing_takeoff[0], sizing_climb[0], sizing_cruise[0], sizing_descent[0], sizing_landing[0])
@@ -511,7 +515,7 @@ class Wing():
         print("skin_weight", skin_weight)
 
         # should this weight just be structural stuff or also fuel and motors?
-        return spar_cap_weight + spar_web_weight + skin_weight
+        return 2*spar_cap_weight + 2*spar_web_weight + skin_weight
         # spar_cap_weight + spar_web_weight should = tube_weight right??
 
 
@@ -522,6 +526,7 @@ class Tail():
         self.loading = loading
         self.material = materials
         self.weight_estimate = weight_estimate
+        self.rho_cruise = 1.225 #kg/m3
 
     def axial_stress_vert (self, Lv, Dv, tv, hweight, Lh):
         # Get required variables
@@ -668,19 +673,19 @@ class Tail():
         return shear_max_h
     
 
-    def get_N_vert_ho(self, L, a_z, cg, fuse_rad, pitch, yaw):
+    def get_N_vert_ho(self, Lh_req):
 
         """
-        input: L, a_z, mass, fuselage radius, pitch (deg), yaw (deg)
+        input: L
         Output: flight load factor, landing load factor, and max load factor
         """
         # Get required variable
         W_total = self.aero["W_total"]
-        fuse_I = 0.5*W_total*(fuse_rad**2)
-        # moment = Lh_req*fuse_I = 
-        Lh_req = ...
-        Lv_req = ...
-        # Calculate max load factor
+        # fuse_I = 0.5*W_total*(fuse_rad**2)
+        # # moment = Lh_req*fuse_I = 
+        # Lh_req = ...
+        # Lv_req = ...
+        # # Calculate max load factor
         Nh = Lh_req/W_total # flight load factor
         # N_land = a_z/self.g # landing load factor
         # N_max = np.max(N, N_land) # maximum load factor
@@ -697,7 +702,7 @@ class Tail():
         c_tip_v = self.aero["c_tip_v"]
         c_0_v = self.aero["c_0_v"]
         taper_ratio_v = c_tip_v/c_0_v
-        Nv = self.get_N_vert_ho(L, a_z)[0]
+        Nv = self.get_N_vert_ho(L)[0]
         bv = self.aero["b_vert"] # NOTE: might need to do b/2 for half of wing?
         hv = self.aero["h_vert"]
         E = self.material["spar_car_E"] # maybe remain this variable if it shows up again just for clarity
@@ -708,7 +713,7 @@ class Tail():
         A_cap_0_strength_v = (Nv*W_cent)/(12*axial_stress_v)*(bv/hv)*(1+2*taper_ratio_v)/(1+taper_ratio_v)
         A_cap_0_stiffness_v = (Nv*W_cent)/(48*E) * bv**2/hv**2 * 1/w_b_max_v * (1+2*taper_ratio_v)/(1+taper_ratio_v)
 
-        return np.max(A_cap_0_strength_v, A_cap_0_stiffness_v)
+        return max(A_cap_0_strength_v, A_cap_0_stiffness_v)
 
     def spar_cap_area_ho(self, L, a_z, axial_stress_h):
         """Find necessary spar cap area based on loading"""
@@ -720,23 +725,23 @@ class Tail():
         c_tip_h = self.aero["c_tip_h"]
         c_0_h = self.aero["c_0_h"]
         taper_ratio_h = c_tip_h/c_0_h
-        Nh = self.get_N_vert_ho(L, a_z)[1]
+        Nh = self.get_N_vert_ho(L)[1]
         bh = self.aero["b_ho"] # NOTE: might need to do b/2 for half of wing?
-        hh = self.aero["h_ho"]
+        hh = self.aero["t_x1_h"]
         E = self.material["spar_car_E"] # maybe remain this variable if it shows up again just for clarity
         w_b_max_h = self.aero["w_b_max_h"] # not sure where we'll actually get this
 
         # Horizontal Calculate area based on strength and stiffness requirements 
         A_cap_0_strength_h = (Nh*W_cent)/(12*axial_stress_h)*(bh/hh)*(1+2*taper_ratio_h)/(1+taper_ratio_h)
         A_cap_0_stiffness_h = (Nh*W_cent)/(48*E) * bh**2/hh**2 * 1/w_b_max_h * (1+2*taper_ratio_h)/(1+taper_ratio_h)
-        return np.max(A_cap_0_strength_h, A_cap_0_stiffness_h)
+        return max(A_cap_0_strength_h, A_cap_0_stiffness_h)
 
 
 
     def spar_web_area_vert(self, L, a_z, shear_stress_v):
         """Find necessary spar web area based on loading"""
         # Get required variables
-        Nv = self.get_N_vert_ho(L, a_z)[0]
+        Nv = self.get_N_vert_ho(L)[0]
         W_cent = self.aero["W_total"] - self.weight_estimate
 
         # Return spar web area
@@ -745,7 +750,7 @@ class Tail():
     def spar_web_area_ho(self, L, a_z, shear_stress_h):
         """Find necessary spar web area based on loading"""
         # Get required variables
-        Nh = self.get_N_vert_ho(L, a_z)[1]
+        Nh = self.get_N_vert_ho(L)[1]
         W_cent = self.aero["W_total"] - self.weight_estimate
 
         # Return spar web area
@@ -775,7 +780,7 @@ class Tail():
         t_skin_stiffness_v = 1*bv*cv**2*y_ail*c_m*s_tot/(4*Av**2*G)*(1/twist_max)
 
         # Return max thickness
-        return np.max(t_skin_strength_v, t_skin_stiffness_v)
+        return max(t_skin_strength_v, t_skin_stiffness_v)
     
     def skin_thickness_ho(self, q, shear_stress_h):
         """Find necessary skin thickness based on loading"""
@@ -801,23 +806,23 @@ class Tail():
         t_skin_stiffness_h = 1*bh*ch**2*y_ail*c_m*s_tot/(4*Ah**2*G)*(1/twist_max)
 
         # Return max thickness
-        return np.max(t_skin_strength_h, t_skin_stiffness_h)
+        return max(t_skin_strength_h, t_skin_stiffness_h)
     
     
-    def ho_max_elevator_velNE(self, velNE, Cl_v_max, Cd_v, th, hweight, a_z, q):
+    def ho_max_elevator_velNE_weight(self, velNE, Cl_h_max, Cd_h, th, a_z, q):
         # Find forces - do we need to incorporate some takeoff angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
-        bh = self.aero["b_ho"]
+        bh = (self.aero["b_ho"])
         c_tip_h = self.aero["c_tip_h"]
         c_0_h = self.aero["c_0_h"]
         ch = (c_tip_h+c_0_h)*0.5
         Ah = bh*ch
-        L_req = 0.5*self.rho_cruise*(velNE**2)*Cl_v_max*Ah
-        D = 0.5*self.rho_cruise*(velNE**2)*Cd_v*Ah
+        L_req = 0.5*self.rho_cruise*(velNE**2)*Cl_h_max*Ah
+        D = 0.5*self.rho_cruise*(velNE**2)*Cd_h*Ah
 
 
         # Calculate stresses and torsion
 
-        axial_stress_max_elevator = self.axial_stress_ho(L_req, D, th, hweight)
+        axial_stress_max_elevator = self.axial_stress_ho(L_req, D, th)
         shear_stress_max_elevator = self.shear_stress_ho(L_req, D, th)
 
         # Find component sizing based on calculated loading
@@ -829,10 +834,56 @@ class Tail():
         # for one of two wings
         spar_cap_weight = ho_max_spar_cap_area*bh*self.material["spar_cap_density"]
         spar_web_weight = ho_max_spar_web_area*bh*self.material["spar_web_density"]
-        skin_weight = ho_max_skin_thickness*self.aero["airfoil_surface_area"]*self.materials["skin_density"]
+        skin_weight = ho_max_skin_thickness*self.aero["airfoil_surface_area"]*self.material["skin_density"]
         # tube_weight = sizing[3]*bh*self.material["tube_density"]
 
-        spar_weight = max(spar_cap_weight + spar_web_weight)
+        spar_weight = spar_cap_weight + spar_web_weight
+
+        # should this weight just be structural stuff or also fuel and motors?
+        # return spar_weight + skin_weight
+        return ho_max_spar_cap_area, ho_max_spar_web_area, ho_max_skin_thickness
+        # spar_cap_weight + spar_web_weight should = tube_weight right??
+    
+    def vert_max_rudder_velNE_weight(self, velNE, Cl_v_max, Cd_v, tv, a_z, q):
+        # Find forces - do we need to incorporate some takeoff angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
+        bv = (self.aero["b_vert"])
+        Ah = bv*(self.aero["vert_chord"])
+        L_req = 0.5*self.rho_cruise*(velNE**2)*Cl_v_max*Ah
+        D = 0.5*self.rho_cruise*(velNE**2)*Cd_v*Ah
+        # Horizontal tail weight acting on vertical tail
+        hweight = self.weight_estimate
+
+    # Stress calculations
+        axial_stress_max = self.axial_stress_vert(
+        L_req,      # Lv
+        D,          # Dv
+        tv,         # thickness
+        hweight,    # horizontal tail weight
+        L_req       # horizontal tail lift (approx)
+        )
+
+        shear_stress_max = self.shear_stress_vert(
+        L_req,      # Lv
+        D,          # Dv
+        D,          # Dh (approx drag)
+        tv,         # vertical thickness
+        tv,         # horizontal thickness (approx)
+        hweight
+        )
+
+        # Find component sizing based on calculated loading
+        # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
+        vert_max_spar_cap_area = self.spar_cap_area_ho(L_req, a_z, axial_stress_max )
+        vert_max_spar_web_area = self.spar_web_area_ho(L_req, a_z, shear_stress_max)
+        vert_max_skin_thickness = self.skin_thickness_ho(q, shear_stress_max)
+
+        # for one of two wings
+        spar_cap_weight = vert_max_spar_cap_area*bv*self.material["spar_cap_density"]
+        spar_web_weight = vert_max_spar_web_area*bv*self.material["spar_web_density"]
+        skin_weight = vert_max_skin_thickness*self.aero["airfoil_surface_area"]*self.material["skin_density"]
+        # tube_weight = sizing[3]*bh*self.material["tube_density"]
+
+        spar_weight = spar_cap_weight + spar_web_weight
 
         # should this weight just be structural stuff or also fuel and motors?
         return spar_weight + skin_weight
@@ -877,11 +928,13 @@ class Tail():
 
 class Fuselage:
 
-    def __init__(self, length, radius, n):
+    def __init__(self, length, radius, n_people, cabin_width):
         self.length = length
         self.R = radius
-        self.n = n
+        self.n = n_people
+        self.cabin_width = cabin_width
         self.weight = 0.0 # to be derived
+
 
 
     def pressure_at_altitude(self, h):
@@ -896,6 +949,22 @@ class Fuselage:
         R  = 287.05      # Gas constant for air (J/kg*K)
 
         return P0 * (1 - (L * h) / T0)**(g / (R * L))
+
+
+
+
+    # -------------------------
+    # Geometry functions
+    # -------------------------
+
+    def shell_area(self):
+        return self.circumference() * self.length
+
+    def circumference(self):
+        return 2.0 * np.pi * self.R
+
+    def count_members(self, length, spacing):
+        return int(np.floor(length / spacing)) + 1
 
     def required_thickness_hoop(self,
                         yield_strength,
@@ -927,45 +996,413 @@ class Fuselage:
 
         return self.hoop_t
 
-    def required_thickness_moments(self, yield_stress, safety_factor=2):
+    def required_thickness_bending(self, yield_stress, safety_factor=2):
         pass
 
-    def get_dead_weight(self):
+
+
+    
+    # -------------------------
+    # Component mass functions
+    # -------------------------
+
+
+    def get_structural_mass(self):
+        # assume some materials
+        # aluminum 7075-T6
+        yield_strength_al70 = 490e6    # Pa
+        rho_al70 = 2810    # kg/m^3
+
+        # honey comb fiberglass/carbonfiber
+        rho_hc = 3 # kg/m^3
+
+        # skin mass
+        # skin mass
+        # self.thickness = self.required_thickness_hoop(yield_strengths)+self.required_thickness_moments(yield_strengths) # solve for later
+        thickness = 0.002 # meter
+        skin_volume = self.cylinder_area(self.R)*thickness
+        self.skin_mass = skin_volume*rho_al70
+
+        # frame mass
+        # frame specs
+        frame_spacing = .5 # assumed
+        frame_disk_depth = .1 # assumed
+        frame_thickness = 0.002 # assumed
+        frame_area = (np.pi*self.R**2-np.pi*(self.R-frame_disk_depth)**2)
+        n_frames = self.count_members(self.length, frame_spacing)
+        total_volume = n_frames * frame_thickness * frame_area
+        self.frame_mass = total_volume * rho_al70
+
+
+        # stringer mass
+        # stringer specs
+        stringer_area = 1e-4 # assumed
+        stringer_spacing = 0.5 # assumed
+        # stringer mass
+        n_stringers = self.count_members(self.circumference(), stringer_spacing)
+        total_volume = n_stringers * self.length * stringer_area
+        self.stringer_mass = total_volume * rho_al70
+
+        # floor panel mass
+        # floor specs
+        floor_thickness = 0.01 # assumed
+        area = self.length * self.cabin_width
+        self.fpanel_mass = area * floor_thickness * rho_hc
+    
+
+        # floor fframe mass
+        # floor fframe specs
+        n_fframes = n_frames # assume beams at every frame
+        fframe_depth = 0.07 # assumed
+        fframe_thickness = 0.002 # assumed
+        total_volume = n_fframes * self.cabin_width * fframe_thickness * fframe_depth
+        self.fframe_mass = total_volume * rho_al70
+
+
+        
+        # floor beam mass
+        # floor beam specs
+        beam_spacing = .5
+        n_fbeams = self.count_members(self.cabin_width, beam_spacing)
+        fbeam_depth = 0.07 # assumed
+        fbeam_thickness= 0.002 # assumed
+        total_volume = n_fbeams * self.length * fbeam_thickness * fbeam_depth
+        self.fbeam_mass = total_volume * rho_al70
+
+
+        return self.skin_mass+self.frame_mass+self.stringer_mass+self.fpanel_mass+self.fframe_mass+self.fbeam_mass
+    
+    def get_dead_mass(self):
         seat_weight = self.n*13.0 # kg (average modern aircraft seat weight)
-        person_weight = self.n*100.0 # kg
+        person_weight = self.n*100.0 # kg (person + luggage)
         return seat_weight + person_weight
 
 
-    def get_structural_weight(self, safety_factor):
-        # assume some materials
-
-        # skin material aluminum 7075-T6
-        yield_strength = 490e6    # Pa
-        skin_rho = 2810    # kg/m^3
-        # skin weight
-        self.thickness = self.required_thickness_hoop(yield_strength)+self.required_thickness_moments(yield_strength)
-        self.skin_volume = self.length*2*math.pi*self.R*self.thickness
-        self.skin_weight = self.skin_volume*self.skin_rho
-
-        # frame weight
-        self.frame_weight
-
-        # stringer weight
-        self.stringer_weight
-
-        return self.skin_weight+self.frame_weight+self.stringer_weight
-
-
-    def get_total_weight(self, n, safety_factor):
+    def get_total_weight(self):
         g  = 9.80665     # Gravity (m/s^2)
-        self.dead_weight = self.get_dead_weight()
-        self.structural_weight = self.get_structural_weight(safety_factor)
-        return self.dead_weight*g + self.structural_weight*g
+        return self.get_dead_mass()*g + self.get_structural_mass()*g
 
 
 
 class LandingGear():
-    pass
+
+    # =========================================================
+    # Geometry helpers for a hollow circular tube
+    # =========================================================
+    def tube_inner_diameter(D_outer, t):
+        D_inner = D_outer - 2.0 * t
+        if D_inner <= 0:
+            raise ValueError("Invalid geometry: thickness too large for outer diameter.")
+        return D_inner
+
+
+    def tube_area(D_outer, t):
+        """
+        Cross-sectional area [m^2]
+        """
+        D_inner = tube_inner_diameter(D_outer, t)
+        return (np.pi / 4.0) * (D_outer**2 - D_inner**2)
+
+
+    def tube_I(D_outer, t):
+        """
+        Area moment of inertia for bending [m^4]
+        """
+        D_inner = tube_inner_diameter(D_outer, t)
+        return (np.pi / 64.0) * (D_outer**4 - D_inner**4)
+
+
+    def tube_c(D_outer):
+        """
+        Outer fiber distance from neutral axis [m]
+        """
+        return D_outer / 2.0
+
+
+    def tube_mass(D_outer, t, L, rho):
+        """
+        Mass of one strut [kg]
+        """
+        A = tube_area(D_outer, t)
+        return A * L * rho
+
+
+    # =========================================================
+    # Core analysis for one rear strut
+    # =========================================================
+    def analyze_rear_strut(
+        Fz,                 # vertical wheel load on one rear strut [N]
+        theta_deg,          # strut angle from vertical [deg]
+        L,                  # strut length [m]
+        D_outer,            # tube outer diameter [m]
+        t,                  # tube thickness [m]
+        E,                  # Young's modulus [Pa]
+        sigma_allow,        # allowable normal stress [Pa]
+        rho=None,           # density [kg/m^3], optional
+        buckling_sf=1.5     # required buckling safety factor
+    ):
+        """
+        Analyze one rear landing gear strut treated as an angled cantilever tube.
+
+        Returns a dictionary of loads, stresses, deflections, and pass/fail checks.
+        """
+        theta = np.radians(theta_deg)
+
+        # Section properties
+        A = tube_area(D_outer, t)
+        I = tube_I(D_outer, t)
+        c = tube_c(D_outer)
+
+        # Resolve wheel load into strut coordinates
+        F_axial = Fz * np.cos(theta)   # compression along strut
+        F_perp  = Fz * np.sin(theta)   # transverse load causing bending
+
+        # Root bending moment
+        M_root = F_perp * L
+
+        # Stresses
+        sigma_axial = F_axial / A
+        sigma_bending = M_root * c / I
+        sigma_max = sigma_axial + sigma_bending
+        sigma_min = sigma_axial - sigma_bending
+
+        # Deflection
+        delta_perp = F_perp * L**3 / (3.0 * E * I)
+        delta_axial = F_axial * L / (A * E)
+
+        # Approximate vertical wheel deflection
+        delta_v_bending = delta_perp * np.sin(theta)
+        delta_v_axial = delta_axial * np.cos(theta)
+        delta_v_total = delta_v_bending + delta_v_axial
+
+        # Euler buckling for cantilever column: K = 2
+        K = 2.0
+        P_cr = (np.pi**2 * E * I) / ((K * L)**2)
+        buckling_ok = P_cr / buckling_sf >= F_axial
+
+        # Stress check
+        stress_ok = sigma_max <= sigma_allow
+
+        # Optional mass
+        mass = tube_mass(D_outer, t, L, rho) if rho is not None else None
+
+        return {
+            "F_axial_N": F_axial,
+            "F_perp_N": F_perp,
+            "Area_m2": A,
+            "I_m4": I,
+            "M_root_Nm": M_root,
+            "sigma_axial_Pa": sigma_axial,
+            "sigma_bending_Pa": sigma_bending,
+            "sigma_max_Pa": sigma_max,
+            "sigma_min_Pa": sigma_min,
+            "delta_perp_m": delta_perp,
+            "delta_axial_m": delta_axial,
+            "delta_v_bending_m": delta_v_bending,
+            "delta_v_axial_m": delta_v_axial,
+            "delta_v_total_m": delta_v_total,
+            "Pcr_N": P_cr,
+            "stress_ok": stress_ok,
+            "buckling_ok": buckling_ok,
+            "feasible": stress_ok and buckling_ok,
+            "mass_kg": mass
+        }
+
+
+    # =========================================================
+    # Solve thickness for a given outer diameter and length
+    # =========================================================
+    def find_min_thickness_for_design(
+        Fz,
+        theta_deg,
+        L,
+        D_outer,
+        E,
+        sigma_allow,
+        rho=None,
+        buckling_sf=1.5,
+        t_min=0.001,
+        t_max=None,
+        n_steps=400
+    ):
+        """
+        For a fixed outer diameter and length, find the minimum wall thickness
+        that satisfies stress and buckling.
+        """
+        if t_max is None:
+            t_max = 0.49 * D_outer
+
+        thicknesses = np.linspace(t_min, t_max, n_steps)
+
+        for t in thicknesses:
+            try:
+                res = analyze_rear_strut(
+                    Fz=Fz,
+                    theta_deg=theta_deg,
+                    L=L,
+                    D_outer=D_outer,
+                    t=t,
+                    E=E,
+                    sigma_allow=sigma_allow,
+                    rho=rho,
+                    buckling_sf=buckling_sf
+                )
+            except ValueError:
+                continue
+
+            if res["feasible"]:
+                res["D_outer_m"] = D_outer
+                res["t_m"] = t
+                res["L_m"] = L
+                res["theta_deg"] = theta_deg
+                return res
+
+        return None
+
+
+    # =========================================================
+    # Sweep a design space
+    # =========================================================
+    def sweep_design_space(
+        Fz,
+        theta_deg,
+        E,
+        sigma_allow,
+        D_outer_list,
+        L_list,
+        rho=None,
+        buckling_sf=1.5,
+        t_min=0.001,
+        max_vertical_deflection=None
+    ):
+        """
+        Sweep through candidate outer diameters and lengths, and solve for the
+        minimum thickness that works for each combination.
+        """
+        feasible_designs = []
+
+        for D_outer in D_outer_list:
+            for L in L_list:
+                res = find_min_thickness_for_design(
+                    Fz=Fz,
+                    theta_deg=theta_deg,
+                    L=L,
+                    D_outer=D_outer,
+                    E=E,
+                    sigma_allow=sigma_allow,
+                    rho=rho,
+                    buckling_sf=buckling_sf,
+                    t_min=t_min
+                )
+
+                if res is None:
+                    continue
+
+                if max_vertical_deflection is not None:
+                    if res["delta_v_total_m"] > max_vertical_deflection:
+                        continue
+
+                feasible_designs.append(res)
+
+        return feasible_designs
+
+
+    # =========================================================
+    # Pretty print
+    # =========================================================
+    def print_design(res):
+        print("\n--- Rear Strut Design ---")
+        print(f"Outer diameter      : {res['D_outer_m']*1000:.2f} mm")
+        print(f"Wall thickness      : {res['t_m']*1000:.2f} mm")
+        print(f"Length              : {res['L_m']:.3f} m")
+        print(f"Angle from vertical : {res['theta_deg']:.1f} deg")
+        print(f"Axial force         : {res['F_axial_N']:.1f} N")
+        print(f"Transverse force    : {res['F_perp_N']:.1f} N")
+        print(f"Root moment         : {res['M_root_Nm']:.1f} N*m")
+        print(f"Axial stress        : {res['sigma_axial_Pa']/1e6:.2f} MPa")
+        print(f"Bending stress      : {res['sigma_bending_Pa']/1e6:.2f} MPa")
+        print(f"Max stress          : {res['sigma_max_Pa']/1e6:.2f} MPa")
+        print(f"Vertical deflection : {res['delta_v_total_m']*1000:.2f} mm")
+        print(f"Buckling load Pcr   : {res['Pcr_N']:.1f} N")
+        print(f"Stress OK?          : {res['stress_ok']}")
+        print(f"Buckling OK?        : {res['buckling_ok']}")
+        print(f"Feasible?           : {res['feasible']}")
+        if res["mass_kg"] is not None:
+            print(f"Mass per strut      : {res['mass_kg']:.3f} kg")
+
+
+    # =========================================================
+    # Example usage
+    # =========================================================
+    def test_LandingGear():
+        # -----------------------------------------------------
+        # Inputs you should edit
+        # -----------------------------------------------------
+        Fz = 12000.0            # N, assumed hard landing load on ONE rear strut
+        theta_deg = 25.0        # strut angle from vertical
+        E = 71.7e9              # Pa, aluminum-ish
+        sigma_y = 505e6         # Pa
+        FS_yield = 1.5
+        sigma_allow = sigma_y / FS_yield
+        rho = 2810.0            # kg/m^3
+
+        # -----------------------------------------------------
+        # Check one design directly
+        # -----------------------------------------------------
+        D_outer = 0.060         # 60 mm
+        t = 0.004               # 4 mm
+        L = 0.85                # m
+
+        one_design = analyze_rear_strut(
+            Fz=Fz,
+            theta_deg=theta_deg,
+            L=L,
+            D_outer=D_outer,
+            t=t,
+            E=E,
+            sigma_allow=sigma_allow,
+            rho=rho,
+            buckling_sf=1.5
+        )
+
+        one_design["D_outer_m"] = D_outer
+        one_design["t_m"] = t
+        one_design["L_m"] = L
+        one_design["theta_deg"] = theta_deg
+
+        print_design(one_design)
+
+        # -----------------------------------------------------
+        # Sweep design space
+        # -----------------------------------------------------
+        D_outer_list = np.linspace(0.040, 0.090, 11)   # 40 mm to 90 mm
+        L_list = np.linspace(0.60, 1.00, 9)            # 0.60 m to 1.00 m
+
+        feasible = sweep_design_space(
+            Fz=Fz,
+            theta_deg=theta_deg,
+            E=E,
+            sigma_allow=sigma_allow,
+            D_outer_list=D_outer_list,
+            L_list=L_list,
+            rho=rho,
+            buckling_sf=1.5,
+            t_min=0.0015,
+            max_vertical_deflection=0.120   # optional, meters
+        )
+
+        # Sort by lightest design
+        feasible = sorted(
+            feasible,
+            key=lambda r: r["mass_kg"] if r["mass_kg"] is not None else 1e99
+        )
+
+        print(f"\nFound {len(feasible)} feasible designs.")
+
+        for i, res in enumerate(feasible[:5], start=1):
+            print(f"\nBest candidate #{i}")
+            print_design(res)
+
 
 
 if __name__ == "__main__":
@@ -1008,8 +1445,8 @@ if __name__ == "__main__":
     }
 
     loading = {
-        "T_takeoff": 60 * 10**3,
-        "T_climb": 40 * 10**3, # guess
+        "T_takeoff": 27 * 10**3,
+        "T_climb": 18 * 10**3, # guess
         "T_cruise": 8.5 * 10**3,
         "T_descent": 5 * 10**3, # guess
         "T_landing": 12 * 10**3, # guess
