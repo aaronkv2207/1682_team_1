@@ -8,6 +8,7 @@ import os
 
 import numpy as np
 import math as math
+import matplotlib.pyplot as plt
 
 # from aero_workspace.conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
 # from aero_workspace.aero_main import AircraftConfig as aircraft
@@ -996,7 +997,7 @@ class Fuselage:
 
         return self.hoop_t
 
-    def required_thickness_moments(self, yield_stress, safety_factor=2):
+    def required_thickness_bending(self, yield_stress, safety_factor=2):
         pass
 
 
@@ -1037,7 +1038,7 @@ class Fuselage:
         # stringer mass
         # stringer specs
         stringer_area = 1e-4 # assumed
-        stringer_spacing = 0.25 # assumed
+        stringer_spacing = 0.5 # assumed
         # stringer mass
         n_stringers = self.count_members(self.circumference(), stringer_spacing)
         total_volume = n_stringers * self.length * stringer_area
@@ -1084,8 +1085,457 @@ class Fuselage:
 
 
 
-class LandingGear():
-    pass
+class LandingGear:
+    def __init__(
+        self,
+        material_name,
+        E,
+        sigma_y,
+        rho,
+        FS_yield=1.5,
+        buckling_sf=1.5
+    ):
+        """
+        Store shared material properties for the landing gear design.
+        """
+        self.material_name = material_name
+        self.E = E
+        self.sigma_y = sigma_y
+        self.rho = rho
+        self.FS_yield = FS_yield
+        self.sigma_allow = sigma_y / FS_yield
+        self.buckling_sf = buckling_sf
+
+    # =========================================================
+    # Geometry helpers for a hollow circular tube
+    # =========================================================
+    def tube_inner_diameter(self, D_outer, t):
+        D_inner = D_outer - 2.0 * t
+        if D_inner <= 0:
+            raise ValueError("Invalid geometry: thickness too large for outer diameter.")
+        return D_inner
+
+    def tube_area(self, D_outer, t):
+        """
+        Cross-sectional area [m^2]
+        """
+        D_inner = self.tube_inner_diameter(D_outer, t)
+        return (np.pi / 4.0) * (D_outer**2 - D_inner**2)
+
+    def tube_I(self, D_outer, t):
+        """
+        Area moment of inertia for bending [m^4]
+        """
+        D_inner = self.tube_inner_diameter(D_outer, t)
+        return (np.pi / 64.0) * (D_outer**4 - D_inner**4)
+
+    def tube_c(self, D_outer):
+        """
+        Outer fiber distance from neutral axis [m]
+        """
+        return D_outer / 2.0
+
+    def tube_mass(self, D_outer, t, L):
+        """
+        Mass of one strut [kg]
+        """
+        A = self.tube_area(D_outer, t)
+        return A * L * self.rho
+
+    # =========================================================
+    # Core analysis for one rear strut
+    # =========================================================
+    def analyze_rear_strut(
+        self,
+        Fz,                 # vertical wheel load on one rear strut [N]
+        theta_deg,          # strut angle from vertical [deg]
+        L,                  # strut length [m]
+        D_outer,            # tube outer diameter [m]
+        t                   # tube thickness [m]
+    ):
+        """
+        Analyze one rear landing gear strut treated as an angled cantilever tube.
+
+        Returns a dictionary of loads, stresses, deflections, and pass/fail checks.
+        """
+        theta = np.radians(theta_deg)
+
+        # Section properties
+        A = self.tube_area(D_outer, t)
+        I = self.tube_I(D_outer, t)
+        c = self.tube_c(D_outer)
+
+        # Resolve wheel load into strut coordinates
+        # angle is measured from vertical
+        F_axial = Fz * np.cos(theta)   # compression along strut
+        F_perp  = Fz * np.sin(theta)   # transverse load causing bending
+
+        # Root bending moment
+        M_root = F_perp * L
+
+        # Stresses
+        sigma_axial = F_axial / A
+        sigma_bending = M_root * c / I
+        sigma_max = sigma_axial + sigma_bending
+        sigma_min = sigma_axial - sigma_bending
+
+        # Deflection
+        delta_perp = F_perp * L**3 / (3.0 * self.E * I)
+        delta_axial = F_axial * L / (A * self.E)
+
+        # Approximate vertical wheel deflection
+        delta_v_bending = delta_perp * np.sin(theta)
+        delta_v_axial = delta_axial * np.cos(theta)
+        delta_v_total = delta_v_bending + delta_v_axial
+
+        # Euler buckling for cantilever column: K = 2
+        K = 2.0
+        P_cr = (np.pi**2 * self.E * I) / ((K * L)**2)
+        buckling_ok = (P_cr / self.buckling_sf) >= F_axial
+
+        # Stress check
+        stress_ok = sigma_max <= self.sigma_allow
+
+        # Mass
+        mass = self.tube_mass(D_outer, t, L)
+
+        return {
+            "F_axial_N": F_axial,
+            "F_perp_N": F_perp,
+            "Area_m2": A,
+            "I_m4": I,
+            "M_root_Nm": M_root,
+            "sigma_axial_Pa": sigma_axial,
+            "sigma_bending_Pa": sigma_bending,
+            "sigma_max_Pa": sigma_max,
+            "sigma_min_Pa": sigma_min,
+            "delta_perp_m": delta_perp,
+            "delta_axial_m": delta_axial,
+            "delta_v_bending_m": delta_v_bending,
+            "delta_v_axial_m": delta_v_axial,
+            "delta_v_total_m": delta_v_total,
+            "Pcr_N": P_cr,
+            "stress_ok": stress_ok,
+            "buckling_ok": buckling_ok,
+            "feasible": stress_ok and buckling_ok,
+            "mass_kg": mass
+        }
+
+    # =========================================================
+    # Solve thickness for a given outer diameter and length
+    # =========================================================
+    def find_min_thickness_for_design(
+        self,
+        Fz,
+        theta_deg,
+        L,
+        D_outer,
+        t_min=0.001,
+        t_max=None,
+        n_steps=400
+    ):
+        """
+        For a fixed outer diameter and length, find the minimum wall thickness
+        that satisfies stress and buckling.
+        """
+        if t_max is None:
+            t_max = 0.49 * D_outer
+
+        thicknesses = np.linspace(t_min, t_max, n_steps)
+
+        for t in thicknesses:
+            try:
+                res = self.analyze_rear_strut(
+                    Fz=Fz,
+                    theta_deg=theta_deg,
+                    L=L,
+                    D_outer=D_outer,
+                    t=t
+                )
+            except ValueError:
+                continue
+
+            if res["feasible"]:
+                res["D_outer_m"] = D_outer
+                res["t_m"] = t
+                res["L_m"] = L
+                res["theta_deg"] = theta_deg
+                return res
+
+        return None
+
+    # =========================================================
+    # Sweep a design space
+    # =========================================================
+    def sweep_design_space(
+        self,
+        Fz,
+        theta_deg,
+        D_outer_list,
+        L_list,
+        t_min=0.001,
+        max_vertical_deflection=None
+    ):
+        """
+        Sweep through candidate outer diameters and lengths, and solve for the
+        minimum thickness that works for each combination.
+        """
+        feasible_designs = []
+
+        for D_outer in D_outer_list:
+            for L in L_list:
+                res = self.find_min_thickness_for_design(
+                    Fz=Fz,
+                    theta_deg=theta_deg,
+                    L=L,
+                    D_outer=D_outer,
+                    t_min=t_min
+                )
+
+                if res is None:
+                    continue
+
+                if max_vertical_deflection is not None:
+                    if res["delta_v_total_m"] > max_vertical_deflection:
+                        continue
+
+                feasible_designs.append(res)
+
+        return feasible_designs
+
+    # =========================================================
+    # Pretty print
+    # =========================================================
+    def print_design(self, res):
+        print("\n--- Rear Strut Design ---")
+        print(f"Material            : {self.material_name}")
+        print(f"Outer diameter      : {res['D_outer_m']*1000:.2f} mm")
+        print(f"Wall thickness      : {res['t_m']*1000:.2f} mm")
+        print(f"Length              : {res['L_m']:.3f} m")
+        print(f"Angle from vertical : {res['theta_deg']:.1f} deg")
+        print(f"Axial force         : {res['F_axial_N']:.1f} N")
+        print(f"Transverse force    : {res['F_perp_N']:.1f} N")
+        print(f"Root moment         : {res['M_root_Nm']:.1f} N*m")
+        print(f"Axial stress        : {res['sigma_axial_Pa']/1e6:.2f} MPa")
+        print(f"Bending stress      : {res['sigma_bending_Pa']/1e6:.2f} MPa")
+        print(f"Max stress          : {res['sigma_max_Pa']/1e6:.2f} MPa")
+        print(f"Allowable stress    : {self.sigma_allow/1e6:.2f} MPa")
+        print(f"Vertical deflection : {res['delta_v_total_m']*1000:.2f} mm")
+        print(f"Buckling load Pcr   : {res['Pcr_N']:.1f} N")
+        print(f"Stress OK?          : {res['stress_ok']}")
+        print(f"Buckling OK?        : {res['buckling_ok']}")
+        print(f"Feasible?           : {res['feasible']}")
+        print(f"Mass per strut      : {res['mass_kg']:.3f} kg")
+
+    # =========================================================
+    # Plotting helpers
+    # =========================================================
+    def plot_design_space(self, feasible_designs):
+        """
+        Scatter plot of feasible designs in L vs D_outer space.
+        Color = mass, marker size = thickness
+        """
+        if len(feasible_designs) == 0:
+            print("No feasible designs to plot.")
+            return
+
+        L_vals = np.array([d["L_m"] for d in feasible_designs])
+        D_vals = np.array([d["D_outer_m"] * 1000 for d in feasible_designs])   # mm
+        t_vals = np.array([d["t_m"] * 1000 for d in feasible_designs])         # mm
+        mass_vals = np.array([d["mass_kg"] for d in feasible_designs])
+
+        plt.figure(figsize=(9, 6))
+        sc = plt.scatter(
+            L_vals,
+            D_vals,
+            c=mass_vals,
+            s=30 + 20 * t_vals,
+            alpha=0.8
+        )
+        plt.colorbar(sc, label="Mass per strut [kg]")
+        plt.xlabel("Strut length L [m]")
+        plt.ylabel("Outer diameter D_outer [mm]")
+        plt.title(f"Feasible Landing Gear Design Space ({self.material_name})")
+        plt.grid(True)
+        plt.tight_layout()
+
+    def plot_design_metrics(self, feasible_designs):
+        """
+        3 plots:
+        1. thickness vs length
+        2. stress vs mass
+        3. deflection vs mass
+        """
+        if len(feasible_designs) == 0:
+            print("No feasible designs to plot.")
+            return
+
+        L_vals = np.array([d["L_m"] for d in feasible_designs])
+        D_vals = np.array([d["D_outer_m"] * 1000 for d in feasible_designs])
+        t_vals = np.array([d["t_m"] * 1000 for d in feasible_designs])
+        mass_vals = np.array([d["mass_kg"] for d in feasible_designs])
+        stress_vals = np.array([d["sigma_max_Pa"] / 1e6 for d in feasible_designs])
+        defl_vals = np.array([d["delta_v_total_m"] * 1000 for d in feasible_designs])
+
+        fig, axs = plt.subplots(1, 3, figsize=(18, 5))
+
+        sc1 = axs[0].scatter(L_vals, D_vals, c=t_vals, s=70, alpha=0.8)
+        axs[0].set_xlabel("Length [m]")
+        axs[0].set_ylabel("Outer diameter [mm]")
+        axs[0].set_title("Required Thickness [mm]")
+        axs[0].grid(True)
+        fig.colorbar(sc1, ax=axs[0])
+
+        sc2 = axs[1].scatter(mass_vals, stress_vals, c=D_vals, s=70, alpha=0.8)
+        axs[1].axhline(self.sigma_allow / 1e6, linestyle="--")
+        axs[1].set_xlabel("Mass [kg]")
+        axs[1].set_ylabel("Max stress [MPa]")
+        axs[1].set_title("Stress vs Mass")
+        axs[1].grid(True)
+        fig.colorbar(sc2, ax=axs[1], label="Outer diameter [mm]")
+
+        sc3 = axs[2].scatter(mass_vals, defl_vals, c=L_vals, s=70, alpha=0.8)
+        axs[2].set_xlabel("Mass [kg]")
+        axs[2].set_ylabel("Vertical deflection [mm]")
+        axs[2].set_title("Deflection vs Mass")
+        axs[2].grid(True)
+        fig.colorbar(sc3, ax=axs[2], label="Length [m]")
+
+        plt.tight_layout()
+
+    def plot_all_candidates(self, Fz, theta_deg, D_outer_list, L_list, t_min=0.001):
+        """
+        Plot which (L, D_outer) combinations are feasible or infeasible.
+        This is useful to see the boundary of the design space.
+        """
+        feasible_pts = []
+        infeasible_pts = []
+
+        for D_outer in D_outer_list:
+            for L in L_list:
+                res = self.find_min_thickness_for_design(
+                    Fz=Fz,
+                    theta_deg=theta_deg,
+                    L=L,
+                    D_outer=D_outer,
+                    t_min=t_min
+                )
+                if res is None:
+                    infeasible_pts.append((L, D_outer * 1000))
+                else:
+                    feasible_pts.append((L, D_outer * 1000))
+
+        plt.figure(figsize=(9, 6))
+
+        if infeasible_pts:
+            infeasible_pts = np.array(infeasible_pts)
+            plt.scatter(
+                infeasible_pts[:, 0],
+                infeasible_pts[:, 1],
+                marker="x",
+                label="No feasible thickness found",
+                alpha=0.7
+            )
+
+        if feasible_pts:
+            feasible_pts = np.array(feasible_pts)
+            plt.scatter(
+                feasible_pts[:, 0],
+                feasible_pts[:, 1],
+                marker="o",
+                label="Feasible",
+                alpha=0.7
+            )
+
+        plt.xlabel("Strut length L [m]")
+        plt.ylabel("Outer diameter D_outer [mm]")
+        plt.title(f"Feasible / Infeasible Design Regions ({self.material_name})")
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+
+
+# =========================================================
+# Example usage
+# =========================================================
+def test_LandingGear(mtow=12000, theta_deg=65.0):
+    # -----------------------------------------------------
+    # Material / class initialization
+    # -----------------------------------------------------
+    gear = LandingGear(
+    material_name="300M Steel",
+    E=205e9,          # Pa
+    sigma_y=1586e6,   # Pa, typical high-strength value
+    rho=7870.0,       # kg/m^3
+    FS_yield=1.5,
+    buckling_sf=1.5
+)
+
+    # -----------------------------------------------------
+    # Inputs
+    # -----------------------------------------------------
+    #mtow = 7500
+    W_total = mtow*9.81
+    landing_factor = 3
+    Fz = W_total*landing_factor/2  # N, assumed hard landing load on ONE rear strut
+    #theta_deg = 45.0      # strut angle from vertical
+
+
+    '''
+    # -----------------------------------------------------
+    # Check one design directly
+    # -----------------------------------------------------
+    D_outer = 0.060       # 60 mm
+    t = 0.004             # 4 mm
+    L = 0.85              # m
+
+    one_design = gear.analyze_rear_strut(
+        Fz=Fz,
+        theta_deg=theta_deg,
+        L=L,
+        D_outer=D_outer,
+        t=t
+    )
+
+    one_design["D_outer_m"] = D_outer
+    one_design["t_m"] = t
+    one_design["L_m"] = L
+    one_design["theta_deg"] = theta_deg
+
+    gear.print_design(one_design)
+    '''
+
+    # -----------------------------------------------------
+    # Sweep design space
+    # -----------------------------------------------------
+    D_outer_list = np.linspace(0.050, 0.30, 22)   # 40 mm to 90 mm
+    L_list = np.linspace(0.60, 2.50, 18)            # 0.60 m to 1.00 m
+
+    feasible = gear.sweep_design_space(
+        Fz=Fz,
+        theta_deg=theta_deg,
+        D_outer_list=D_outer_list,
+        L_list=L_list,
+        t_min=0.0015,
+        max_vertical_deflection=0.120   # m
+    )
+
+    feasible = sorted(feasible, key=lambda r: r["mass_kg"])
+
+    print(f"\nFound {len(feasible)} feasible designs.")
+
+    for i, res in enumerate(feasible[:5], start=1):
+        print(f"\nBest candidate #{i}")
+        gear.print_design(res)
+
+    # -----------------------------------------------------
+    # Plotting
+    # -----------------------------------------------------
+    gear.plot_all_candidates(Fz, theta_deg, D_outer_list, L_list, t_min=0.0015)
+    gear.plot_design_space(feasible)
+    gear.plot_design_metrics(feasible)
+    plt.show()
+
 
 
 if __name__ == "__main__":

@@ -64,14 +64,31 @@ class Aircraft:
         #     delta_e=np.radians(-10)*(t-3)/2 #ermoving pitch spike
         elif t<6:
             delta_e = np.radians(-10) * (1/(1+np.exp(-(t-4)))) #negative elevator deflection -> pitch up
+        # elif t<8:
+        #     delta_e=np.radians(-10)
         else:
-            delta_e=np.radians(-10)
+            delta_e=0
         if t<6:
             delta_f=np.radians(10)
         elif t<9:
-            delta_f=np.radians(10)*(1-(t-20)/5)
+            delta_f=np.radians(10)*(1-(t-8)/2)
         else:
             delta_f=0
+
+        # if t<4: #chang delta_e to change based off takeoff velcoity, maybe have CL_max known
+        #     delta_e=0
+        # # elif t<5:
+        # #     delta_e=np.radians(-10)*(t-3)/2 #ermoving pitch spike
+        # elif t<6:
+        #     delta_e = np.radians(-10) * (t-4)/2 #negative elevator deflection -> pitch up
+        # else:
+        #     delta_e=np.radians(-10)
+        # if t<10:
+        #     delta_f=np.radians(10)
+        # elif t<14:
+        #     delta_f=np.radians(10)*(1-(t-10)/4)
+        # else:
+        #     delta_f=0
 
         throttle=1-np.exp(-t/2)
         return delta_e, delta_f, throttle
@@ -91,9 +108,10 @@ class Aircraft:
         delta_dele=delta_e-self.deltae0
         delta_delf=delta_f-self.deltaf0
         delta_alpha=alpha-self.alpha0
-        delta_qbar=q_bar-self.qbar0
+        # delta_qbar=q_bar-self.qbar0
 
-        state_vec=np.array([delta_alpha, delta_qbar, delta_dele, delta_delf])
+        # state_vec=np.array([delta_alpha, delta_qbar, delta_dele, delta_delf])
+        state_vec=np.array([delta_alpha, delta_dele, delta_delf])
 
         CL=self.aero.CL0+self.aero.CL@state_vec
         Cm=self.aero.Cm0+self.aero.Cm@state_vec
@@ -144,10 +162,7 @@ class Aircraft:
 
         L = Q * self.geom.S * CL
         D = Q * self.geom.S * CD
-
-        # Setup Thrust using interpolation from Fan Sizing
-        airplane_thrust = ThrustVelocity()
-        T = airplane_thrust.get_T(V) * throttle # TODO: This isn't exactly how a propeller works, can't just "throttle" it, but it's a start.
+        T = self.prop.Tmax * throttle
         # # omega=200
         # # T_W=0.3
         # T=omega*T_W
@@ -258,8 +273,10 @@ aero = Aero(
     CD0=0.013,
     cd_w=0,
     cd_t=0.01,
-    CL=np.array([6.5, 5, 0.4, 1.2]),
-    Cm=np.array([-1.2, -12, -1, -0.1]),
+    # CL=np.array([6.5, 5, 0.4, 1.2]),
+    CL=np.array([6.5, 0.4, 1.2]),
+    # Cm=np.array([-1.2, -12, -1, -0.1]),
+    Cm=np.array([-1.2, -1, -0.1]),
     cl=4,
     cm=-0.3,
     cx=-0.6
@@ -269,10 +286,9 @@ aero = Aero(
 
 plane_1=Aircraft(mass, geom, aero, prop, rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0)
 
-#Integrate for 20 seconds
-t = 20.0
-t_span = (0, t)
-t_eval = np.linspace(0, t, 1000)
+#Intergate for 20 seconds
+t_span = (0, 15)
+t_eval = np.linspace(0, 15, 500)
 
 sol = solve_ivp(
     plane_1.dynamics,
