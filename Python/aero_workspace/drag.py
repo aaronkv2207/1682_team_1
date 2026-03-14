@@ -9,12 +9,13 @@ Created on Mon Mar  2 15:34:04 2026
 import numpy as np
 from ambiance import Atmosphere
 from conceptual_design import V_STALL, cl_max, ureg
+import matplotlib.pyplot as plt
 
 # parameters
-AR = 8 
 b = 19.92  # [m]
 c = 2.49  # [m]
-S = b**2 / AR
+S = b*c
+AR = b**2/S
 x_to = 45  # [m]
 
 m = 7500  # [kg]
@@ -22,7 +23,7 @@ W = m * 9.81  # [N]
 
 # fuselage (roskam pt 2)
 D_f = 1.6  # [m] 
-l_f = 15  # [m] 
+l_f = 15  # [m] f
 lambda_f = l_f / D_f
 
 
@@ -48,29 +49,30 @@ V_h = S_h * l_h / (S * c)
 V_v = S_v * l_v / (S * b)
 
 
-# landing gear (still need to add!!)
-tire_width = ...
-tire_radius = ...
+# # landing gear (still need to add!!)
+# tire_width = ...
+# tire_radius = ...
 
-trouser_length = ...
+# trouser_length = ...
 
 
 # wetted area
 S_wet_fuse = np.pi * D_f * l_f * (1 - 2 / lambda_f) ** (2 / 3) * (1 + 1 / lambda_f**2)
 S_wet_fancowl = (l_n * D_n * (2 + 0.35 * l_1 * l_n + 0.8 * l_1 * D_hl / l_n * D_n + 1.15 * (1 - l_1 / l_n) * D_ef / D_n))
-S_wet_wing = S * 2
-S_wet_htail = S_h * 2
-S_wet_vtail = S_v * 2
-S_wet_gear = tire_width * (np.pi*tire_radius*2)
-s_wet_trousers = ...
+S_wet_wing = 2*S 
+S_wet_htail = 2*S_h 
+S_wet_vtail = 2*S_v 
+# S_wet_gear = tire_width * (np.pi*tire_radius*2)
+# s_wet_trousers = ...
 
-S_wet_total = S_wet_fuse + 8*S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail
+# S_wet_total = S_wet_fuse + 8*S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail
 
 
 # cruise
 h_cruise = 5486.4 # [m]
 rho_cruise = Atmosphere(h=h_cruise).density[0]  # [kg/m^2]
 mu_cruise = Atmosphere(h=h_cruise).dynamic_viscosity[0] # [Pa * s]
+print('mu cruise =', mu_cruise)
 V_cruise = 125  # [m/s]
 C_L_cruise = W / (1 / 2 * rho_cruise * V_cruise**2 * S)
 e_cruise = 0.95
@@ -85,28 +87,29 @@ C_L_takeoff = cl_max  # from wt data???
 e_takeoff = 0.9
 
 
-print("AR =", AR)
-print("wing area =", round(S, 2), "m^2")
-print("total wetted area =", round(S_wet_total, 2), "m^2")
-print("takeoff distance =", x_to, "m")
-print("MTOW =", round(W, 2), "N")
+# print("AR =", AR)
+# print("wing area =", round(S, 2), "m^2")
+# # print("total wetted area =", round(S_wet_total, 2), "m^2")
+# print("takeoff distance =", x_to, "m")
+# print("MTOW =", round(W, 2), "N")
 
-print("h tail coefficient =", round(V_h, 3))
-print("v tail coefficient =", round(V_v, 3))
+# print("h tail coefficient =", round(V_h, 3))
+# print("v tail coefficient =", round(V_v, 3))
 
 
-def calc_Re_l(rho, V, mu, l):
+def calc_Re_l(rho, V, mu, l): # 
     Re_l = rho*V*l/mu
     return Re_l
 
-def calc_C_f(Re_l):    
-    C_f = 0.455 / (np.log10(Re_l ** 2.58)) # assuming fully turbulent flow for a conservative and realistic estimate!
+def calc_C_f(Re_l): # skin friction coefficient
+    C_f = 0.455 / (np.log10(Re_l) ** 2.58) # assuming fully turbulent flow for a conservative and realistic estimate!
     return C_f
 
-def calc_CDA(S_wet, C_f, K_f):
+def calc_CDA(S_wet, C_f, K_f): # drag area
     CDA = S_wet * C_f * K_f
     return CDA
 
+# calculate form factors
 def calc_K_f_airfoil(tc):
     K_f = 1 + 2.0 * tc + 60 * tc**4
     return K_f
@@ -118,7 +121,6 @@ def calc_K_f_axi(dl):
 # calculate profile drag (dissipation summation buildup)
 def calc_C_Dp(rho, V, mu):
     V_i = V_inf = V
-
 
     S_wets = [S_wet_fuse, S_wet_fancowl, S_wet_wing, S_wet_htail, S_wet_vtail]
     ls = [l_f, l_n, c, c_h, c_v]
@@ -144,14 +146,21 @@ def calc_C_Dp(rho, V, mu):
             K_f = calc_K_f_airfoil(fineness_ratios[i])
             K_fs.append(K_f)
 
-        CDA = calc_CDA(S_wets[i], C_fs[i], K_fs[i])
+        CDA = calc_CDA(s_val, C_fs[i], K_fs[i])
 
         if i==1: # 8 total fans
             CDA*=8
 
         CDAs.append(CDA)
-    
-    # print(CDAs)
+
+    cdps = np.array([])
+    for i in range(len(CDAs)):
+        dp = CDAs[i] * 1/2 * rho * V**2
+        cdp = dp/(1/2*rho*V**2*S)
+        cdps = np.append(cdps,cdp)
+
+    print(cdps)
+    print(np.sum(cdps))
 
     Dp = sum(CDAs) * (1/2 * rho * V_i**3 / V_inf) #NOTE: Would need to change this logic if you V_i != V_inf
     C_Dp = Dp / (1/2 * rho * V**2 * S)
@@ -167,21 +176,43 @@ def calc_C_Di(C_L, rho, V, e):
 
     return Di, C_Di
 
+print(C_L_cruise)
 
+# calcualte drag during cruise!
 Dp_cruise, C_Dp_cruise = calc_C_Dp(rho_cruise, V_cruise, mu_cruise)
-Dp_takeoff, C_Dp_takeoff = calc_C_Dp(rho_takeoff, V_takeoff, mu_takeoff)
+# Di_cruise, C_Di_cruise = calc_C_Di(C_L_cruise, rho_cruise, V_cruise, e_cruise)
 
-Di_cruise, C_Di_cruise = calc_C_Di(C_L_cruise, rho_cruise, V_cruise, e_cruise)
-Di_takeoff, C_Di_takeoff = calc_C_Di(C_L_takeoff, rho_takeoff, V_takeoff, e_takeoff)
+# print('-------')
+# print('cruising :)')
+# print('profile drag coefficient =', round(C_Dp_cruise,3))
+# print('induced drag coefficient =', round(C_Di_cruise,3))
+# print('total drag coefficient =', round(C_Dp_cruise+C_Di_cruise,3))
+         
 
-print('-------')
-print('cruising :)')
-print('profile drag coefficient =', round(C_Dp_cruise,3))
-print('induced drag coefficient =', round(C_Di_cruise,3))
-print('total drag coefficient =', round(C_Dp_cruise+C_Di_cruise,3))
+# # calculate drag during takeoff!
+# Dp_takeoff, C_Dp_takeoff = calc_C_Dp(rho_takeoff, V_takeoff, mu_takeoff)
+# Di_takeoff, C_Di_takeoff = calc_C_Di(C_L_takeoff, rho_takeoff, V_takeoff, e_takeoff)
 
-print('-------')
-print('takeoff!')
-print('profile drag coefficient =', round(C_Dp_takeoff,3))
-print('induced drag coefficient =', round(C_Di_takeoff,3))
-print('total drag coefficient =', round(C_Dp_takeoff+C_Di_takeoff,3))
+# print('-------')
+# print('takeoff!')
+# print('profile drag coefficient =', round(C_Dp_takeoff,3))
+# print('induced drag coefficient =', round(C_Di_takeoff,3))
+# print('total drag coefficient =', round(C_Dp_takeoff+C_Di_takeoff,3))
+
+# # drag polar??
+# C_D = np.linspace(0,2,1000)
+# C_L = np.sqrt((C_D - C_Dp_cruise) * np.pi * AR * e_cruise)
+# C_L2 = np.sqrt((C_D - C_Dp_takeoff) * np.pi * AR * e_takeoff)
+
+# plt.figure()
+# plt.plot(C_D, C_L, label = 'cruise')
+# plt.plot(C_D, C_L2, label = 'takeoff')
+# plt.xlabel('$C_D$')
+# plt.ylabel('$C_L$')
+# plt.legend()
+# plt.show()
+
+
+
+
+# print(C_L_cruise/(C_Dp_cruise+C_Di_cruise))
