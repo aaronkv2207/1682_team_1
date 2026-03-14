@@ -72,7 +72,6 @@ S_wet_vtail = 2*S_v
 h_cruise = 5486.4 # [m]
 rho_cruise = Atmosphere(h=h_cruise).density[0]  # [kg/m^2]
 mu_cruise = Atmosphere(h=h_cruise).dynamic_viscosity[0] # [Pa * s]
-print('mu cruise =', mu_cruise)
 V_cruise = 125  # [m/s]
 C_L_cruise = W / (1 / 2 * rho_cruise * V_cruise**2 * S)
 e_cruise = 0.95
@@ -87,14 +86,14 @@ C_L_takeoff = cl_max  # from wt data???
 e_takeoff = 0.9
 
 
-# print("AR =", AR)
-# print("wing area =", round(S, 2), "m^2")
-# # print("total wetted area =", round(S_wet_total, 2), "m^2")
-# print("takeoff distance =", x_to, "m")
-# print("MTOW =", round(W, 2), "N")
+print("AR =", AR)
+print("wing area =", round(S, 2), "m^2")
+# print("total wetted area =", round(S_wet_total, 2), "m^2")
+print("takeoff distance =", x_to, "m")
+print("MTOW =", round(W, 2), "N")
 
-# print("h tail coefficient =", round(V_h, 3))
-# print("v tail coefficient =", round(V_v, 3))
+print("h tail coefficient =", round(V_h, 3))
+print("v tail coefficient =", round(V_v, 3))
 
 
 def calc_Re_l(rho, V, mu, l): # 
@@ -153,15 +152,6 @@ def calc_C_Dp(rho, V, mu):
 
         CDAs.append(CDA)
 
-    cdps = np.array([])
-    for i in range(len(CDAs)):
-        dp = CDAs[i] * 1/2 * rho * V**2
-        cdp = dp/(1/2*rho*V**2*S)
-        cdps = np.append(cdps,cdp)
-
-    print(cdps)
-    print(np.sum(cdps))
-
     Dp = sum(CDAs) * (1/2 * rho * V_i**3 / V_inf) #NOTE: Would need to change this logic if you V_i != V_inf
     C_Dp = Dp / (1/2 * rho * V**2 * S)
 
@@ -180,24 +170,24 @@ print(C_L_cruise)
 
 # calcualte drag during cruise!
 Dp_cruise, C_Dp_cruise = calc_C_Dp(rho_cruise, V_cruise, mu_cruise)
-# Di_cruise, C_Di_cruise = calc_C_Di(C_L_cruise, rho_cruise, V_cruise, e_cruise)
+Di_cruise, C_Di_cruise = calc_C_Di(C_L_cruise, rho_cruise, V_cruise, e_cruise)
 
-# print('-------')
-# print('cruising :)')
-# print('profile drag coefficient =', round(C_Dp_cruise,3))
-# print('induced drag coefficient =', round(C_Di_cruise,3))
-# print('total drag coefficient =', round(C_Dp_cruise+C_Di_cruise,3))
+print('-------')
+print('cruising :)')
+print('profile drag coefficient =', round(C_Dp_cruise,3))
+print('induced drag coefficient =', round(C_Di_cruise,3))
+print('total drag coefficient =', round(C_Dp_cruise+C_Di_cruise,3))
          
 
-# # calculate drag during takeoff!
-# Dp_takeoff, C_Dp_takeoff = calc_C_Dp(rho_takeoff, V_takeoff, mu_takeoff)
-# Di_takeoff, C_Di_takeoff = calc_C_Di(C_L_takeoff, rho_takeoff, V_takeoff, e_takeoff)
+# calculate drag during takeoff!
+Dp_takeoff, C_Dp_takeoff = calc_C_Dp(rho_takeoff, V_takeoff, mu_takeoff)
+Di_takeoff, C_Di_takeoff = calc_C_Di(C_L_takeoff, rho_takeoff, V_takeoff, e_takeoff)
 
-# print('-------')
-# print('takeoff!')
-# print('profile drag coefficient =', round(C_Dp_takeoff,3))
-# print('induced drag coefficient =', round(C_Di_takeoff,3))
-# print('total drag coefficient =', round(C_Dp_takeoff+C_Di_takeoff,3))
+print('-------')
+print('takeoff!')
+print('profile drag coefficient =', round(C_Dp_takeoff,3))
+print('induced drag coefficient =', round(C_Di_takeoff,3))
+print('total drag coefficient =', round(C_Dp_takeoff+C_Di_takeoff,3))
 
 # # drag polar??
 # C_D = np.linspace(0,2,1000)
