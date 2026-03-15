@@ -289,7 +289,8 @@ class JVL(AVL):
             directory = Path(directory)
 
             if self.working_directory is not None:
-                directory = Path(self.working_directory)
+                # directory = Path(self.working_directory)
+                directory = Path("Python/aero_workspace/temp")
 
             output_filename = "output.txt"
 
@@ -298,15 +299,13 @@ class JVL(AVL):
             self.write_jvl(directory / airplane_file)
 
             # Build keystroke script
-            keystroke_file_contents = ["oper"]
-
+            keystroke_file_contents = self._default_keystroke_file_contents()
             if run_command is not None:
-                keystroke_file_contents.append(run_command)
-
+                keystroke_file_contents += [run_command]
             keystroke_file_contents += [
                 "x",
                 "st",
-                output_filename,
+                f"{output_filename}",
                 "o",
                 "",
                 "",
@@ -368,6 +367,7 @@ class JVL(AVL):
             b = self.airplane.b_ref
             c = self.airplane.c_ref
 
+            res['velocity'] = self.op_point.velocity
             res["p"] = res["pb/2V"] * (2 * self.op_point.velocity / b)
             res["q"] = res["qc/2V"] * (2 * self.op_point.velocity / c)
             res["r"] = res["rb/2V"] * (2 * self.op_point.velocity / b)
@@ -411,10 +411,68 @@ class JVL(AVL):
 
             return res
 
+    def _default_keystroke_file_contents(self) -> List[str]:
+        run_file_contents = []
+
+        # Disable graphics
+        run_file_contents += [
+            "plop",
+            "g",
+            "",
+        ]
+
+        # Enter oper mode
+        run_file_contents += [
+            "oper",
+        ]
+
+        # Direct p, q, r to be in body axes, to match ASB convention
+        run_file_contents += [
+            "o",
+            "r",
+            "",
+        ]
+
+        # Set parameters
+        run_file_contents += [
+            "m",
+            f"mn {float(self.op_point.mach())}",
+            f"v {float(self.op_point.velocity)}",
+            f"d {float(self.op_point.atmosphere.density())}",
+            "g 9.81",
+            "",
+        ]
+
+        # Set analysis state
+        p_bar = self.op_point.p * self.airplane.b_ref / (2 * self.op_point.velocity)
+        q_bar = self.op_point.q * self.airplane.c_ref / (2 * self.op_point.velocity)
+        r_bar = self.op_point.r * self.airplane.b_ref / (2 * self.op_point.velocity)
+
+        run_file_contents += [
+            f"a a {float(self.op_point.alpha)}",
+            f"b b {float(self.op_point.beta)}",
+            f"r r {float(p_bar)}",
+            f"p p {float(q_bar)}",
+            f"y y {float(r_bar)}",
+        ]
+
+        # Set control surface deflections
+        run_file_contents += ["d1 d1 1"]
+
+        return run_file_contents
+
 
 class JetParam:
     def __init__(
-        self, name="JET", hdisk=0.45, fh=1.0, djet0=-2.0, djet1=-0.2, djet3=-0.0003
+        self,
+        name="JET",
+        hdisk=0.45,
+        fh=1.0,
+        djet0=-2.0,
+        djet1=-0.2,
+        djet3=-0.0003,
+        dxdsk=0.0,
+        dndsk=-0.0,
     ):
         """
         Jet Param class
@@ -431,6 +489,8 @@ class JetParam:
         self.djet0 = djet0
         self.djet1 = djet1
         self.djet3 = djet3
+        self.dxdsk = dxdsk
+        self.dndsk = dndsk
 
 
 class JetControl:

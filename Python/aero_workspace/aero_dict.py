@@ -12,14 +12,13 @@ class AircraftConfig:
 
     #### GLOBAL DEFINITIONS ###
     AR: float = 8.0
-    s_ref: float = S  # NOTE: S_ref may change after Brenda's drag update
+    s_ref: float = S.magnitude  # NOTE: S_ref may change after Brenda's drag update
     V_h: float = V_h  # TODO: will need to update based on stability analyses
     V_v: float = V_v  # TODO: will need to update based on stability analyses
     # parameters
 
-    b = (S * AR) ** 0.5  # [m]
-    S: float = b**2 / AR
-    W_S: float = W_S
+    b = (s_ref * AR) ** 0.5  # [m]
+    W_S: float = W_S.magnitude
     MTOW: float = MTOW.magnitude * 9.81
     c = 1.98  # NOTE: Brenda got this from Aaron --> Look into this
     # R = 2.39 / 2  # estimated
@@ -28,7 +27,7 @@ class AircraftConfig:
     #### TAKEOFF DEFINITIONS ###
     h_t0: float = 0.0
     rho_t0 = Atmosphere(h=h_t0).density[0]  # [kg/m^2]
-    v_t0: float = 1.1 * V_STALL
+    v_t0: float = 1.1 * V_STALL.magnitude
     mu_t0: float = Atmosphere(h=h_t0).dynamic_viscosity[0]
 
     Dp_t0, C_Dp_t0 = calc_C_Dp(rho_t0, v_t0, mu_t0)
@@ -53,7 +52,7 @@ class AircraftConfig:
     # weight_cruise: ...  # TODO: update to varied model
     h_cruise: int = 18000 * ureg("ft").to("m").magnitude
     rho_cruise = Atmosphere(h=h_cruise).density[0]  # [kg/m^2]
-    v_cruise: float = 1.1 * V_STALL
+    v_cruise: float = 125  # [m/s]
     mu_cruise: float = Atmosphere(h=h_cruise).dynamic_viscosity[0]
     Dp_cruise, C_Dp_cruise = calc_C_Dp(rho_cruise, v_cruise, mu_cruise)
 

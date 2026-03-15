@@ -11,11 +11,13 @@ from scipy.interpolate import interp1d
 
 # get jvl cg --> mset, run file, input file, ...; can shift around masses to shift cg in .mass file
 
+DEG2RAD_CONV = ureg("deg").to("rad").magnitude
+
 
 @dataclass
 class TakeoffCoeff:
     """Reads a summary of JVL output dataframe at various operating points. Defines functions
-    based on fit of operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
+    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
     FILE_NAME = "Python/aero_workspace/jvl_run_outputs/takeoff.pkl"
     with open(FILE_NAME, "rb") as f:
@@ -25,23 +27,23 @@ class TakeoffCoeff:
     CL, CD, Cm, CDind, e = [], [], [], [], []
 
     for idx, run in enumerate(data):
-        alphas.append(run["alpha"])
+        alphas.append(run["alpha"] * DEG2RAD_CONV)
         velocities.append(run["velocity"])
-        betas.append(run["beta"])
-        CL, CD, Cm = (
-            run["CL"],
-            run["CD"],
-            run["Cm"],
-        )  # NOTE: double check definitions: Cl vs CL
-        CDind, e = run["e"], run["CDind"]
+        betas.append(run["beta"] * DEG2RAD_CONV)
+        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
+        CD.append(run["CD"])
+        Cm.append(run["Cm"])
 
-    CD_offset = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
+        CDind.append(run["e"])
+        e.append(run["CDind"])
+
+    CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
 
 
 @dataclass
 class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     """Will read a summary of JVL output dataframe at various operating points. Defines functions
-    based on fit of operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
+    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
     FILE_NAME = "Python/aero_workspace/jvl_run_outputs/climb.pkl"
     with open(FILE_NAME, "rb") as f:
@@ -51,23 +53,23 @@ class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     CL, CD, Cm, CDind, e = [], [], [], [], []
 
     for idx, run in enumerate(data):
-        alphas.append(run["alpha"])
+        alphas.append(run["alpha"] * DEG2RAD_CONV)
         velocities.append(run["velocity"])
-        betas.append(run["beta"])
-        CL, CD, Cm = (
-            run["CL"],
-            run["CD"],
-            run["Cm"],
-        )  # NOTE: double check definitions: Cl vs CL
-        CDind, e = run["e"], run["CDind"]
+        betas.append(run["beta"] * DEG2RAD_CONV)
+        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
+        CD.append(run["CD"])
+        Cm.append(run["Cm"])
 
-    # TODO: CD_offset = AircraftConfig.C_Dp_climb # profile drag from Brenda's model
+        CDind.append(run["e"])
+        e.append(run["CDind"])
+
+    # TODO: CD_DP = AircraftConfig.C_Dp_climb # profile drag from Brenda's model
 
 
 @dataclass
 class CruiseCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     """Will read a summary of JVL output dataframe at various operating points. Defines functions
-    based on fit of operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
+    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
     FILE_NAME = "Python/aero_workspace/jvl_run_outputs/cruise.pkl"
     with open(FILE_NAME, "rb") as f:
@@ -77,16 +79,17 @@ class CruiseCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     CL, CD, Cm, CDind, e = [], [], [], [], []
 
     for idx, run in enumerate(data):
-        alphas.append(run["alpha"])
+        alphas.append(run["alpha"] * DEG2RAD_CONV)
         velocities.append(run["velocity"])
-        betas.append(run["beta"])
-        CL, CD, Cm = (
-            run["CL"],
-            run["CD"],
-            run["Cm"],
-        )  # NOTE: double check definitions: Cl vs CL
-        CDind, e = run["e"], run["CDind"]
-    CD_offset = AircraftConfig.C_Dp_cruise  # profile drag from Brenda's model
+        betas.append(run["beta"] * DEG2RAD_CONV)
+        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
+        CD.append(run["CD"])
+        Cm.append(run["Cm"])
+
+        CDind.append(run["e"])
+        e.append(run["CDind"])
+
+    CD_DP = AircraftConfig.C_Dp_cruise  # profile drag from Brenda's model
 
 
 class CruiseModel:
@@ -95,9 +98,9 @@ class CruiseModel:
     ) -> None:
         self.s_ref = s_ref * ureg("m^2")
         self.weight = weight * ureg("N")  # newtons
-        self.v_cruise = v_cruise.magnitude * ureg("m/s")
+        self.v_cruise = v_cruise
         self.h_cruise = h_cruise
-        self.density = Atmosphere(h=h_cruise.magnitude).density[0] * ureg("kg/m^3")
+        self.density = Atmosphere(h=h_cruise).density[0]
         self.AR = AR
         self.q = 0.5 * self.density * (self.v_cruise**2)
         self.Cd0 = Cd0
@@ -107,7 +110,7 @@ class CruiseModel:
 
     def cl(self):
         L = self.weight  # assumes I have weight as a function of time
-        return (L / (self.q * self.s_ref)).magnitude
+        return L / (self.q * self.s_ref)
 
     def cd_induced(self):
         if self.CDi is None:
@@ -124,7 +127,7 @@ class CruiseModel:
 
 class LandingCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     """Will read a summary of JVL output dataframe at various operating points. Defines functions
-    based on fit of operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
+    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
     FILE_NAME = "Python/aero_workspace/jvl_run_outputs/landing.pkl"
     with open(FILE_NAME, "rb") as f:
@@ -134,29 +137,31 @@ class LandingCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     CL, CD, Cm, CDind, e = [], [], [], [], []
 
     for idx, run in enumerate(data):
-        alphas.append(run["alpha"])
+        alphas.append(run["alpha"] * DEG2RAD_CONV)
         velocities.append(run["velocity"])
-        betas.append(run["beta"])
-        CL, CD, Cm = (
-            run["CL"],
-            run["CD"],
-            run["Cm"],
-        )  # NOTE: double check definitions: Cl vs CL
-        CDind, e = run["e"], run["CDind"]
-    # TODO: CD_offset = AircraftConfig.C_Dp_landing # profile drag from Brenda's model
+        betas.append(run["beta"] * DEG2RAD_CONV)
+        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
+        CD.append(run["CD"])
+        Cm.append(run["Cm"])
+
+        CDind.append(run["e"])
+        e.append(run["CDind"])
+    # TODO: CD_DP = AircraftConfig.C_Dp_landing # profile drag from Brenda's model
 
 
 # Runner script
 if __name__ == "__main__":
     cruise_cls = CruiseModel(
         s_ref=AircraftConfig.s_ref,
-        weight=AircraftConfig.weight_cruise,
+        weight=0.85
+        * MTOW.magnitude,  # TODO: needed from prop; UPDATE to AircraftConfig.weight_cruise
         v_cruise=AircraftConfig.v_cruise,
         h_cruise=AircraftConfig.h_cruise,
         AR=AircraftConfig.AR,
-        Cd0=AircraftConfig.Cd0_cruise,
-        Cdv=AircraftConfig.Cdv_cruise,
-        CDi=AircraftConfig.CDi_cruise,
+        Cd0=0.0,
+        Cdv=TakeoffCoeff.CD_DP,
+        CDi=CruiseCoeff.CDind[0],  # NOTE: change for a particular run of interest
+        e=CruiseCoeff.e[0],  # NOTE: change for a particular run of interest
     )  #  default assumes e=0.7; change this parameter if different
     CD_total_cruise = cruise_cls.cd_total()
     L_over_D_cruise = cruise_cls.cl() / CD_total_cruise
