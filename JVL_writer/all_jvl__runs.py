@@ -54,35 +54,26 @@ DEFAULT_ANALYSIS_OPTIONS_PLANE = {
 }
 
 
-# def create_plane(cond):
-#     # assumed for entire plane at the moment
-#     jvl = JVL(
-#         airplane=planeB,  # NOTE: assumes plane geometry made in geom.py file
-#         op_point=asb.OperatingPoint(
-#         velocity=cond["velocity"],
-#         alpha=cond["alpha"],
-#         beta=cond["beta"],
-#         p=0,
-#         q=0,
-#         r=0,
-#     ),
-#         avl_command="jvl",
-#     )
-
-#     jvl.default_analysis_specific_options = DEFAULT_ANALYSIS_OPTIONS_PLANE
-#     return jvl
-
-def run_case(cond):
-
-    op = asb.OperatingPoint(
-        velocity=cond["velocity"],
-        alpha=cond["alpha"],
-        beta=cond["beta"],
-        p=0,
-        q=0,
-        r=0,
+def create_plane(cond):
+    # assumed for entire plane at the moment
+    jvl = JVL(
+        airplane=planeB,  # NOTE: assumes plane geometry made in geom.py file
+        op_point=asb.OperatingPoint(
+            velocity=cond["velocity"],
+            alpha=cond["alpha"],
+            beta=cond["beta"],
+            p=0,
+            q=0,
+            r=0,
+        ),
+        avl_command="jvl",
     )
 
+    jvl.default_analysis_specific_options = DEFAULT_ANALYSIS_OPTIONS_PLANE
+    return jvl
+
+
+def run_case(cond):
     surface = create_plane(cond)
 
     out = surface.run()
@@ -94,26 +85,6 @@ def run_case(cond):
         **out,
     }
 
-def create_plane(cond):
-
-    op = asb.OperatingPoint(
-        velocity=cond["velocity"],
-        alpha=cond["alpha"],
-        beta=cond["beta"],
-        p=0,
-        q=0,
-        r=0,
-    )
-
-    jvl = JVL(
-        airplane=planeB,
-        op_point=op,
-        avl_command="jvl",
-    )
-
-    jvl.default_analysis_specific_options = DEFAULT_ANALYSIS_OPTIONS_PLANE
-    return jvl
-
 
 def save_results(data, filename):
     """Save data as dataframe."""
@@ -122,9 +93,9 @@ def save_results(data, filename):
 
 
 def takeoff():
-    alphas = np.linspace(-30, 30, 2)
-    betas = np.linspace(-30, 30, 2)
-    velocities = np.linspace(100, 150, 2)
+    alphas = np.linspace(8, 30, 1)
+    betas = np.linspace(9, 30, 1)
+    velocities = np.linspace(120, 150, 1)
 
     cases = [
         {"velocity": v, "alpha": a, "beta": b}
