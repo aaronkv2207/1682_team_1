@@ -1,62 +1,88 @@
+import pickle
+from dataclasses import dataclass
+
+import jvl_run_outputs
 import numpy as np
 import pandas as pd
 from aero_dict import AircraftConfig
 from ambiance import Atmosphere
 from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
-from drag import C_Dp, V_h, V_v
+from drag import V_h, V_v, calc_C_Dp
 from scipy.interpolate import interp1d
 
 # get jvl cg --> mset, run file, input file, ...; can shift around masses to shift cg in .mass file
 
 
+@dataclass
 class TakeoffCoeff:
-    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Defines functions based on fit of operating points --> CL, CD, CM."""
+    """Reads a summary of JVL output dataframe at various operating points. Defines functions
+    based on fit of operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    df = pd.read_csv("./takeoff_coefficients")
-    alphas = df["ALPHA"]
-    flap_angle = df["BETAS"]
-    velocities = df["VELOCITY"]
+    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/takeoff.pkl"
+    with open(FILE_NAME, "rb") as f:
+        data = pickle.load(f)
 
-    # TODO: Will need definitions for every control surface
-    CL_alpha = np.hstack((alphas, df["CL"]))  # convert from degrees --> radians
-    CD_alpha = np.hstack((alphas, df["CD"]))
-    CM_alpha = np.hstack((alphas, df["CM"]))
+    alphas, velocities, betas = [], [], []
+    CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    CL_flap = np.hstack((flap_angle, df["CL"]))
-    CD_flap = np.hstack((flap_angle, df["CD"]))
-    CM_flap = np.hstack((flap_angle, df["CM"]))
-
-    CL_velocity = np.hstack((velocities, df["CL"]))
-    CD_velocity = np.hstack((velocities, df["CD"]))
-    CM_velocity = np.hstack((velocities, df["CM"]))
-
-
-class ClimbCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
-    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Defines functions based on fit of operating points --> CL, CD, CM."""
+    for idx, run in enumerate(data):
+        alphas.append(run["alpha"])
+        velocities.append(run["velocity"])
+        betas.append(run["beta"])
+        CL, CD, Cm = (
+            run["CL"],
+            run["CD"],
+            run["Cm"],
+        )  # NOTE: double check definitions: Cl vs CL
+        CDind, e = run["e"], run["CDind"]
 
 
-class CruiseCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
-    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Defines functions based on fit of operating points --> CL, CD, CM."""
+@dataclass
+class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
+    """Will read a summary of JVL output dataframe at various operating points. Defines functions
+    based on fit of operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    df = pd.read_csv("./cruise_coefficients")
-    alphas = df["ALPHA"]
-    flap_angle = df["BETAS"]
-    velocities = df["VELOCITY"]
+    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/climb.pkl"
+    with open(FILE_NAME, "rb") as f:
+        data = pickle.load(f)
 
-    CL_alpha = np.hstack((alphas, df["CL"]))
-    CD_alpha = np.hstack((alphas, df["CD"]))
-    CM_alpha = np.hstack((alphas, df["CM"]))
+    alphas, velocities, betas = [], [], []
+    CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    CL_flap = np.hstack((flap_angle, df["CL"]))
-    CD_flap = np.hstack((flap_angle, df["CD"]))
-    CM_flap = np.hstack((flap_angle, df["CM"]))
+    for idx, run in enumerate(data):
+        alphas.append(run["alpha"])
+        velocities.append(run["velocity"])
+        betas.append(run["beta"])
+        CL, CD, Cm = (
+            run["CL"],
+            run["CD"],
+            run["Cm"],
+        )  # NOTE: double check definitions: Cl vs CL
+        CDind, e = run["e"], run["CDind"]
 
-    CL_velocity = np.hstack((velocities, df["CL"]))
-    CD_velocity = np.hstack((velocities, df["CD"]))
-    CM_velocity = np.hstack((velocities, df["CM"]))
+
+@dataclass
+class CruiseCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
+    """Will read a summary of JVL output dataframe at various operating points. Defines functions
+    based on fit of operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
+
+    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/cruise.pkl"
+    with open(FILE_NAME, "rb") as f:
+        data = pickle.load(f)
+
+    alphas, velocities, betas = [], [], []
+    CL, CD, Cm, CDind, e = [], [], [], [], []
+
+    for idx, run in enumerate(data):
+        alphas.append(run["alpha"])
+        velocities.append(run["velocity"])
+        betas.append(run["beta"])
+        CL, CD, Cm = (
+            run["CL"],
+            run["CD"],
+            run["Cm"],
+        )  # NOTE: double check definitions: Cl vs CL
+        CDind, e = run["e"], run["CDind"]
 
 
 class CruiseModel:
@@ -92,26 +118,27 @@ class CruiseModel:
         return self.cd_total() * self.q * self.s_ref
 
 
-class LandingCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
-    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Defines functions based on fit of operating points --> CL, CD, CM."""
+class LandingCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
+    """Will read a summary of JVL output dataframe at various operating points. Defines functions
+    based on fit of operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    df = pd.read_csv("./landing_coefficients")
-    alphas = df["ALPHA"]
-    flap_angle = df["BETAS"]
-    velocities = df["VELOCITY"]
+    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/landing.pkl"
+    with open(FILE_NAME, "rb") as f:
+        data = pickle.load(f)
 
-    CL_alpha = np.hstack((alphas, df["CL"]))
-    CD_alpha = np.hstack((alphas, df["CD"]))
-    CM_alpha = np.hstack((alphas, df["CM"]))
+    alphas, velocities, betas = [], [], []
+    CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    CL_flap = np.hstack((flap_angle, df["CL"]))
-    CD_flap = np.hstack((flap_angle, df["CD"]))
-    CM_flap = np.hstack((flap_angle, df["CM"]))
-
-    CL_velocity = np.hstack((velocities, df["CL"]))
-    CD_velocity = np.hstack((velocities, df["CD"]))
-    CM_velocity = np.hstack((velocities, df["CM"]))
+    for idx, run in enumerate(data):
+        alphas.append(run["alpha"])
+        velocities.append(run["velocity"])
+        betas.append(run["beta"])
+        CL, CD, Cm = (
+            run["CL"],
+            run["CD"],
+            run["Cm"],
+        )  # NOTE: double check definitions: Cl vs CL
+        CDind, e = run["e"], run["CDind"]
 
 
 # Runner script

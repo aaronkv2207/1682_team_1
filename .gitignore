@@ -1,0 +1,6 @@
+*/build
+*/.vscode
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
