@@ -29,7 +29,7 @@ mu = 0.02  # Rolling friction coefficient [-]
 x_runway = 52  # Runway length (171 ft) [m]
 
 V_stall = 19.933  # Stall speed [m/s]
-V_to = 23.7#1.1 * V_stall  # Takeoff speed [m/s]
+V_to = 1.1 * V_stall  # Takeoff speed [m/s]
 V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
 RPM = 2100 # RPM of propeller [rev/min]
@@ -231,11 +231,13 @@ motor_power = 2050  # kW
 R_selected = .583 # [m]
 A_selected = N_fans * np.pi * R_selected**2 # [m^2]
 J = V_cruise / (omega*R_selected) 
+torque_TO = 2.1e6/omega
 print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
 print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
 print("Effective Total Fan Area:", A_selected)
 print("Advance Ratio: ", J)
 print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected))
+print("Torque at takeoff:", torque_TO)
 
 # # Second axis for tip Mach
 # ax2 = ax1.twinx()
@@ -261,8 +263,8 @@ plt.show()
 # THRUST INTERPOLATOR (first used in takeoff model) (0–22 m/s)
 # ============================================================
 
-V_data = np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130])
-T_data = 8 * 10 * np.array([709.4, 414.2, 303.2, 257.9, 225.0, 200.0, 182.0, 170.0, 160.0, 152.0, 145.0, 139.0, 135.0, 131.0]) # Thrust per fan [N]
+V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
+T_data = 8 * np.array([3940.0, 3326.0, 2863.0, 2514.0, 2249.0, 2049.0, 1895.0, 1771.0, 1645.0, 1466.0, 1183.0]) # Thrust per fan [N]
 degree = 5          # change this to 1,2,3,4,... to test fits
 coeffs = np.polyfit(V_data, T_data, degree)
 T_poly = np.poly1d(coeffs)
@@ -282,15 +284,18 @@ def T_fan_interp(v):
 
 vel = np.linspace(0,130,500)
 plt.figure(figsize=(8,6))
-plt.scatter(V_data, T_data, label="Original Data")
-plt.plot(vel, T_fan_interp(vel), label=f"Polynomial Fit (deg={degree})")
+plt.scatter(V_data, T_data/1000, label="Original Data")
+plt.plot(vel, T_fan_interp(vel)/1000, label=f"Polynomial Fit (deg={degree})")
 plt.xlabel("Velocity [m/s]")
-plt.ylabel("Thrust per fan [N]")
+plt.ylabel("Thrust per fan [kN]")
 plt.title("Fan Thrust Interpolation")
 plt.legend()
 plt.show()
 
 
+
+# Size ducted fan A/2, R/sqrt(2)
+# cl_avg about 0.5
 
 
 
