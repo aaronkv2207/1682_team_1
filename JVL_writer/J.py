@@ -289,8 +289,7 @@ class JVL(AVL):
             directory = Path(directory)
 
             if self.working_directory is not None:
-                # directory = Path(self.working_directory)
-                directory = Path("Python/aero_workspace/temp")
+                directory = Path(self.working_directory)
 
             output_filename = "output.txt"
 
