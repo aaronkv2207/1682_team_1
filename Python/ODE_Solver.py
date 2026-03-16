@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from ambiance import Atmosphere
 
 # Imports from other subteam dependencies
-from ThrustVelocity import ThrustVelocity
+# from ThrustVelocity import ThrustVelocity
 
 # from aero_workspace.aero_main import AircraftConfig, TakeoffCoeff
 #eigenmodes can be calculated from JVL!  lowkey might still caculate them in this
@@ -93,7 +93,7 @@ class Aircraft:
         '''
         using all linear functions to model takeoff controls inputs
         '''
-        # if t<4: #chang delta_e to change based off takeoff velcoity, maybe have CL_max known
+        # if t<4: #change delta_e to change based off takeoff velcoity, maybe have CL_max known
         #     delta_e=0
         # # elif t<5:
         # #     delta_e=np.radians(-10)*(t-3)/2 #ermoving pitch spike
@@ -297,7 +297,7 @@ prop = Propulsion(Tmax=77000)
 landing = Landing_Gear(
     m1=7500,
     m2=120,
-    b=8928.98,
+    b=8900,
     k1=50002.31,
     k2=223224.59
 )
@@ -348,8 +348,10 @@ sol = solve_ivp(
 
 '''SOLVING IVP FOR LANDING'''
 #Before touchdown, what is the max and min altitude, min should be about zero
-print(f"Min ze: {-np.min(sol.y[5]):.3f} m")
-print(f"Final ze: {-sol.y[5][-1]:.3f} m")
+t_td=sol.t_events[0][0]
+print(f"Time to land: {t_td:.3f} s")
+print(f"Initial altitude: {-sol.y[5][0]:.3f} m")
+print(f"Final altitude: {-sol.y[5][-1]:.3f} m")
 
 if sol.y_events[0].size == 0:
     print("Touchdown not detected")
@@ -469,9 +471,9 @@ plt.show()
 
 F_tire = plane_1.landing.k2 * sol_landing.y[1]
 
-plt.plot(sol_landing.t, F_tire)
+plt.plot(sol_landing.t, F_tire/10**3)
 plt.xlabel("Time (s)")
-plt.ylabel("Gear Load (N)")
+plt.ylabel("Gear Load (kN)")
 plt.title("Landing Gear Force")
 plt.grid()
 plt.show()
