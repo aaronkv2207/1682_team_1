@@ -230,7 +230,7 @@ class Fuselage:
         # longerons
         self.stringer_area = self.required_stringer_area_bending(
             M_max=M_max, 
-            skin_thickness=self.skin_t
+            skin_thickness=self.skin_t,
             yield_strength=yield_strength,
             n_stringers=n_stringers,
             safety_factor=safety_factor
