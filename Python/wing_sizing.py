@@ -31,7 +31,8 @@ class aircraft:
 
     #### GLOBAL DEFINITIONS ###
     AR: int = 8
-    s_ref: float = S.magnitude   # convert from pint quantity
+    s_ref: float = 49.6
+    b: float = 19.92
 
     #### TAKEOFF DEFINITIONS ###
     v_takeoff: float = (1.2 * V_STALL).magnitude
@@ -54,7 +55,7 @@ class Wing():
     g = 9.81
     rho_ground = 1.225
     rho_cruise = 0.699 # at 18,000 ft
-    W_total = 7438.9149 * 9.8
+    W_total = 7500 * 9.8
     W_duct = 25 * 9.81 # kg - guess
     W_fuel_per_wing = 750 # kg
 
@@ -81,8 +82,8 @@ class Wing():
         t_x1 = self.aero["t_x1"]
         t_x2 = self.aero["t_x2"]
 
-        x_1 = 0.1*c
-        x_2 = 0.7*c
+        x_1 = self.aero["x_1"]
+        x_2 = self.aero["x_2"]
 
         h = 0.5*(t_x1+t_x2)
         w = x_2-x_1
@@ -140,8 +141,8 @@ class Wing():
         t_x1 = self.aero["t_x1"]
         t_x2 = self.aero["t_x2"]
 
-        x_1 = 0.1*c
-        x_2 = 0.7*c
+        x_1 = self.aero["x_1"]
+        x_2 = self.aero["x_2"]
 
         h = 0.5*(t_x1+t_x2)
         w = x_2-x_1
@@ -189,7 +190,7 @@ class Wing():
     def spar_cap_area(self, L, a_z, axial_stress):
         """Find necessary spar cap area based on loading"""
         # Get required variables
-        c = np.sqrt(aircraft.s_ref/aircraft.AR)
+        c = 2.49
         c_tip = c
         c_0 = c
         taper_ratio = c_tip/c_0
@@ -200,7 +201,8 @@ class Wing():
         t_x2 = self.aero["t_x2"]
         x_1 = 0.1*c
         x_2 = 0.7*c
-        h = 0.5*(t_x1+t_x2)
+        h = 2.64*.15
+        # h = 0.5*(t_x1+t_x2)
         N = self.get_N(L, a_z)[0]
         E = self.materials["spar_cap_E"] # maybe remain this variable if it shows up again just for clarity
         w_b_max = self.aero["w_b_max"] # not sure where we'll actually get this
@@ -222,26 +224,20 @@ class Wing():
     def skin_thickness(self, q, shear_stress):
         """Find necessary skin thickness based on loading"""
         # Get required variables
-        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
+        b = aircraft.b/2
         c = np.sqrt(aircraft.s_ref/aircraft.AR)
 
         # NOTE: all of these are guesses
-        b_ail = 0.25*b
-        c_ail = 0.75*c
-        y_ail = 0.65*b
-        c_m = -0.05
-
-
-        # x1 = self.aero["x1"]
-        # x2= self.aero["x2"]
-        # tx1 = self.aero["tx1"]
-        # tx2 = self.aero["tx2"]
+        b_ail = self.aero["b_ail"]
+        c_ail = self.aero["c_ail"]
+        y_ail = self.aero["y_ail"]
+        c_m = self.aero["c_m"]
         t_avg = self.aero["t_avg"] # Average thickness to chord of the airfoil
-        s_tot = None
+        s_tot = self.aero["s_tot"]
         # s_tot = self.aero["airfoil_perimeter"] # we'll estimate this as 2 * c_ail for now
         G = self.materials["skin_G"]
         twist_max = self.aero["twist_max"]
-        A = None
+        A = self.aero["A"]
         # A = self.aero["airfoil_cross_section_area"] # we'll estimate this as b_ail * c_ail for now
         T = abs(c_m) * 0.5*self.rho_cruise*aircraft.v_cruise**2 * aircraft.s_ref * c
         print("T:", T)
@@ -406,7 +402,7 @@ class Wing():
 
 
     def wing_weight(self):
-        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
+        b = aircraft.b/2
         # for one of two wings
         sizing = self.max_load_sizing()
         spar_cap_weight = sizing[0]*b*self.materials["spar_cap_density"]
@@ -431,26 +427,36 @@ if __name__ == "__main__":
         "t_x1": (0.7279684E-01 + 0.2596068E-01)*c,
         "t_x2": (0.2139701E-01 + 0.4671981E-01)*c,
         # all below values are guesses
-        "w_b_max": 0.025,
-        "twist_max": 0.0524, # radians
-        "CL_takeoff": 6,
-        "CL_climb": 1,
-        "CL_cruise": 0.35,
-        "CL_descent": 0.2,
-        "CL_landing": 6,
-        "CD_takeoff": 0.7,
-        "CD_climb": 0.1,
-        "CD_cruise": 0.05,
-        "CD_descent": 0.045,
-        "CD_landing": 1,
-        "v_takeoff": 25,
-        "v_climb": 60,
-        "v_cruise": 125,
-        "v_descent": 75,
-        "v_landing": 25,
+        "w_b_max": 19.92/2*1.05,
+        "twist_max": 0.0523599, # radians
+        "b_ail":2.5, #should this for one aileron or both? this is for one aileron, so total aileron span is 5 m
+        "c_ail":0.75,
+        "y_ail":7.47 + 2.5/2,
+        "c_m":-0.2,
+        "A":.275*1.6,
+        "s_tot":2.0700619*2.49,
+        "x_1":.06*2.49,
+        "x_2":(.06+.6)*2.49,
+        "t_x1":.275,
+        "t_x2":.275,
+        "CL_takeoff":6.1,
+        "CL_climb":.426, #but depends where in climb we are
+        "CL_cruise":.237,
+        "CL_descent":.4, #tbh we don't really know yet
+        "CL_landing":6.1, #also subject to significant change
+        "CD_takeoff":1.665,#including induced drag
+        "CD_climb":0.027,#including induced drag
+        "CD_cruise":.019,
+        "CD_descent":.04,
+        "CD_landing":1.665,
+        "v_takeoff":20,
+        "v_climb":80,
+        "v_cruise":125,
+        "v_descent":80,
+        "v_landing":20,
         "drag_area": 2.5,
-        "a_z": 3*9.8,
-        "airfoil_surface_area": 100, # m^2
+        "a_z": 2*9.8,
+        "airfoil_surface_area":2.0700619*2.49,
         "t_avg": 0.12,
     }
 
@@ -477,4 +483,4 @@ if __name__ == "__main__":
     test_wing = Wing(aero, loading, materials)
 
     test_wing_weight = test_wing.wing_weight()
-    print("Wing weight (kg)", test_wing_weight/9.81)
+    print("Wing weight (kg)", test_wing_weight)
