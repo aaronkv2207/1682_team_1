@@ -73,7 +73,7 @@ def takeoff():
         status = run_case(case)
         print(f"Successfully ran case {case_idx + 1} of {len(cases)} in takeoff")
         results.append(status)
-        save_results(results, "Python/aero_workspace/jvl_run_outputs/takeoff.pkl")
+    save_results(results, "Python/aero_workspace/jvl_run_outputs/takeoff.pkl")
 
 
 def climb():
@@ -93,7 +93,7 @@ def climb():
         status = run_case(case)
         print(f"Successfully ran case {case_idx + 1} of {len(cases)} in climb")
         results.append(status)
-        save_results(results, "Python/aero_workspace/jvl_run_outputs/climb.pkl")
+    save_results(results, "Python/aero_workspace/jvl_run_outputs/climb.pkl")
 
 
 def cruise():
@@ -113,7 +113,7 @@ def cruise():
         status = run_case(case)
         print(f"Successfully ran case {case_idx + 1} of {len(cases)} in cruise")
         results.append(status)
-        save_results(results, "Python/aero_workspace/jvl_run_outputs/cruise.pkl")
+    save_results(results, "Python/aero_workspace/jvl_run_outputs/cruise.pkl")
 
 
 def landing():
@@ -133,7 +133,7 @@ def landing():
         status = run_case(case)
         print(f"Successfully ran case {case_idx + 1} of {len(cases)} in landing")
         results.append(status)
-        save_results(results, "Python/aero_workspace/jvl_run_outputs/landing.pkl")
+    save_results(results, "Python/aero_workspace/jvl_run_outputs/landing.pkl")
 
 
 if __name__ == "__main__":

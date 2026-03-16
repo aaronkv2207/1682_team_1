@@ -7,7 +7,6 @@ import pandas as pd
 from aero_dict import AircraftConfig
 from ambiance import Atmosphere
 from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
-from scipy.interpolate import interp1d
 
 # get jvl cg --> mset, run file, input file, ...; can shift around masses to shift cg in .mass file
 
@@ -26,7 +25,7 @@ class TakeoffCoeff:
     alphas, velocities, betas = [], [], []
     CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    for idx, run in enumerate(data):
+    for _, run in enumerate(data):
         alphas.append(run["alpha"] * DEG2RAD_CONV)
         velocities.append(run["velocity"])
         betas.append(run["beta"] * DEG2RAD_CONV)
@@ -34,8 +33,8 @@ class TakeoffCoeff:
         CD.append(run["CD"])
         Cm.append(run["Cm"])
 
-        CDind.append(run["e"])
-        e.append(run["CDind"])
+        CDind.append(run["CDind"])
+        e.append(run["e"])
 
     CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
 
@@ -52,7 +51,7 @@ class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     alphas, velocities, betas = [], [], []
     CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    for idx, run in enumerate(data):
+    for _, run in enumerate(data):
         alphas.append(run["alpha"] * DEG2RAD_CONV)
         velocities.append(run["velocity"])
         betas.append(run["beta"] * DEG2RAD_CONV)
@@ -60,8 +59,8 @@ class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
         CD.append(run["CD"])
         Cm.append(run["Cm"])
 
-        CDind.append(run["e"])
-        e.append(run["CDind"])
+        CDind.append(run["CDind"])
+        e.append(run["e"])
 
     # TODO: CD_DP = AircraftConfig.C_Dp_climb # profile drag from Brenda's model
 
@@ -78,7 +77,7 @@ class CruiseCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     alphas, velocities, betas = [], [], []
     CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    for idx, run in enumerate(data):
+    for _, run in enumerate(data):
         alphas.append(run["alpha"] * DEG2RAD_CONV)
         velocities.append(run["velocity"])
         betas.append(run["beta"] * DEG2RAD_CONV)
@@ -86,8 +85,8 @@ class CruiseCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
         CD.append(run["CD"])
         Cm.append(run["Cm"])
 
-        CDind.append(run["e"])
-        e.append(run["CDind"])
+        CDind.append(run["CDind"])
+        e.append(run["e"])
 
     CD_DP = AircraftConfig.C_Dp_cruise  # profile drag from Brenda's model
 
@@ -136,7 +135,7 @@ class LandingCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     alphas, velocities, betas = [], [], []
     CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    for idx, run in enumerate(data):
+    for _, run in enumerate(data):
         alphas.append(run["alpha"] * DEG2RAD_CONV)
         velocities.append(run["velocity"])
         betas.append(run["beta"] * DEG2RAD_CONV)
@@ -144,8 +143,8 @@ class LandingCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
         CD.append(run["CD"])
         Cm.append(run["Cm"])
 
-        CDind.append(run["e"])
-        e.append(run["CDind"])
+        CDind.append(run["CDind"])
+        e.append(run["e"])
     # TODO: CD_DP = AircraftConfig.C_Dp_landing # profile drag from Brenda's model
 
 
@@ -155,7 +154,9 @@ if __name__ == "__main__":
         s_ref=AircraftConfig.s_ref,
         weight=0.85
         * MTOW.magnitude,  # TODO: needed from prop; UPDATE to AircraftConfig.weight_cruise
-        v_cruise=AircraftConfig.v_cruise,
+        v_cruise=CruiseCoeff.velocities[
+            0
+        ],  # NOTE: change for a particular run of interest
         h_cruise=AircraftConfig.h_cruise,
         AR=AircraftConfig.AR,
         Cd0=0.0,
