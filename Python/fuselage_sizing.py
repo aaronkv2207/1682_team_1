@@ -62,6 +62,24 @@ class Fuselage:
         return self.R * np.sin(theta)
 
     # -------------------------
+    # Section inertias
+    # -------------------------
+    def skin_bending_inertia(self, skin_thickness):
+        """
+        Thin-walled circular shell bending inertia about horizontal centroidal axis:
+            I_skin = pi * R^3 * t
+        """
+        return np.pi * self.R**3 * skin_thickness
+
+    def stringer_bending_inertia(self, stringer_area, n_stringers):
+        """
+        Boom/stringer contribution:
+            I_stringers = sum(A_s * y_i^2)
+        """
+        y = self.stringer_y_coords(n_stringers)
+        return stringer_area * np.sum(y**2)
+
+    # -------------------------
     # Allowables
     # -------------------------
     def allowable_normal_stress(self, yield_strength, safety_factor=1.5):
@@ -88,20 +106,27 @@ class Fuselage:
 
         t_hoop = (delta_P * self.R) / sigma_allow
         return t_hoop
-
+    
     # -------------------------
     # Longeron sizing from bending
     # -------------------------
-    def required_stringer_area_bending(self, M_max, yield_strength,
-                                       n_stringers=4, safety_factor=1.5):
+    def required_stringer_area_bending(self, M_max, skin_thickness, yield_strength,
+                                       n_stringers=4, safety_factor=1.5,
+                                       min_stringer_area=1e-5):
         """
-        Size equal-area longerons so max boom stress does not exceed allowable.
+        Size equal-area stringers with skin included in global bending stiffness.
 
-        Uses:
-            sigma_max = M*y_max / I
-            I = sum(A_i * y_i^2) = A_s * sum(y_i^2)
-        Therefore:
-            A_s = M*y_max / (sigma_allow * sum(y_i^2))
+        Total section inertia:
+            I_total = I_skin + I_stringers
+                    = pi*R^3*t + A_s * sum(y_i^2)
+
+        Require:
+            sigma_max = M*R / I_total <= sigma_allow
+
+        Solve for A_s:
+            A_s = (M*R/sigma_allow - I_skin) / sum(y_i^2)
+
+        If skin alone is sufficient, return minimum practical stringer area.
         """
         sigma_allow = self.allowable_normal_stress(yield_strength, safety_factor)
 
@@ -109,18 +134,23 @@ class Fuselage:
         y_max = np.max(np.abs(y))
         sum_y2 = np.sum(y**2)
 
-        if y_max <= 0.0 or sum_y2 <= 0.0:
-            raise ValueError("Invalid longeron geometry for bending about vertical axis.")
+        if sum_y2 <= 0.0:
+            raise ValueError("Invalid stringer geometry for bending.")
 
-        A_s = (abs(M_max) * y_max) / (sigma_allow * sum_y2)
+        I_skin = self.skin_bending_inertia(skin_thickness)
+        I_required = abs(M_max) * y_max / sigma_allow
+
+        A_s = (I_required - I_skin) / sum_y2
+
+        # If skin alone satisfies global bending, keep a minimum practical area
+        A_s = max(A_s, min_stringer_area)
 
         return A_s
 
     # -------------------------
     # Skin sizing from shear
     # -------------------------
-    def required_skin_thickness_shear(self, V_max, yield_strength,
-                                      safety_factor=1.5):
+    def required_skin_thickness_shear(self, V_max, yield_strength, safety_factor=1.5):
         """
         First-pass max shear-flow approximation for circular closed section:
             q_max ~ V / (pi*R)
@@ -173,14 +203,6 @@ class Fuselage:
         self.yield_strength = yield_strength
         self.safety_factor = safety_factor
 
-        # longerons
-        self.stringer_area = self.required_stringer_area_bending(
-            M_max=M_max,
-            yield_strength=yield_strength,
-            n_stringers=n_stringers,
-            safety_factor=safety_factor
-        )
-
         # skin
         t_hoop = self.required_thickness_hoop(
             yield_strength=yield_strength,
@@ -204,6 +226,15 @@ class Fuselage:
         self.t_shear = t_shear
         self.t_torsion = t_torsion
         self.t_min = min_skin_gauge
+
+        # longerons
+        self.stringer_area = self.required_stringer_area_bending(
+            M_max=M_max, 
+            skin_thickness=self.skin_t
+            yield_strength=yield_strength,
+            n_stringers=n_stringers,
+            safety_factor=safety_factor
+        )
 
         return {
             "stringer_area_each_m2": self.stringer_area,
@@ -302,3 +333,78 @@ class Fuselage:
             print(f"  Floor panel mass      = {self.fpanel_mass:.2f} kg")
             print(f"  Floor frame mass      = {self.fframe_mass:.2f} kg")
             print(f"  Floor beam mass       = {self.fbeam_mass:.2f} kg")
+
+
+
+# ============================================================
+# Test script
+# ============================================================
+
+if __name__ == "__main__":
+
+    # -------------------------
+    # Aircraft geometry
+    # -------------------------
+
+    length = 12          # m  (approx Caravan fuselage length)
+    radius = 0.85        # m  (approx 1.9 m diameter fuselage)
+    n_people = 10        # passengers (9) + pilot
+    cabin_width = 1.6    # m usable cabin width
+
+    fuse = Fuselage(length, radius, n_people, cabin_width)
+
+    # -------------------------
+    # Structural loads
+    # (placeholder estimates — replace with your team's values)
+    # -------------------------
+
+    M_max = 1.2e6     # N*m  max fuselage bending moment
+    V_max = 2.5e5     # N    max shear force
+    T_max = 5.0e4     # N*m  torsion
+
+    # -------------------------
+    # Size structure
+    # -------------------------
+
+    sizing_results = fuse.size_primary_structure(
+        M_max=M_max,
+        V_max=V_max,
+        T_max=T_max
+    )
+
+    print("\n--- Structural sizing ---")
+    for key, value in sizing_results.items():
+        print(f"{key}: {value}")
+
+    # -------------------------
+    # Compute structural mass
+    # -------------------------
+
+    mass = fuse.get_structural_mass()
+
+    print("\nStructural mass:", mass, "kg")
+
+    # -------------------------
+    # Total loaded fuselage mass
+    # -------------------------
+
+    total_weight = fuse.get_total_weight()
+    total_mass = total_weight / 9.80665
+
+    # -------------------------
+    # Add landing gear
+    # -------------------------
+
+    landing_gear_mass = 102.43   # kg
+    total_mass_with_lg = total_mass + landing_gear_mass
+
+    print("Passenger + seat mass:", n_people*120, "kg")
+    print("Landing gear mass:", landing_gear_mass, "kg")
+    print("Total fuselage mass (including passengers and landing gear):", total_mass_with_lg, "kg")
+
+    # -------------------------
+    # Detailed summary
+    # -------------------------
+
+    print()
+    fuse.summary()
