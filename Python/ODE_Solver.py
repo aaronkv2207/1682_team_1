@@ -38,10 +38,6 @@ class Aero:
     cx:float
 
 @dataclass
-class Propulsion:
-    Tmax: float
-
-@dataclass
 class Landing_Gear:
     m1: float #mass of aircraft per landing gear
     m2: float #sum of wheel, tires, and axel mass
@@ -57,7 +53,6 @@ class Aircraft:
         self.landing=landing
         self.rho=rho
         self.ic=ic
-
         self.b=np.sqrt(geom.S*geom.AR)
         self.c=self.b/geom.AR
 
@@ -67,28 +62,59 @@ class Aircraft:
         self.qbar0=qbar0
 
 
-    def controls(self, t):
+    def controls(self, t, x):
+        u, w, q, theta, xe, ze = x
+        V = np.sqrt(u**2 + w**2)
+        gamma_initial = np.radians(20)
+        alpha = np.arctan2(w, u)
+        u_e = u*np.cos(theta) + w*np.sin(theta)
+        w_e = -u*np.sin(theta) + w*np.cos(theta)
+        gamma_current = np.arctan2(-w_e, u_e)  
+        '''
+        ##### DEFAULT ALL ZEROS #####
+        '''
+        # delta_e=0
+        # delta_f=0
+        # throttle = 1
+        
         '''
         ##### TAKEOFF ##########
         max 25 degrees for ailerons
         max 25-35 for rudders/elevator
         '''
+        throttle = 1
+        ## ELEVATOR LOGIC
+
+        #V1
+        if t>6:
+            delta_e=np.radians(-5)
+        else:  
+            delta_e=0
+
+        # V2
         # if t<3: #chang delta_e to change based off takeoff velcoity, maybe have CL_max known
         #     delta_e=0
-        # # elif t<5:
-        # #     delta_e=np.radians(-10)*(t-3)/2 #ermoving pitch spike
         # elif t<6:
-        #     delta_e = np.radians(-10) * (1/(1+np.exp(-(t-4)))) #negative elevator deflection -> pitch up
-        # # elif t<8:
-        # #     delta_e=np.radians(-10)
+        #     delta_e = np.radians(-20) * (1/(1+np.exp(-(t-4)))) #negative elevator deflection -> pitch up
+        # elif t<8:
+        #     delta_e=np.radians(-20)
         # else:
         #     delta_e=0
-        # if t<6:
-        #     delta_f=np.radians(10)
-        # elif t<9:
-        #     delta_f=np.radians(10)*(1-(t-8)/2)
-        # else:
-        #     delta_f=0
+
+        # V3
+        # (super basic controller; don't have to use rn)
+        # Kp = 0.5
+        # e = gamma_current - gamma_initial
+        # if V>15:
+        #     delta_e=Kp * e
+        # else: 
+        #     delta_e=0
+
+        ## FLAP LOGIC
+        if t>6:
+            delta_f=np.radians(35)
+        else:
+            delta_f=0
 
         '''
         using all linear functions to model takeoff controls inputs
@@ -113,17 +139,16 @@ class Aircraft:
         '''
         # small constant nose-down trim,
         '''do i want nose up or down during landing?'''
-        delta_e = np.radians(1)
+        # delta_e = np.radians(1)
 
-        # flaps deployed for landing
-        if t < 8:
-            delta_f = np.radians(15)
-        else:
-            delta_f = np.radians(10)
+        # # flaps deployed for landing
+        # if t < 8:
+        #     delta_f = np.radians(15)
+        # else:
+        #     delta_f = np.radians(10)
 
-        # throttle slowly reducing
-        throttle = .1
-        throttle=0.15*np.exp(-t/10)
+        # # throttle slowly reducing
+        throttle=1 - np.exp(-t/0.5)
 
         return delta_e, delta_f, throttle
 
@@ -133,7 +158,7 @@ class Aircraft:
 
         V = np.sqrt(u**2 + w**2)
         alpha=np.arctan2(w, u)
-        alpha=np.clip(alpha, np.radians(-15), np.radians(15))
+        alpha=np.clip(alpha, np.radians(-30), np.radians(30))
         if V<1e-6:
             q_bar=0
         else:
@@ -148,6 +173,7 @@ class Aircraft:
         state_vec=np.array([delta_alpha, delta_dele, delta_delf]) #in future ingnore CL due to elevator deflection
 
         CL=self.aero.CL0+self.aero.CL@state_vec
+        print(f"CL: {CL:.3f} at alpha: {np.degrees(alpha):.2f} deg, delta_e: {np.degrees(delta_e):.2f} deg, delta_f: {np.degrees(delta_f):.2f} deg")
         Cm=self.aero.Cm0+self.aero.Cm@state_vec
 
 
@@ -175,7 +201,9 @@ class Aircraft:
 
         u, w, q, theta, xe, ze = x
 
-        controls = self.controls(t)
+        # print(f'altitude: {-ze}')
+
+        controls = self.controls(t, x)
         delta_e, delta_f, throttle = controls
 
         V = np.sqrt(u**2 + w**2)
@@ -192,7 +220,7 @@ class Aircraft:
 
         L = Q * self.geom.S * CL
         D = Q * self.geom.S * CD
-        T = self.prop.Tmax * throttle
+        T = self.prop.get_T(V) * throttle
         W = self.mass.m * 9.81
 
         '''TAKEOFF: if altitude for zome reason negative or zero
@@ -209,6 +237,8 @@ class Aircraft:
         X = L*np.sin(alpha)+ T - D*np.cos(alpha) - Roll_resist
         Z = -L*np.cos(alpha) + D*np.sin(alpha) - N
         M = Q * self.geom.S * self.c * Cm
+
+        # print(f'Thrust = {T} at velocity {V} at time {t}')
 
         return X, Z, M
 
@@ -256,7 +286,7 @@ class Aircraft:
         V = np.sqrt(u**2 + w**2)
         rho=Atmosphere(h=ze*-1).density[0]
         Q = 0.5 * rho * V**2
-        CL, Cm, CD= self.aero_coefficents(x, self.controls(t))
+        CL, Cm, CD= self.aero_coefficents(x, self.controls(t, x))
 
         L=Q*self.geom.S*CL
         W = self.mass.m * 9.81
@@ -291,7 +321,7 @@ mass = Mass(
     Iy=40000
     )
 
-prop = Propulsion(Tmax=77000)
+prop = ThrustVelocity()
 
 #landing values taken from study
 landing = Landing_Gear(
@@ -304,15 +334,17 @@ landing = Landing_Gear(
 
 aero = Aero(
     # CL0=2.96, #with flaps
-    CL0=.109, #without flaps with blown
+    CL0 = 1.2, #without flaps
+    # CL0=.109, #without flaps with blown
     Cm0=0.168,
     CD0=0.02,
     cd_w=0.01,
     cd_t=0.01,
     # CL=np.array([6.5, 5, 0.4, 1.2]), use if CL_qbar known
-    CL=np.array([6.5, 0.4, 1.2]),
+    CL=np.array([6.5, 0.4, 3]),
     # Cm=np.array([-1.2, -12, -1, -0.1]),
     Cm=np.array([-1.2, -1, -0.1]),
+    # Cm=np.array([-0.1, -0.2, -0.05]),
     cl=4,
     cm=-0.3,
     cx=-0.6
@@ -322,87 +354,88 @@ aero = Aero(
 
 '''SOLVING IVP FOR GENERAL'''
 # Initial state General
-u0 = 50       # forward velocity in m/s
-w0 = -2        # vertical velocity in m/s
+u0 = 0       # forward velocity in m/s
+w0 = 0        # vertical velocity in m/s
 q0 = 0        # pitch rate in rad/s
-theta0 = np.radians(3)   # pitch angle in rad
+theta0 = 0   # pitch angle in rad
 x_e0 = 0      # initial x-position in meters
-z_e0 = -100  # initial altitude above runwayin meters
+z_e0 = 0  # initial altitude above runwayin meters
 x0 = [u0, w0, q0, theta0, x_e0, z_e0]
 plane_1=Aircraft(mass, geom, aero, prop, landing, rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0)
 
 #Intergate over time span
-t_span = (0, 100)
-t_eval = np.linspace(0, 100, 500)
+t = 30
+t_span = (0, t)
+t_eval = np.linspace(0, t, 250)
 
 sol = solve_ivp(
     plane_1.dynamics,
     t_span,
     plane_1.ic,
     t_eval=t_eval,
-    events=plane_1.touchdown_event,
-    rtol=1e-8,
-    atol=1e-8,
-    max_step=.02
+    events=plane_1.takeoff_event,
+    # rtol=1e-8,
+    # atol=1e-8,
+    # max_step=.02
 )
 
 '''SOLVING IVP FOR LANDING'''
 #Before touchdown, what is the max and min altitude, min should be about zero
-print(f"Min ze: {-np.min(sol.y[5]):.3f} m")
-print(f"Final ze: {-sol.y[5][-1]:.3f} m")
+# print(f"Min ze: {-np.min(sol.y[5]):.3f} m")
+# print(f"Final ze: {-sol.y[5][-1]:.3f} m")
 
-if sol.y_events[0].size == 0:
-    print("Touchdown not detected")
-    exit()
+# if sol.y_events[0].size == 0:
+#     print("Touchdown not detected")
+#     exit()
 
-x_touch = sol.y_events[0][0]
+# x_touch = sol.y_events[0][0]
 
-u_td = x_touch[0]
-w_td = x_touch[1]
-theta_td = x_touch[3]
-we_td=-u_td*np.sin(theta_td)+w_td*np.cos(theta_td)
+# u_td = x_touch[0]
+# w_td = x_touch[1]
+# theta_td = x_touch[3]
+# we_td=-u_td*np.sin(theta_td)+w_td*np.cos(theta_td)
 
 #Landing Initial Conditions
-z10=0 #no shock absorber compression initally
-z20=0 #no tire compression initially
-z1_dot0=we_td
-z2_dot0=0
-z0=[z10, z20, z1_dot0, z2_dot0]
+# z10=0 #no shock absorber compression initally
+# z20=0 #no tire compression initially
+# z1_dot0=we_td
+# z2_dot0=0
+# z0=[z10, z20, z1_dot0, z2_dot0]
 
-landing_tspan=(0,10)
-# landing_teval=np.linspace(0,5,300)
-sol_landing=solve_ivp(
-    lambda t,z: plane_1.landing_dynamics(plane_1.controls(t), t, x_touch, z),
-    landing_tspan,
-    z0,
-    # landing_teval,
-    rtol=1e-8,
-    atol=1e-8,
-    max_step=.02
-)
+# landing_tspan=(0,10)
+# # landing_teval=np.linspace(0,5,300)
+# sol_landing=solve_ivp(
+#     lambda t,z: plane_1.landing_dynamics(plane_1.controls(t), t, x_touch, z),
+#     landing_tspan,
+#     z0,
+#     # landing_teval,
+#     rtol=1e-8,
+#     atol=1e-8,
+#     max_step=.02
+# )
 
 
 # RESULTS
 # x takeoff and at what time, only do this is event is takeoff
-# if sol.t_events[0].size > 0:
-#     t_to=sol.t_events[0][0]
-#     x_to=sol.y_events[0][0][4]
-#     v_to=np.sqrt(sol.y_events[0][0][0]**2+sol.y_events[0][0][1]**2)
+if sol.t_events[0].size > 0:
+    t_to=sol.t_events[0][0]
+    x_to=sol.y_events[0][0][4]
+    v_to=np.sqrt(sol.y_events[0][0][0]**2+sol.y_events[0][0][1]**2)
 
-#     print(f"Takeoff time: {t_to:.3f} s")
-#     print(f"Takeoff distance: {x_to:.2f} m")
-#     print(f"Takeoff velocity: {v_to:.2f} m/s")
+    print(f"Takeoff time: {t_to:.3f} s")
+    print(f"Takeoff distance: {x_to:.2f} m")
+    print(f"Takeoff velocity: {v_to:.2f} m/s")
 
-# else:
-#     print("Aircraft did not lift off.")
+else:
+    print("Aircraft did not lift off.")
 
-alpha=np.arctan2(sol.y[1], sol.y[0])
-alpha = np.clip(alpha, np.radians(-15), np.radians(15))
+
+#alpha = np.clip(alpha, np.radians(-15), np.radians(15))
 
 '''PLOTS'''
 # Trajectory
 plt.plot(sol.y[4], -sol.y[5])
-# plt.scatter(x_to, 0, label='Takeoff',c='red', marker='*')
+plt.scatter(x_to, 0, label='Takeoff',c='red', marker='*')
 plt.xlabel("Downrange Distance (m)")
 plt.ylabel("Altitude (m)")
 plt.title("Trajectory")
@@ -413,65 +446,71 @@ plt.show()
 
 
 #x and z Positions
-# # plt.plot(sol.t, sol.y[4], label='x Position')
-# plt.plot(sol.t, sol.y[4], label='x Position')
-# plt.plot(sol.t, -sol.y[5], label='z Position')
-# plt.legend()
-# plt.grid(True)
-# plt.xlabel('Time (s)')
-# plt.ylabel('Position (m)')
-# plt.title("Position")
-# plt.show()
+plt.plot(sol.t, sol.y[4], label='x Position')
+plt.plot(sol.t, sol.y[4], label='x Position')
+plt.plot(sol.t, -sol.y[5], label='z Position')
+plt.legend()
+plt.grid(True)
+plt.xlabel('Time (s)')
+plt.ylabel('Position (m)')
+plt.title("Position")
+plt.show()
 
 # Velocities
-# u = sol.y[0]
-# w = sol.y[1]
-# v = np.sqrt(u**2 + w**2)
-# plt.plot(sol.t, u, label='Forward Velocity (u)')
-# plt.plot(sol.t, -w, label='Vertical Velocity (w)')
-# plt.plot(sol.t, v, label='Total Velocity (v)')
-# plt.xlabel("Time (s)")
-# plt.ylabel("Velocity (m/s)")
-# plt.title("Velocity")
-# plt.legend()
-# plt.grid(True)
-# plt.show()
+u = sol.y[0]
+w = sol.y[1]
+v = np.sqrt(u**2 + w**2)
+plt.plot(sol.t, u, label='Forward Velocity (u)')
+plt.plot(sol.t, w, label='Vertical Velocity (w)')
+plt.plot(sol.t, v, label='Total Velocity (v)')
+plt.xlabel("Time (s)")
+plt.ylabel("Velocity (m/s)")
+plt.title("Velocity")
+plt.legend()
+plt.grid(True)
+plt.show()
 
-#AoA
-# plt.plot(sol.t, np.degrees(alpha))
-# plt.xlabel("Time (s)")
-# plt.ylabel("Angle of Attack (deg)")
-# plt.title("Angle of Attack")
-# plt.grid(True)
-# plt.show()
+# Climb angle wrt ground
+
+alpha=np.arctan2(sol.y[1], sol.y[0])
+theta=sol.y[3]
+plt.plot(sol.t, np.degrees(theta)-np.degrees(alpha))
+# plt.plot(v, np.degrees(theta)-np.degrees(alpha))
+plt.xlabel("Time (s)")
+plt.ylabel("Climb Angle (deg)")
+plt.title("Climb Angle")
+plt.grid(True)
+plt.show()
+
+
 
 #Landing
-z1=sol_landing.y[0]
-z2=sol_landing.y[1]
-compression=z1-z2
+# z1=sol_landing.y[0]
+# z2=sol_landing.y[1]
+# compression=z1-z2
 
-plt.plot(sol_landing.t, compression)
-plt.xlabel("Time (s)")
-plt.ylabel("Shock Compression (m)")
-plt.title("Landing Gear Compression")
-plt.grid()
-plt.show()
+# plt.plot(sol_landing.t, compression)
+# plt.xlabel("Time (s)")
+# plt.ylabel("Shock Compression (m)")
+# plt.title("Landing Gear Compression")
+# plt.grid()
+# plt.show()
 
-plt.plot(sol_landing.t, z1, label="Aircraft Mass")
-plt.plot(sol_landing.t, z2, label="Wheel")
-plt.xlabel("Time (s)")
-plt.ylabel("Displacement (m)")
-plt.title("Landing Gear Motion")
-plt.legend()
-plt.grid()
-plt.show()
+# plt.plot(sol_landing.t, z1, label="Aircraft Mass")
+# plt.plot(sol_landing.t, z2, label="Wheel")
+# plt.xlabel("Time (s)")
+# plt.ylabel("Displacement (m)")
+# plt.title("Landing Gear Motion")
+# plt.legend()
+# plt.grid()
+# plt.show()
 
 
-F_tire = plane_1.landing.k2 * sol_landing.y[1]
+# F_tire = plane_1.landing.k2 * sol_landing.y[1]
 
-plt.plot(sol_landing.t, F_tire)
-plt.xlabel("Time (s)")
-plt.ylabel("Gear Load (N)")
-plt.title("Landing Gear Force")
-plt.grid()
-plt.show()
+# plt.plot(sol_landing.t, F_tire)
+# plt.xlabel("Time (s)")
+# plt.ylabel("Gear Load (N)")
+# plt.title("Landing Gear Force")
+# plt.grid()
+# plt.show()
