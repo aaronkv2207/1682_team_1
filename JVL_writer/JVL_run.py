@@ -1,11 +1,12 @@
+from typing import List
+
 import aerosandbox as asb
 import aerosandbox.numpy as np
-from aerosandbox.tools import units
 import aerosandbox.tools.pretty_plots as p
-from typing import List
-from J import JetParam, JetControl, WingJSec, JVL, JWing
-from scipy.interpolate import Akima1DInterpolator
+from aerosandbox.tools import units
 from geom import planeB as plane  # , jvl_plane
+from J import JVL, JetControl, JetParam, JWing, WingJSec
+from scipy.interpolate import Akima1DInterpolator
 
 # jvl_plane.run()
 
@@ -56,5 +57,5 @@ jvl_plane.default_analysis_specific_options = {
     # asb.Fuselage: dict(panel_resolution=24, panel_spacing="cosine"), # NOTE: fuselage creation doesn't work on Mac silicon jvl version
 }
 
-result = jvl_plane.run() # dictionary of results
+result = jvl_plane.run()  # dictionary of results
 print(result)

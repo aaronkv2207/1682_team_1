@@ -1,0 +1,4 @@
+*/build
+*/.vscode
+# Python cache
+__pycache__/

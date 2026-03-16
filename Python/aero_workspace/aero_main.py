@@ -1,62 +1,94 @@
+import pickle
+from dataclasses import dataclass
+
+import jvl_run_outputs
 import numpy as np
 import pandas as pd
 from aero_dict import AircraftConfig
 from ambiance import Atmosphere
 from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
-from drag import C_Dp, V_h, V_v
-from scipy.interpolate import interp1d
 
 # get jvl cg --> mset, run file, input file, ...; can shift around masses to shift cg in .mass file
 
+DEG2RAD_CONV = ureg("deg").to("rad").magnitude
 
+
+@dataclass
 class TakeoffCoeff:
-    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Defines functions based on fit of operating points --> CL, CD, CM."""
+    """Reads a summary of JVL output dataframe at various operating points. Defines functions
+    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    df = pd.read_csv("./takeoff_coefficients")
-    alphas = df["ALPHA"]
-    flap_angle = df["BETAS"]
-    velocities = df["VELOCITY"]
+    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/takeoff.pkl"
+    with open(FILE_NAME, "rb") as f:
+        data = pickle.load(f)
 
-    # TODO: Will need definitions for every control surface
-    CL_alpha = np.hstack((alphas, df["CL"]))  # convert from degrees --> radians
-    CD_alpha = np.hstack((alphas, df["CD"]))
-    CM_alpha = np.hstack((alphas, df["CM"]))
+    alphas, velocities, betas = [], [], []
+    CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    CL_flap = np.hstack((flap_angle, df["CL"]))
-    CD_flap = np.hstack((flap_angle, df["CD"]))
-    CM_flap = np.hstack((flap_angle, df["CM"]))
+    for _, run in enumerate(data):
+        alphas.append(run["alpha"] * DEG2RAD_CONV)
+        velocities.append(run["velocity"])
+        betas.append(run["beta"] * DEG2RAD_CONV)
+        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
+        CD.append(run["CD"])
+        Cm.append(run["Cm"])
 
-    CL_velocity = np.hstack((velocities, df["CL"]))
-    CD_velocity = np.hstack((velocities, df["CD"]))
-    CM_velocity = np.hstack((velocities, df["CM"]))
+        CDind.append(run["CDind"])
+        e.append(run["e"])
 
-
-class ClimbCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
-    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Defines functions based on fit of operating points --> CL, CD, CM."""
+    CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
 
 
-class CruiseCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
-    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Defines functions based on fit of operating points --> CL, CD, CM."""
+@dataclass
+class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
+    """Will read a summary of JVL output dataframe at various operating points. Defines functions
+    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    df = pd.read_csv("./cruise_coefficients")
-    alphas = df["ALPHA"]
-    flap_angle = df["BETAS"]
-    velocities = df["VELOCITY"]
+    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/climb.pkl"
+    with open(FILE_NAME, "rb") as f:
+        data = pickle.load(f)
 
-    CL_alpha = np.hstack((alphas, df["CL"]))
-    CD_alpha = np.hstack((alphas, df["CD"]))
-    CM_alpha = np.hstack((alphas, df["CM"]))
+    alphas, velocities, betas = [], [], []
+    CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    CL_flap = np.hstack((flap_angle, df["CL"]))
-    CD_flap = np.hstack((flap_angle, df["CD"]))
-    CM_flap = np.hstack((flap_angle, df["CM"]))
+    for _, run in enumerate(data):
+        alphas.append(run["alpha"] * DEG2RAD_CONV)
+        velocities.append(run["velocity"])
+        betas.append(run["beta"] * DEG2RAD_CONV)
+        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
+        CD.append(run["CD"])
+        Cm.append(run["Cm"])
 
-    CL_velocity = np.hstack((velocities, df["CL"]))
-    CD_velocity = np.hstack((velocities, df["CD"]))
-    CM_velocity = np.hstack((velocities, df["CM"]))
+        CDind.append(run["CDind"])
+        e.append(run["e"])
+
+    # TODO: CD_DP = AircraftConfig.C_Dp_climb # profile drag from Brenda's model
+
+
+@dataclass
+class CruiseCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
+    """Will read a summary of JVL output dataframe at various operating points. Defines functions
+    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
+
+    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/cruise.pkl"
+    with open(FILE_NAME, "rb") as f:
+        data = pickle.load(f)
+
+    alphas, velocities, betas = [], [], []
+    CL, CD, Cm, CDind, e = [], [], [], [], []
+
+    for _, run in enumerate(data):
+        alphas.append(run["alpha"] * DEG2RAD_CONV)
+        velocities.append(run["velocity"])
+        betas.append(run["beta"] * DEG2RAD_CONV)
+        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
+        CD.append(run["CD"])
+        Cm.append(run["Cm"])
+
+        CDind.append(run["CDind"])
+        e.append(run["e"])
+
+    CD_DP = AircraftConfig.C_Dp_cruise  # profile drag from Brenda's model
 
 
 class CruiseModel:
@@ -65,9 +97,9 @@ class CruiseModel:
     ) -> None:
         self.s_ref = s_ref * ureg("m^2")
         self.weight = weight * ureg("N")  # newtons
-        self.v_cruise = v_cruise.magnitude * ureg("m/s")
+        self.v_cruise = v_cruise
         self.h_cruise = h_cruise
-        self.density = Atmosphere(h=h_cruise.magnitude).density[0] * ureg("kg/m^3")
+        self.density = Atmosphere(h=h_cruise).density[0]
         self.AR = AR
         self.q = 0.5 * self.density * (self.v_cruise**2)
         self.Cd0 = Cd0
@@ -77,7 +109,7 @@ class CruiseModel:
 
     def cl(self):
         L = self.weight  # assumes I have weight as a function of time
-        return (L / (self.q * self.s_ref)).magnitude
+        return L / (self.q * self.s_ref)
 
     def cd_induced(self):
         if self.CDi is None:
@@ -92,39 +124,45 @@ class CruiseModel:
         return self.cd_total() * self.q * self.s_ref
 
 
-class LandingCoeff:  # TODO: NOT IMPLEMENTED; NEEDS UPDATE
-    """Will read a summary of JVL output data as a .txt and interpolate results from JVL outputs at various operating points.
-    Defines functions based on fit of operating points --> CL, CD, CM."""
+class LandingCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
+    """Will read a summary of JVL output dataframe at various operating points. Defines functions
+    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    df = pd.read_csv("./landing_coefficients")
-    alphas = df["ALPHA"]
-    flap_angle = df["BETAS"]
-    velocities = df["VELOCITY"]
+    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/landing.pkl"
+    with open(FILE_NAME, "rb") as f:
+        data = pickle.load(f)
 
-    CL_alpha = np.hstack((alphas, df["CL"]))
-    CD_alpha = np.hstack((alphas, df["CD"]))
-    CM_alpha = np.hstack((alphas, df["CM"]))
+    alphas, velocities, betas = [], [], []
+    CL, CD, Cm, CDind, e = [], [], [], [], []
 
-    CL_flap = np.hstack((flap_angle, df["CL"]))
-    CD_flap = np.hstack((flap_angle, df["CD"]))
-    CM_flap = np.hstack((flap_angle, df["CM"]))
+    for _, run in enumerate(data):
+        alphas.append(run["alpha"] * DEG2RAD_CONV)
+        velocities.append(run["velocity"])
+        betas.append(run["beta"] * DEG2RAD_CONV)
+        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
+        CD.append(run["CD"])
+        Cm.append(run["Cm"])
 
-    CL_velocity = np.hstack((velocities, df["CL"]))
-    CD_velocity = np.hstack((velocities, df["CD"]))
-    CM_velocity = np.hstack((velocities, df["CM"]))
+        CDind.append(run["CDind"])
+        e.append(run["e"])
+    # TODO: CD_DP = AircraftConfig.C_Dp_landing # profile drag from Brenda's model
 
 
 # Runner script
 if __name__ == "__main__":
     cruise_cls = CruiseModel(
         s_ref=AircraftConfig.s_ref,
-        weight=AircraftConfig.weight_cruise,
-        v_cruise=AircraftConfig.v_cruise,
+        weight=0.85
+        * MTOW.magnitude,  # TODO: needed from prop; UPDATE to AircraftConfig.weight_cruise
+        v_cruise=CruiseCoeff.velocities[
+            0
+        ],  # NOTE: change for a particular run of interest
         h_cruise=AircraftConfig.h_cruise,
         AR=AircraftConfig.AR,
-        Cd0=AircraftConfig.Cd0_cruise,
-        Cdv=AircraftConfig.Cdv_cruise,
-        CDi=AircraftConfig.CDi_cruise,
+        Cd0=0.0,
+        Cdv=TakeoffCoeff.CD_DP,
+        CDi=CruiseCoeff.CDind[0],  # NOTE: change for a particular run of interest
+        e=CruiseCoeff.e[0],  # NOTE: change for a particular run of interest
     )  #  default assumes e=0.7; change this parameter if different
     CD_total_cruise = cruise_cls.cd_total()
     L_over_D_cruise = cruise_cls.cl() / CD_total_cruise

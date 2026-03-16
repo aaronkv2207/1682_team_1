@@ -4,7 +4,7 @@ Initial Aircraft
 #IYsym   IZsym   Zsym
 0       0   0.0
 #Sref    Cref    Bref
-48.98 2.4605624353155786 19.91983935678197
+48.98 2.460562435315579 19.91983935678197
 #Xref    Yref    Zref
 0 0 0
 # CDp
@@ -27,7 +27,7 @@ SECTION
 0 0 0 2.4899799 0
 
 AFIL
-1682_v0.af0
+1682_v0_8diff.af0
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -40,18 +40,14 @@ FlapJet1 1.000 1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-0 4.1349699 0 2.4899799 0
+0 2.4674849 0 2.4899799 0
 
 AFIL
-1682_v0.af1
+1682_v0_8diff.af1
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
 Flap1 1 0.75 0 0 0 1
-
-CONTROL
-#name, gain, Xhinge, XYZhvec, SgnDup
-Flap2 1 0.75 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
@@ -64,14 +60,70 @@ FlapJet2 1.000 1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-0 7.4699398 0 2.4899799 0
+0 4.1349699 0 2.4899799 0
 
 AFIL
-1682_v0.af2
+1682_v0_8diff.af2
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flap1 1 0.75 0 0 0 1
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet2 1.000 1.000
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet3 1.000 1.000
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJetO3 1.000 -1.000
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+0 5.8024548 0 2.4899799 0
+
+AFIL
+1682_v0_8diff.af3
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flap1 1 0.75 0 0 0 1
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
 Flap2 1 0.75 0 0 0 1
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet3 1.000 1.000
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJetO3 1.000 -1.000
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet4 1.000 1.000
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJetO4 1.000 -1.000
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+0 7.4699398 0 2.4899799 0
+
+AFIL
+1682_v0_8diff.af4
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flap2 1 0.8 0 0 0 1
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -83,7 +135,11 @@ Flaperon 1 0.7 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet2 1.000 1.000
+FlapJet4 1.000 1.000
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJetO4 1.000 -1.000
 
 #--------------------------------------------------
 SECTION
@@ -91,7 +147,7 @@ SECTION
 0.17429859 9.9599197 0 2.2409819 0
 
 AFIL
-1682_v0.af3
+1682_v0_8diff.af5
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -113,7 +169,7 @@ SECTION
 7.3381975 0 0 2.4849849 0
 
 AFIL
-1682_v0.af4
+1682_v0_8diff.af6
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -125,7 +181,7 @@ SECTION
 8.6643 0 2.9819819 2.4849849 0
 
 AFIL
-1682_v0.af5
+1682_v0_8diff.af7
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -146,7 +202,7 @@ SECTION
 8.6643 0 2.9819819 2.4849849 0
 
 AFIL
-1682_v0.af6
+1682_v0_8diff.af8
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -158,7 +214,7 @@ SECTION
 8.9987402 4.6355297 2.9819819 2.1505447 0
 
 AFIL
-1682_v0.af7
+1682_v0_8diff.af9
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -170,7 +226,7 @@ Fuselage
 24 1
 
 BFIL
-1682_v0.fuse0
+1682_v0_8diff.fuse0
 
 TRANSLATE
 0 0 0
