@@ -29,7 +29,7 @@ mu = 0.02  # Rolling friction coefficient [-]
 x_runway = 52  # Runway length (171 ft) [m]
 
 V_stall = 19.933  # Stall speed [m/s]
-V_to = 25  # Takeoff speed [m/s]
+V_to = 1.1*V_stall  # Takeoff speed [m/s]
 V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
 RPM = 6000 # RPM of propeller [rev/min]
@@ -78,7 +78,7 @@ def T(v):
 # At takeoff, (W-L(v)) is not included, as there is no friction force when we are off the ground
 T_to = D(V_to) + acc(V_to)
 print("Velocity at Takeoff:", V_to)
-print("Thrust at takeoff:", T_to)
+print("BASIC/NAIVE Thrust at takeoff:", T_to)
 print("T/W at takeoff: ", T_to/W)
 
 # ============================================================
@@ -168,11 +168,11 @@ def Eta_ideal(v, R):
     return 2 / (1 + np.sqrt(1 + Tc))
 
 
-# print(Eta_ideal_cruise(125,3.5))
-# print("Cl=", CL_cruise(130))
-# print("Cd=", CD_cruise(130))
-# print("T_cruise=",T_cruise(130))
-# print("P_cruise=", P_cruise(130, 1.8)/1000)
+print("Effeciency during cruise=", Eta_ideal_cruise(125,3.5))
+print("Cl=", CL_cruise(130))
+print("Cd=", CD_cruise(130))
+print("T_cruise=",T_cruise(130), "N")
+print("P_cruise=", P_cruise(130, 1.8)/1000, "kW")
 
 
 # ============================================================
@@ -261,31 +261,31 @@ def P_shaft_required(v, R):
 
 
 
-# # ============================================================
-# # THRUST INTERPOLATOR (first used in takeoff model) (0–22 m/s)
-# # ============================================================
+# ============================================================
+# THRUST INTERPOLATOR (first used in takeoff model) (0–22 m/s)
+# ============================================================
 
-# V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
-# T_data = 8 * np.array([3940.0, 3326.0, 2863.0, 2514.0, 2249.0, 2049.0, 1895.0, 1771.0, 1645.0, 1466.0, 1183.0]) # Thrust per fan [N]
-# degree = 5          # change this to 1,2,3,4,... to test fits
-# coeffs = np.polyfit(V_data, T_data, degree)
-# T_poly = np.poly1d(coeffs)
-# print("Current Thrust at Takeoff:", T_poly(V_to)/1000, " [kN]")
+V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
+T_data = 8 * np.array([3604.0, 3280.0, 2999.0, 2759.0, 2557.0, 2381.0, 2224.0, 2088.0, 1969.0, 1866.0, 1776.0]) # Thrust per fan [N]
+degree = 5          # change this to 1,2,3,4,... to test fits
+coeffs = np.polyfit(V_data, T_data, degree)
+T_poly = np.poly1d(coeffs)
+print("Current Thrust at Takeoff:", T_poly(V_to)/1000, " [kN]")
 
-# class ThrustInterpolator:
-#     def __init__(self, V_data=V_data, T_data=T_data, degree=degree):
-#         self.coeffs = np.polyfit(V_data, T_data, degree)
-#         self.poly = np.poly1d(self.coeffs)
+class ThrustInterpolator:
+    def __init__(self, V_data=V_data, T_data=T_data, degree=degree):
+        self.coeffs = np.polyfit(V_data, T_data, degree)
+        self.poly = np.poly1d(self.coeffs)
 
-#     def get_T(self, v):
-#         """Interpolated thrust per fan [N]"""
-#         return self.poly(v)
+    def get_T(self, v):
+        """Interpolated thrust per fan [N]"""
+        return self.poly(v)
 
-# def T_fan_interp(v):
-#         """Interpolated thrust per fan [N]"""
-#         return T_poly(v)
+def T_fan_interp(v):
+        """Interpolated thrust per fan [N]"""
+        return T_poly(v)
 
-# vel = np.linspace(0,130,500)
+vel = np.linspace(0,130,500)
 # plt.figure(figsize=(8,6))
 # plt.scatter(V_data, T_data/1000, label="Original Data")
 # plt.plot(vel, T_fan_interp(vel)/1000, label=f"Polynomial Fit (deg={degree})")
