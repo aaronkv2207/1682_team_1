@@ -32,7 +32,8 @@ class Aero:
     CD0: float
     cd_w: float
     cd_t: float
-    CL: np.ndarray #[CLa, CLq, CLde, CLdf]
+    CL_to: np.ndarray #[CLa, CLq, CLde, CLdf]
+    CL_td: np.ndarray
     Cm: np.ndarray #[CMa, Cmq, Cmde, Cmddf]
 
 @dataclass
@@ -178,12 +179,14 @@ class Aircraft:
 
         if self.phase=='takeoff':
             CL0=self.aero.CL0[0]
+            CL_vec=self.aero.CL_to
         if self.phase=='landing':
             CL0=self.aero.CL0[1]
+            CL_vec=self.aero.CL_td
 
-        CL=CL0+self.aero.CL@state_vec
+        CL=CL0+CL_vec@state_vec
         # print(f"CL: {CL:.3f} at alpha: {np.degrees(alpha):.2f} deg, delta_e: {np.degrees(delta_e):.2f} deg, delta_f: {np.degrees(delta_f):.2f} deg")
-        CL_array.append(CL)
+        # CL_array.append(CL)
 
         Cm=self.aero.Cm0+self.aero.Cm@state_vec
 
@@ -352,7 +355,8 @@ aero = Aero(
     cd_w=0.01,
     cd_t=0.01,
     # CL=np.array([6.5, 5, 0.4, 1.2]), use if CL_qbar known
-    CL=np.array([6.5, 0.4, 3]), #change for takeoff to be 3 for CLdeltaf
+    CL_to=np.array([6.5, 0.4, 3]), #change for takeoff to be 3 for CLdeltaf
+    CL_td=np.array([6.5, 0.4, 1.2]),
     # Cm=np.array([-1.2, -12, -1, -0.1]),
     Cm=np.array([-1.2, -1, -0.1]),
     # Cm=np.array([-0.1, -0.2, -0.05]),
@@ -360,7 +364,7 @@ aero = Aero(
     # CD0=AircraftConfig.Cd0_takeoff
 )
 '''CHOOSING PHASE OF FLIGHT'''
-phase='takeoff' #either 'takeoff' or 'landing'
+phase='landing' #either 'takeoff' or 'landing'
 
 '''SOLVING IVP FOR GENERAL'''
 # Initial state General
