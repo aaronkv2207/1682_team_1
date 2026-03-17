@@ -49,9 +49,9 @@ V_h = S_h * l_h / (S * c)
 V_v = S_v * l_v / (S * b)
 
 
-# # landing gear (still need to add!!)
-# tire_width = ...
-# tire_radius = ...
+# landing gear (still need to add!!)
+tire_width = 0.284 # [m] = 11.2 [in] 
+tire_radius = 0.818/2 # [m] = 32.2 [in] diameter
 
 # trouser_length = ...
 
@@ -62,14 +62,15 @@ S_wet_fancowl = (l_n * D_n * (2 + 0.35 * l_1 * l_n + 0.8 * l_1 * D_hl / l_n * D_
 S_wet_wing = 2*S 
 S_wet_htail = 2*S_h 
 S_wet_vtail = 2*S_v 
-# S_wet_gear = tire_width * (np.pi*tire_radius*2)
+
+S_wet_gear = tire_width * (np.pi*tire_radius*2)
 # s_wet_trousers = ...
 
-# S_wet_total = S_wet_fuse + 8*S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail
+# S_wet_total = S_wet_fuse + 8*S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail + S_wet_gear
 
 
 # cruise
-h_cruise = 5486.4 # [m]
+h_cruise = 5486.4 # [m] = 18000 ft
 rho_cruise = Atmosphere(h=h_cruise).density[0]  # [kg/m^2]
 mu_cruise = Atmosphere(h=h_cruise).dynamic_viscosity[0] # [Pa * s]
 V_cruise = 125  # [m/s]
@@ -84,6 +85,15 @@ mu_takeoff = Atmosphere(h=h_takeoff).dynamic_viscosity[0]  # [Ns/m^2] dynamic vi
 V_takeoff = 1.1 * V_STALL.magnitude  # [m/s]
 C_L_takeoff = cl_max  # from wt data???
 e_takeoff = 0.9
+
+
+# landing
+h_landing = h_takeoff
+rho_landing = rho_takeoff
+mu_landing = mu_takeoff
+V_landing = 20
+C_L_landing = 1.665
+e_landing = 0.9
 
 
 print("AR =", AR)
@@ -121,9 +131,9 @@ def calc_K_f_axi(dl):
 def calc_C_Dp(rho, V, mu):
     V_i = V_inf = V
 
-    S_wets = [S_wet_fuse, S_wet_fancowl, S_wet_wing, S_wet_htail, S_wet_vtail]
-    ls = [l_f, l_n, c, c_h, c_v]
-    fineness_ratios = [D_f/l_f, 0.12, 0.12, 0.10, 0.10]
+    S_wets = [S_wet_fuse, S_wet_fancowl, S_wet_wing, S_wet_htail, S_wet_vtail, S_wet_gear]
+    ls = [l_f, l_n, c, c_h, c_v, tire_radius*2]
+    fineness_ratios = [D_f/l_f, 0.12, 0.12, 0.10, 0.10, 0.10] # need to check fineness for landing gear
 
     Re_ls = []
     C_fs = []
@@ -154,6 +164,21 @@ def calc_C_Dp(rho, V, mu):
 
     Dp = sum(CDAs) * (1/2 * rho * V_i**3 / V_inf) #NOTE: Would need to change this logic if you V_i != V_inf
     C_Dp = Dp / (1/2 * rho * V**2 * S)
+
+    # # printing all the parts for debugging...
+    # Re_ls = np.array(Re_ls)
+    # print(np.round(Re_ls,2))
+
+    # C_fs = np.array(C_fs)
+    # print(np.round(C_fs,4))
+    
+    # normalized_S = []
+
+    # for s in S_wets:
+    #     normalized_S.append(s/S)
+    
+    # normalized_S = np.array(normalized_S)
+    # print(np.round(normalized_S,2))
 
     return Dp, C_Dp
 
@@ -189,6 +214,17 @@ print('profile drag coefficient =', round(C_Dp_takeoff,3))
 print('induced drag coefficient =', round(C_Di_takeoff,3))
 print('total drag coefficient =', round(C_Dp_takeoff+C_Di_takeoff,3))
 
+
+# calculate drag during landing!
+Dp_landing, C_Dp_landing = calc_C_Dp(rho_landing, V_landing, mu_landing)
+Di_landing, C_Di_landing = calc_C_Di(C_L_landing, rho_landing, V_landing, e_landing)
+
+# print('-------')
+# print('landinggg')
+# print('profile drag coefficient =', round(C_Dp_landing,3))
+# print('induced drag coefficient =', round(C_Di_landing,3))
+# print('total drag coefficient =', round(C_Dp_landing+C_Di_landing,3))
+
 # # drag polar??
 # C_D = np.linspace(0,2,1000)
 # C_L = np.sqrt((C_D - C_Dp_cruise) * np.pi * AR * e_cruise)
@@ -206,3 +242,6 @@ print('total drag coefficient =', round(C_Dp_takeoff+C_Di_takeoff,3))
 
 
 # print(C_L_cruise/(C_Dp_cruise+C_Di_cruise))
+
+
+
