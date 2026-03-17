@@ -57,7 +57,7 @@ class Wing():
     rho_cruise = 0.699 # at 18,000 ft
     W_total = 7500 * 9.8
     W_duct = 25 * 9.81 # kg - guess
-    W_fuel_per_wing = 750 # kg
+    W_fuel_per_wing = 750 * 9.8 # kg
 
     def __init__(self, aero, loading, materials, weight_estimate = 0.07*W_total):
         self.aero = aero
@@ -130,7 +130,8 @@ class Wing():
 
         axial_max = max(abs(axial_yy), abs(axial_zz))
 
-        return 1.5*axial_max
+        # return 1.5*axial_max
+        return 276e6
 
 
     def shear_stress(self, L, T, D):
@@ -172,7 +173,99 @@ class Wing():
 
         shear_max = max(abs(shear_xy), abs(shear_xz))
 
-        return 1.5*shear_max
+        # return 1.5*shear_max
+        return 207e6
+
+    def max_moment(self, L, T, D, N_landing):
+
+        # Geometry
+        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
+        c = np.sqrt(aircraft.s_ref/aircraft.AR)
+
+        x_T1 = b/5
+        x_T2 = b*(2/5)
+        x_T3 = b*(3/5)
+        x_T4 = b*(4/5)
+
+        t_x1 = self.aero["t_x1"]
+        t_x2 = self.aero["t_x2"]
+
+        x_1 = self.aero["x_1"]
+        x_2 = self.aero["x_2"]
+
+        h = 0.5*(t_x1+t_x2)
+        w = x_2-x_1
+        t = t_x1*0.1
+
+        z = w/2
+        y = h/2
+
+        # thrust per fan
+        T = T/8
+
+        # weights
+        W_struct = N_landing*self.weight_estimate
+        W_fuel = N_landing*self.W_fuel_per_wing
+        W_duct = N_landing*self.W_duct
+
+        # elliptical moment constants
+        lift_moment = (2*L*b)/(3*np.pi)
+        drag_moment = (2*D*b)/(3*np.pi)
+
+        struct_moment = (2*W_struct*b)/(3*np.pi)
+        fuel_moment = (2*W_fuel*b)/(3*np.pi)
+
+        # root bending moments
+        M_y = (
+            T*(x_T1+x_T2+x_T3+x_T4)
+            - drag_moment
+        )
+
+        M_z = (
+            struct_moment
+            + fuel_moment
+            + W_duct*(x_T1+x_T2+x_T3+x_T4)
+            - lift_moment
+        )
+
+        print("Moments", M_y, M_z)
+
+        return abs(M_z)
+        return max(abs(M_y), abs(M_z))
+
+    def max_shear_load(self, L, T, D, N_landing):
+
+        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
+        c = np.sqrt(aircraft.s_ref/aircraft.AR)
+
+        t_x1 = self.aero["t_x1"]
+        t_x2 = self.aero["t_x2"]
+
+        x_1 = self.aero["x_1"]
+        x_2 = self.aero["x_2"]
+
+        h = 0.5*(t_x1+t_x2)
+        w = x_2-x_1
+        t = t_x1*0.1
+
+        T = T/8
+
+        # weights
+        W_struct = N_landing*self.weight_estimate
+        W_fuel = N_landing*self.W_fuel_per_wing
+        W_duct = N_landing*self.W_duct
+        print("L", L)
+        print("T", T)
+        print("D", D)
+
+        # shear forces
+        F_y = W_struct + 4*W_duct + W_fuel - L
+        F_z = -4*T + D
+
+        print("forces", F_y, F_z)
+
+        return abs(F_y)
+        return max(abs(F_y), abs(F_z))
 
 
     def get_N(self, L, a_z):
@@ -187,7 +280,7 @@ class Wing():
 
         return N, N_land, N_max
 
-    def spar_cap_area(self, L, a_z, axial_stress):
+    def spar_cap_area(self, L, a_z, axial_stress, max_moment):
         """Find necessary spar cap area based on loading"""
         # Get required variables
         c = 2.49
@@ -196,30 +289,38 @@ class Wing():
         taper_ratio = c_tip/c_0
         N_max = self.get_N(L, a_z)[2]
         W_cent = self.W_total - self.weight_estimate
-        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
+        b = aircraft.b
         t_x1 = self.aero["t_x1"]
         t_x2 = self.aero["t_x2"]
         x_1 = 0.1*c
         x_2 = 0.7*c
-        h = 2.64*.15
-        # h = 0.5*(t_x1+t_x2)
+        # h = 2.64*.15
+        h = 0.5*(t_x1+t_x2)
+        print("h", h)
         N = self.get_N(L, a_z)[0]
         E = self.materials["spar_cap_E"] # maybe remain this variable if it shows up again just for clarity
         w_b_max = self.aero["w_b_max"] # not sure where we'll actually get this
 
         # Calculate area based on strength and stiffness requirements
-        A_cap_0_strength = (N_max*W_cent)/(12*axial_stress)*(b/h)*(1+2*taper_ratio)/(1+taper_ratio)
-        A_cap_0_stiffness = (N*W_cent)/(48*E) * b**2/h**2 * 1/w_b_max * (1+2*taper_ratio)/(1+taper_ratio)
+        # A_cap_0_strength = (N_max*W_cent)/(12*axial_stress)*(b/h)*(1+2*taper_ratio)/(1+taper_ratio)
+        # A_cap_0_stiffness = (N*W_cent)/(48*E) * b**2/h**2 * 1/w_b_max * (1+2*taper_ratio)/(1+taper_ratio)
+        print("Max_moment", max_moment)
+        A_cap_0_strength = max_moment/(h*axial_stress)
+        print("A_cap_strength", A_cap_0_strength)
+        A_cap_0_stiffness = (max_moment*b**2)/(4*h**2*E*w_b_max)
+        print("A_cap_stiffness", A_cap_0_stiffness)
+        # return A_cap_0_strength
         return max(A_cap_0_strength, A_cap_0_stiffness)
 
-    def spar_web_area(self, L, a_z, shear_stress):
+    def spar_web_area(self, L, a_z, shear_stress, max_shear):
         """Find necessary spar web area based on loading"""
         # Get required variables
         N_max = self.get_N(L, a_z)[2]
         W_cent = self.W_total - self.weight_estimate
 
         # Return spar web area
-        return (N_max*W_cent)/(2*shear_stress)
+        # return (N_max*W_cent)/(2*shear_stress)
+        return max_shear/shear_stress
 
     def skin_thickness(self, q, shear_stress):
         """Find necessary skin thickness based on loading"""
@@ -267,6 +368,7 @@ class Wing():
         pass
 
     def takeoff(self):
+        print("Takeoff Values:")
         # Find forces - do we need to incorporate some takeoff angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
         q_takeoff = 0.5*self.rho_ground*aircraft.v_takeoff**2
         L_takeoff = self.aero["CL_takeoff"]*q_takeoff*aircraft.s_ref # or lift distribution from aero
@@ -279,11 +381,14 @@ class Wing():
         shear_stress_takeoff = self.shear_stress(L_takeoff, T_takeoff, D_takeoff)
         print("axial stress takeoff:", axial_stress_takeoff)
         print("shear stress takeoff:", shear_stress_takeoff)
+        moment_takeoff = self.max_moment(L_takeoff, T_takeoff, D_takeoff, 1)
+        shear_load_takeoff = self.max_shear_load(L_takeoff, T_takeoff, D_takeoff, 1)
+        print("moment and shear takeoff", moment_takeoff, shear_load_takeoff)
 
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
-        takeoff_spar_cap_area = self.spar_cap_area(L_takeoff, 0, axial_stress_takeoff)
-        takeoff_spar_web_area = self.spar_web_area(L_takeoff, 0, shear_stress_takeoff)
+        takeoff_spar_cap_area = self.spar_cap_area(L_takeoff, 0, axial_stress_takeoff, moment_takeoff)
+        takeoff_spar_web_area = self.spar_web_area(L_takeoff, 0, shear_stress_takeoff, shear_load_takeoff)
         takeoff_skin_thickness = self.skin_thickness(q_takeoff, shear_stress_takeoff)
         # takeoff_tube_thickness = self.tube_thickness() # still not sure what this is for
 
@@ -360,6 +465,7 @@ class Wing():
         return descent_spar_cap_area, descent_spar_web_area, descent_skin_thickness # , descent_tube_thickness
 
     def landing(self):
+        print("Landing Values:")
         # Find forces - do we need to incorporate landing angle into this? maybe for all the stuff angle is an option and during cruise it's just zero?
         q_landing = 0.5*self.rho_ground*aircraft.v_landing**2
         L_landing = self.aero["CL_landing"]*q_landing*aircraft.s_ref # or lift distribution from aero
@@ -372,31 +478,37 @@ class Wing():
         shear_stress_landing = self.shear_stress(L_landing, T_landing, D_landing)
         print("axial stress landing:", axial_stress_landing)
         print("shear stress landing:", shear_stress_landing)
+        moment_landing = self.max_moment(L_landing, T_landing, D_landing, 3)
+        shear_load_landing = self.max_shear_load(L_landing, T_landing, D_landing, 3)
+        print("moment and shear landing", moment_landing, shear_load_landing)
 
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
-        landing_spar_cap_area = self.spar_cap_area(L_landing, self.aero["a_z"], axial_stress_landing)
-        landing_spar_web_area = self.spar_web_area(L_landing, self.aero["a_z"], shear_stress_landing)
+        landing_spar_cap_area = self.spar_cap_area(L_landing, self.aero["a_z"], axial_stress_landing, moment_landing)
+        landing_spar_web_area = self.spar_web_area(L_landing, self.aero["a_z"], shear_stress_landing, shear_load_landing)
         landing_skin_thickness = self.skin_thickness(q_landing, shear_stress_landing)
 
         return landing_spar_cap_area, landing_spar_web_area, landing_skin_thickness
 
     def max_load_sizing(self):
         sizing_takeoff = self.takeoff()
-        sizing_climb = self.climb()
-        sizing_cruise = self.cruise()
-        sizing_descent = self.descent()
+        # sizing_climb = self.climb()
+        # sizing_cruise = self.cruise()
+        # sizing_descent = self.descent()
         sizing_landing = self.landing()
 
         print("sizing_takeoff:", sizing_takeoff)
-        print("sizing_climb:", sizing_climb)
-        print("sizing_cruise:", sizing_cruise)
-        print("sizing_descent:", sizing_descent)
+        # print("sizing_climb:", sizing_climb)
+        # print("sizing_cruise:", sizing_cruise)
+        # print("sizing_descent:", sizing_descent)
         print("sizing_landing:", sizing_landing)
 
-        spar_cap_area = max(sizing_takeoff[0], sizing_climb[0], sizing_cruise[0], sizing_descent[0], sizing_landing[0])
-        spar_web_area = max(sizing_takeoff[1], sizing_climb[1], sizing_cruise[1], sizing_descent[1], sizing_landing[1])
-        skin_thickness = max(sizing_takeoff[2], sizing_climb[2], sizing_cruise[2], sizing_descent[2], sizing_landing[2])
+        # spar_cap_area = max(sizing_takeoff[0], sizing_climb[0], sizing_cruise[0], sizing_descent[0], sizing_landing[0])
+        # spar_web_area = max(sizing_takeoff[1], sizing_climb[1], sizing_cruise[1], sizing_descent[1], sizing_landing[1])
+        # skin_thickness = max(sizing_takeoff[2], sizing_climb[2], sizing_cruise[2], sizing_descent[2], sizing_landing[2])
+        spar_cap_area = max(sizing_takeoff[0], sizing_landing[0])
+        spar_web_area = max(sizing_takeoff[1], sizing_landing[1])
+        skin_thickness = max(sizing_takeoff[2], sizing_landing[2])
 
         return spar_cap_area, spar_web_area, skin_thickness
 
@@ -405,15 +517,15 @@ class Wing():
         b = aircraft.b/2
         # for one of two wings
         sizing = self.max_load_sizing()
-        spar_cap_weight = sizing[0]*b*self.materials["spar_cap_density"]
-        spar_web_weight = sizing[1]*b*self.materials["spar_web_density"]
+        spar_cap_weight = sizing[0]*b*self.materials["spar_cap_density"]*0.75
+        spar_web_weight = sizing[1]*b*self.materials["spar_web_density"]*0.75
         skin_weight = sizing[2]*self.aero["airfoil_surface_area"]*0.4*self.materials["skin_density"]
 
         print("spar_cap_weight", spar_cap_weight)
         print("spar_web_weight", spar_web_weight)
         print("skin_weight", skin_weight)
 
-        spar_and_skin = 2*spar_cap_weight + 2*spar_web_weight + skin_weight
+        spar_and_skin = (2*spar_cap_weight + 2*spar_web_weight + skin_weight)*1.5
         print("Spar and skin weight:", spar_and_skin)
 
         # spar and skin is ~70% of total structural mass of the wing
@@ -461,8 +573,8 @@ if __name__ == "__main__":
     }
 
     loading = {
-        "T_takeoff": 27 * 10**3,
-        "T_climb": 18 * 10**3, # guess
+        "T_takeoff": 22.3 * 10**3,
+        "T_climb": 18645,
         "T_cruise": 8.5 * 10**3,
         "T_descent": 5 * 10**3, # guess
         "T_landing": 12 * 10**3, # guess
@@ -480,7 +592,7 @@ if __name__ == "__main__":
     # wing weight estimate
     # weight_estimate = 0.07*aero["W_total"]
 
-    test_wing = Wing(aero, loading, materials)
+    test_wing = Wing(aero, loading, materials, 1192.42*9.8)
 
     test_wing_weight = test_wing.wing_weight()
     print("Wing weight (kg)", test_wing_weight)
