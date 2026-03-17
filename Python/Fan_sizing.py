@@ -29,10 +29,10 @@ mu = 0.02  # Rolling friction coefficient [-]
 x_runway = 52  # Runway length (171 ft) [m]
 
 V_stall = 19.933  # Stall speed [m/s]
-V_to = 1.1 * V_stall  # Takeoff speed [m/s]
+V_to = 25  # Takeoff speed [m/s]
 V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
-RPM = 2100 # RPM of propeller [rev/min]
+RPM = 6000 # RPM of propeller [rev/min]
 omega = RPM * 2 * np.pi / 60  # [rad/s]
 N_fans = 8  # number of fans
 
@@ -77,6 +77,7 @@ def T(v):
 
 # At takeoff, (W-L(v)) is not included, as there is no friction force when we are off the ground
 T_to = D(V_to) + acc(V_to)
+print("Velocity at Takeoff:", V_to)
 print("Thrust at takeoff:", T_to)
 print("T/W at takeoff: ", T_to/W)
 
@@ -230,7 +231,8 @@ motor_power = 2050  # kW
 # Propulsor Values from radius chosen using plots above
 R_selected = .583 # [m]
 A_selected = N_fans * np.pi * R_selected**2 # [m^2]
-J = V_cruise / (omega*R_selected) 
+lam = V_cruise / (omega*R_selected) 
+J = np.pi*lam
 torque_TO = 2.1e6/omega
 print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
 print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
@@ -268,6 +270,7 @@ T_data = 8 * np.array([3940.0, 3326.0, 2863.0, 2514.0, 2249.0, 2049.0, 1895.0, 1
 degree = 5          # change this to 1,2,3,4,... to test fits
 coeffs = np.polyfit(V_data, T_data, degree)
 T_poly = np.poly1d(coeffs)
+print("Current Thrust at Takeoff:", T_poly(V_to)/1000, " [kN]")
 
 class ThrustInterpolator:
     def __init__(self, V_data=V_data, T_data=T_data, degree=degree):
