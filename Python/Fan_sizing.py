@@ -205,100 +205,170 @@ def P_shaft_required(v, R):
 
 
 
-# ============================================================
-# PLOT: Tradeoff Plot
-# ============================================================
+# # ============================================================
+# # PLOT: Tradeoff Plot
+# # ============================================================
 
-R_plot = np.linspace(0.5, 5, 200)  # [m]
-vel = np.linspace(0.1, V_to, 200) # [m/s]
+# R_plot = np.linspace(0.5, 5, 200)  # [m]
+# vel = np.linspace(0.1, V_to, 200) # [m/s]
 
-P_vals = [] 
-for r in R_plot:
-    P_curve = N_fans * P_shaft_required(vel, r)
-    P_vals.append(np.max(P_curve) / 1000)
-eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
-M_vals = [M_tip(r) for r in R_plot]
+# P_vals = [] 
+# for r in R_plot:
+#     P_curve = N_fans * P_shaft_required(vel, r)
+#     P_vals.append(np.max(P_curve) / 1000)
+# eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
+# M_vals = [M_tip(r) for r in R_plot]
 
-fig, ax1 = plt.subplots(figsize=(9, 6))
-# Power curve
-ax1.plot(np.pi * R_plot**2, P_vals, label="Takeoff Power Required (kW)")
-ax1.set_xlabel("Effective Total Propeller Area [m^2]")
-ax1.set_ylabel("Power (kW)")
+# fig, ax1 = plt.subplots(figsize=(9, 6))
+# # Power curve
+# ax1.plot(np.pi * R_plot**2, P_vals, label="Takeoff Power Required (kW)")
+# ax1.set_xlabel("Effective Total Propeller Area [m^2]")
+# ax1.set_ylabel("Power (kW)")
 
-motor_power = 2050  # kW 
-# ax1.axhline(motor_power, linestyle=":", label="Motor Power")
+# motor_power = 2050  # kW 
+# # ax1.axhline(motor_power, linestyle=":", label="Motor Power")
 
-# Propulsor Values from radius chosen using plots above
-R_selected = .583 # [m]
-A_selected = N_fans * np.pi * R_selected**2 # [m^2]
-lam = V_cruise / (omega*R_selected) 
-J = np.pi*lam
-torque_TO = 2.1e6/omega
-print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
-print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
-print("Effective Total Fan Area:", A_selected)
-print("Advance Ratio: ", J)
-print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected))
-print("Torque at takeoff:", torque_TO)
+# # Propulsor Values from radius chosen using plots above
+# R_selected = .583 # [m]
+# A_selected = N_fans * np.pi * R_selected**2 # [m^2]
+# lam = V_cruise / (omega*R_selected) 
+# J = np.pi*lam
+# torque_TO = 2.1e6/omega
+# print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
+# print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
+# print("Effective Total Fan Area:", A_selected)
+# print("Advance Ratio: ", J)
+# print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected))
+# print("Torque at takeoff:", torque_TO)
 
-# # Second axis for tip Mach
-# ax2 = ax1.twinx()
-# ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
-# ax2.set_ylabel("Tip Mach Number")
-# Mach limits
-# ax2.axhline(1.1, color="red", linestyle="--", label=f"Mach Limit={1.1}")
+# # # Second axis for tip Mach
+# # ax2 = ax1.twinx()
+# # ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
+# # ax2.set_ylabel("Tip Mach Number")
+# # Mach limits
+# # ax2.axhline(1.1, color="red", linestyle="--", label=f"Mach Limit={1.1}")
 
-# Combine legends
-lines1, labels1 = ax1.get_legend_handles_labels()
-# lines2, labels2 = ax2.get_legend_handles_labels()
-# ax1.legend(lines1 + lines2, labels1 + labels2)
-ax1.legend(lines1, labels1)
+# # Combine legends
+# lines1, labels1 = ax1.get_legend_handles_labels()
+# # lines2, labels2 = ax2.get_legend_handles_labels()
+# # ax1.legend(lines1 + lines2, labels1 + labels2)
+# ax1.legend(lines1, labels1)
 
-plt.title("Power vs Propeller Effective Area")
-plt.show()
-
-
+# plt.title("Power vs Propeller Effective Area")
+# plt.show()
 
 
 
-# ============================================================
-# THRUST INTERPOLATOR (first used in takeoff model) (0–22 m/s)
-# ============================================================
 
-V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
-T_data = 8 * np.array([3940.0, 3326.0, 2863.0, 2514.0, 2249.0, 2049.0, 1895.0, 1771.0, 1645.0, 1466.0, 1183.0]) # Thrust per fan [N]
-degree = 5          # change this to 1,2,3,4,... to test fits
-coeffs = np.polyfit(V_data, T_data, degree)
-T_poly = np.poly1d(coeffs)
-print("Current Thrust at Takeoff:", T_poly(V_to)/1000, " [kN]")
 
-class ThrustInterpolator:
-    def __init__(self, V_data=V_data, T_data=T_data, degree=degree):
-        self.coeffs = np.polyfit(V_data, T_data, degree)
-        self.poly = np.poly1d(self.coeffs)
+# # ============================================================
+# # THRUST INTERPOLATOR (first used in takeoff model) (0–22 m/s)
+# # ============================================================
 
-    def get_T(self, v):
-        """Interpolated thrust per fan [N]"""
-        return self.poly(v)
+# V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
+# T_data = 8 * np.array([3940.0, 3326.0, 2863.0, 2514.0, 2249.0, 2049.0, 1895.0, 1771.0, 1645.0, 1466.0, 1183.0]) # Thrust per fan [N]
+# degree = 5          # change this to 1,2,3,4,... to test fits
+# coeffs = np.polyfit(V_data, T_data, degree)
+# T_poly = np.poly1d(coeffs)
+# print("Current Thrust at Takeoff:", T_poly(V_to)/1000, " [kN]")
 
-def T_fan_interp(v):
-        """Interpolated thrust per fan [N]"""
-        return T_poly(v)
+# class ThrustInterpolator:
+#     def __init__(self, V_data=V_data, T_data=T_data, degree=degree):
+#         self.coeffs = np.polyfit(V_data, T_data, degree)
+#         self.poly = np.poly1d(self.coeffs)
 
-vel = np.linspace(0,130,500)
-plt.figure(figsize=(8,6))
-plt.scatter(V_data, T_data/1000, label="Original Data")
-plt.plot(vel, T_fan_interp(vel)/1000, label=f"Polynomial Fit (deg={degree})")
-plt.xlabel("Velocity [m/s]")
-plt.ylabel("Thrust per fan [kN]")
-plt.title("Fan Thrust Interpolation")
-plt.legend()
-plt.show()
+#     def get_T(self, v):
+#         """Interpolated thrust per fan [N]"""
+#         return self.poly(v)
+
+# def T_fan_interp(v):
+#         """Interpolated thrust per fan [N]"""
+#         return T_poly(v)
+
+# vel = np.linspace(0,130,500)
+# plt.figure(figsize=(8,6))
+# plt.scatter(V_data, T_data/1000, label="Original Data")
+# plt.plot(vel, T_fan_interp(vel)/1000, label=f"Polynomial Fit (deg={degree})")
+# plt.xlabel("Velocity [m/s]")
+# plt.ylabel("Thrust per fan [kN]")
+# plt.title("Fan Thrust Interpolation")
+# plt.legend()
+# plt.show()
 
 
 
 # Size ducted fan A/2, R/sqrt(2)
 # cl_avg about 0.5
+
+
+# ============================================================
+# Fan Blade Distribution Plot
+# ============================================================
+n_blades = 5 # number of blades
+R_selected = .583 # [m]
+r = R_selected* np.array([
+    0.05944, 0.07832, 0.0972, 0.11608, 0.13496, 0.15384, 0.17272, 0.1916,
+    0.21048, 0.22936, 0.24824, 0.26712, 0.286, 0.30488, 0.32376, 0.34264,
+    0.36152, 0.3804, 0.39928, 0.41816, 0.43704, 0.45592, 0.4748, 0.49368,
+    0.51256, 0.522
+])
+c = R_selected* np.array([
+    0.1856, 0.111, 0.17096, 0.22447, 0.26976, 0.30662, 0.33561, 0.35768,
+    0.36382, 0.37497, 0.38193, 0.38534, 0.3857, 0.38336, 0.37849, 0.37115,
+    0.36122, 0.34838, 0.33212, 0.3116, 0.29555, 0.28201, 0.26759, 0.25536,
+    0.24299, 0.22757
+])
+beta = np.deg2rad(np.array([
+    85.0212, 80.8544, 77.7618, 74.7565, 71.849, 69.047, 66.3561, 63.7793,
+    61.3179, 58.9711, 56.7372, 54.6132, 52.5953, 50.6792, 48.8601, 47.1332,
+    45.4936, 43.9361, 42.456, 41.0487, 39.7095, 38.4342, 37.2188, 36.0593,
+    34.9523, 32.4185
+]))
+
+y_half = 1/2*c*np.cos(beta)
+y_full = np.concatenate([y_half, -y_half[::-1]])
+r_full = np.concatenate([r, r[::-1]])
+
+# PLOTTING 1 BLADE
+plt.figure(figsize=(8, 3))
+plt.plot(r_full, y_full, '-o', color='blue')
+plt.fill(r_full, y_full, alpha=0.3, color='skyblue')
+plt.xlabel('Radius (m)')
+plt.ylabel('y (m)')
+plt.title('Fan Blade Distribution')
+plt.grid(True)
+plt.axis('equal')
+plt.show()
+
+# PLOTTING ALL BLADES
+plt.figure(figsize=(6,6))
+for i in range(n_blades):
+    angle = i * 2*np.pi / n_blades
+    # rotate blade coordinates
+    x_rot = r_full * np.cos(angle) - y_full * np.sin(angle)
+    y_rot = r_full * np.sin(angle) + y_full * np.cos(angle)
+    plt.fill(x_rot, y_rot, alpha=0.4, label=f'Blade {i+1}')
+
+plt.xlabel('X (m)')
+plt.ylabel('Y (m)')
+plt.title('Full Fan with All Blades')
+plt.axis('equal')
+plt.grid(True)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
