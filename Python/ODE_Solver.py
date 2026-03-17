@@ -4,7 +4,10 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from ambiance import Atmosphere
 
+# Temp arrays to help us print and troubleshoot
 CL_array=[]
+forces_array=[]
+
 # Imports from other subteam dependencies
 from ThrustVelocity import ThrustVelocity
 
@@ -87,8 +90,8 @@ class Aircraft:
             ## ELEVATOR LOGIC
 
             #V1
-            if t>6:
-                delta_e=np.radians(-5)
+            if t>5:
+                delta_e=np.radians(-10)
             else:
                 delta_e=0
 
@@ -112,13 +115,14 @@ class Aircraft:
             #     delta_e=0
 
             ## FLAP LOGIC
-            if t>6:
-                delta_f=np.radians(35)
+            if t>5:
+                delta_f=np.radians(40)
             else:
                 delta_f=0
 
             # throttle slowly reducing
-            throttle=1 - np.exp(-t/0.5)
+            # throttle=1 - np.exp(-t/0.5)
+            throttle = 1
 
             '''
             using all linear functions to model takeoff controls inputs
@@ -186,7 +190,7 @@ class Aircraft:
 
         CL=CL0+CL_vec@state_vec
         # print(f"CL: {CL:.3f} at alpha: {np.degrees(alpha):.2f} deg, delta_e: {np.degrees(delta_e):.2f} deg, delta_f: {np.degrees(delta_f):.2f} deg")
-        # CL_array.append(CL)
+        CL_array.append(CL)
 
         Cm=self.aero.Cm0+self.aero.Cm@state_vec
 
@@ -247,12 +251,14 @@ class Aircraft:
             Roll_resist = 0
             N=0 #otherwise, no normal force
 
+        forces_array.append((L, D, T, N, Roll_resist))
+
         # X and Z  are only the components of the aerodynamic force
         X = L*np.sin(alpha)+ T - D*np.cos(alpha) - Roll_resist
         Z = -L*np.cos(alpha) + D*np.sin(alpha) - N
-        M = Q * self.geom.S * self.c * Cm
+        M = 0 #Q * self.geom.S * self.c * Cm
 
-        # print(f'Thrust = {T} at velocity {V} at time {t}')
+        print(f'Lift Coefficient = {CL} at velocity {V} at time {t}')
 
         return X, Z, M
 
@@ -355,7 +361,7 @@ aero = Aero(
     cd_w=0.01,
     cd_t=0.01,
     # CL=np.array([6.5, 5, 0.4, 1.2]), use if CL_qbar known
-    CL_to=np.array([6.5, 0.4, 3]), #change for takeoff to be 3 for CLdeltaf
+    CL_to=np.array([6.5, 0.4, 6.5]), #change for takeoff to be 3 for CLdeltaf
     CL_td=np.array([6.5, 0.4, 1.2]),
     # Cm=np.array([-1.2, -12, -1, -0.1]),
     Cm=np.array([-1.2, -1, -0.1]),
@@ -364,7 +370,7 @@ aero = Aero(
     # CD0=AircraftConfig.Cd0_takeoff
 )
 '''CHOOSING PHASE OF FLIGHT'''
-phase='landing' #either 'takeoff' or 'landing'
+phase='takeoff' #either 'takeoff' or 'landing'
 
 '''SOLVING IVP FOR GENERAL'''
 # Initial state General
@@ -445,7 +451,8 @@ if phase=='landing':
         # landing_teval,
         rtol=1e-8,
         atol=1e-8,
-        max_step=.02
+        max_step=.02,
+        method = 'RK45'
     )
 
 
@@ -477,8 +484,6 @@ plt.title("Trajectory")
 plt.grid(True)
 plt.axis("equal")
 plt.show()
-
-
 
 #x and z Positions
 plt.plot(sol.t, sol.y[4], label='x Position')
@@ -516,10 +521,30 @@ plt.title("Climb Angle")
 plt.grid(True)
 plt.show()
 
-# length=250
-# plt.plot(sol.t, CL_array[:length])
-# plt.title('CL vs time')
-# plt.show()
+# Lift coefficient plot
+
+# CL_time = np.linspace(0, t, len(CL_array))
+# print(CL_array)
+plt.plot(sol.t, CL_array[0: len(sol.t)])
+plt.xlabel("Time (s)")
+plt.ylabel("Lift Coefficient (CL)")
+plt.title("Lift Coefficient over Time")
+plt.grid(True)
+plt.show()
+
+# Forces
+plt.plot(sol.t[0: len(forces_array)], [f[0] for f in forces_array], label='Lift (N)')
+plt.plot(sol.t[0: len(forces_array)], [f[1] for f in forces_array], label='Drag (N)')
+plt.plot(sol.t[0: len(forces_array)], [f[2] for f in forces_array], label='Thrust (N)')
+plt.plot(sol.t[0: len(forces_array)], [f[3] for f in forces_array], label='Normal Force (N)')
+plt.plot(sol.t[0: len(forces_array)], [f[4] for f in forces_array], label='Rolling Resistance (N)')
+plt.xlabel("Time (s)")
+plt.ylabel("Force (N)")
+plt.title("Forces over Time")
+plt.legend()
+plt.grid(True)
+plt.show()
+
 
 if phase=='landing':
     # Landing
