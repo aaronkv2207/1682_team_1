@@ -225,18 +225,18 @@ Di_landing, C_Di_landing = calc_C_Di(C_L_landing, rho_landing, V_landing, e_land
 # print('induced drag coefficient =', round(C_Di_landing,3))
 # print('total drag coefficient =', round(C_Dp_landing+C_Di_landing,3))
 
-# # drag polar??
-# C_D = np.linspace(0,2,1000)
-# C_L = np.sqrt((C_D - C_Dp_cruise) * np.pi * AR * e_cruise)
-# C_L2 = np.sqrt((C_D - C_Dp_takeoff) * np.pi * AR * e_takeoff)
+# drag polar??
+C_D = np.linspace(0,2,1000)
+C_L = np.sqrt((C_D - C_Dp_cruise) * np.pi * AR * e_cruise)
+C_L2 = np.sqrt((C_D - C_Dp_takeoff) * np.pi * AR * e_takeoff)
 
-# plt.figure()
-# plt.plot(C_D, C_L, label = 'cruise')
-# plt.plot(C_D, C_L2, label = 'takeoff')
-# plt.xlabel('$C_D$')
-# plt.ylabel('$C_L$')
-# plt.legend()
-# plt.show()
+plt.figure()
+plt.plot(C_D, C_L, label = 'cruise')
+plt.plot(C_D, C_L2, label = 'takeoff')
+plt.xlabel('$C_D$')
+plt.ylabel('$C_L$')
+plt.legend()
+plt.show()
 
 
 
