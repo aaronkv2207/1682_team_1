@@ -29,7 +29,7 @@ mu = 0.02  # Rolling friction coefficient [-]
 x_runway = 52  # Runway length (171 ft) [m]
 
 V_stall = 19.933  # Stall speed [m/s]
-V_to = 25  # Takeoff speed [m/s]
+V_to = 1.1*V_stall  # Takeoff speed [m/s]
 V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
 RPM = 6000 # RPM of propeller [rev/min]
@@ -78,7 +78,7 @@ def T(v):
 # At takeoff, (W-L(v)) is not included, as there is no friction force when we are off the ground
 T_to = D(V_to) + acc(V_to)
 print("Velocity at Takeoff:", V_to)
-print("Thrust at takeoff:", T_to)
+print("BASIC/NAIVE Thrust at takeoff:", T_to)
 print("T/W at takeoff: ", T_to/W)
 
 # ============================================================
@@ -168,11 +168,11 @@ def Eta_ideal(v, R):
     return 2 / (1 + np.sqrt(1 + Tc))
 
 
-# print(Eta_ideal_cruise(125,3.5))
-# print("Cl=", CL_cruise(130))
-# print("Cd=", CD_cruise(130))
-# print("T_cruise=",T_cruise(130))
-# print("P_cruise=", P_cruise(130, 1.8)/1000)
+print("Effeciency during cruise=", Eta_ideal_cruise(125,3.5))
+print("Cl=", CL_cruise(130))
+print("Cd=", CD_cruise(130))
+print("T_cruise=",T_cruise(130), "N")
+print("P_cruise=", P_cruise(130, 1.8)/1000, "kW")
 
 
 # ============================================================
@@ -205,57 +205,44 @@ def P_shaft_required(v, R):
 
 
 
-# # ============================================================
-# # PLOT: Tradeoff Plot
-# # ============================================================
+# ============================================================
+# PLOT: Tradeoff Plot
+# ============================================================
 
-# R_plot = np.linspace(0.5, 5, 200)  # [m]
-# vel = np.linspace(0.1, V_to, 200) # [m/s]
+R_plot = np.linspace(0.5, 5, 200)  # [m]
+vel = np.linspace(0.1, V_to, 200) # [m/s]
 
-# P_vals = [] 
-# for r in R_plot:
-#     P_curve = N_fans * P_shaft_required(vel, r)
-#     P_vals.append(np.max(P_curve) / 1000)
-# eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
-# M_vals = [M_tip(r) for r in R_plot]
+P_vals = [] 
+for r in R_plot:
+    P_curve = N_fans * P_shaft_required(vel, r)
+    P_vals.append(np.max(P_curve) / 1000)
+eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
+M_vals = [M_tip(r) for r in R_plot]
 
-# fig, ax1 = plt.subplots(figsize=(9, 6))
-# # Power curve
-# ax1.plot(np.pi * R_plot**2, P_vals, label="Takeoff Power Required (kW)")
-# ax1.set_xlabel("Effective Total Propeller Area [m^2]")
-# ax1.set_ylabel("Power (kW)")
+fig, ax1 = plt.subplots(figsize=(9, 6))
+ax1.plot(np.pi * R_plot**2, P_vals, label="Takeoff Power Required (kW)")
+ax1.set_xlabel("Effective Total Propeller Area [m^2]")
+ax1.set_ylabel("Power (kW)")
 
-# motor_power = 2050  # kW 
-# # ax1.axhline(motor_power, linestyle=":", label="Motor Power")
+motor_power = 2050  # kW 
+ax1.axhline(motor_power, linestyle=":", label="Motor Power")
+lines1, labels1 = ax1.get_legend_handles_labels()
+ax1.legend(lines1, labels1)
+plt.title("Power vs Propeller Effective Area")
+plt.show()
 
-# # Propulsor Values from radius chosen using plots above
-# R_selected = .583 # [m]
-# A_selected = N_fans * np.pi * R_selected**2 # [m^2]
-# lam = V_cruise / (omega*R_selected) 
-# J = np.pi*lam
-# torque_TO = 2.1e6/omega
-# print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
-# print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
-# print("Effective Total Fan Area:", A_selected)
-# print("Advance Ratio: ", J)
-# print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected))
-# print("Torque at takeoff:", torque_TO)
+# Propulsor Values from radius chosen using plots above
+R_selected = .583 # [m]
+A_selected = N_fans * np.pi * R_selected**2 # [m^2]
+lam = V_cruise / (omega*R_selected) 
+J = np.pi*lam
+print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
+print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
+print("Effective Total Fan Area:", A_selected)
+print("Advance Ratio: ", J)
+# print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected)) # USE QFAN FOR M_TIP
 
-# # # Second axis for tip Mach
-# # ax2 = ax1.twinx()
-# # ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
-# # ax2.set_ylabel("Tip Mach Number")
-# # Mach limits
-# # ax2.axhline(1.1, color="red", linestyle="--", label=f"Mach Limit={1.1}")
 
-# # Combine legends
-# lines1, labels1 = ax1.get_legend_handles_labels()
-# # lines2, labels2 = ax2.get_legend_handles_labels()
-# # ax1.legend(lines1 + lines2, labels1 + labels2)
-# ax1.legend(lines1, labels1)
-
-# plt.title("Power vs Propeller Effective Area")
-# plt.show()
 
 
 
@@ -266,7 +253,7 @@ def P_shaft_required(v, R):
 # # ============================================================
 
 # V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
-# T_data = 8 * np.array([3940.0, 3326.0, 2863.0, 2514.0, 2249.0, 2049.0, 1895.0, 1771.0, 1645.0, 1466.0, 1183.0]) # Thrust per fan [N]
+# T_data = 8 * np.array([3604.0, 3280.0, 2999.0, 2759.0, 2557.0, 2381.0, 2224.0, 2088.0, 1969.0, 1866.0, 1776.0]) # Thrust per fan [N]
 # degree = 5          # change this to 1,2,3,4,... to test fits
 # coeffs = np.polyfit(V_data, T_data, degree)
 # T_poly = np.poly1d(coeffs)
@@ -373,12 +360,13 @@ plt.show()
 
 
 
-
-
+# # ============================================================
+# # ============================================================
 # # ============================================================
 # # GRAVEYARD PLOTS/FUNCTIONS
 # # ============================================================
-
+# # ============================================================
+# # ============================================================
 
 
 # # ============================================================
