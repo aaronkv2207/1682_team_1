@@ -54,20 +54,26 @@ def takeoff_polars():
     # add angle of attack points
     y = [4.46391, 5.0136, 5.77082, 6.22638]
     x = [0.852526822, 1.075416152, 1.42479456, 1.658625877]
-    labels = [r'$\alpha$=0$^{\circ}$', r'$\alpha$=5$^{\circ}$', r'$\alpha$=10$^{\circ}$', r'$\alpha$=15$^{\circ}$']
+    labels = [
+        r"     $\alpha$=0$^{\circ}$",
+        r"      $\alpha$=5$^{\circ}$",
+        r"      $\alpha$=10$^{\circ}$",
+        r"   $\alpha$=15$^{\circ}$",
+    ]
 
-    plt.figure(figsize=(8,7))
+    plt.figure(figsize=(8, 7))
     plt.rcParams["font.size"] = 14
     plt.title("Takeoff")
     plt.plot(cd_smooth, cl_smooth, color="blue")
     plt.xlabel("$C_D$")
     plt.ylabel("$C_L$")
 
-    plt.scatter(x,y)
+    plt.scatter(x, y)
     for i, label in enumerate(labels):
-        plt.text(x[i], y[i], labels[i])
+        plt.text(x[i], y[i], label)
 
     plt.show()
+
 
 def cruise_polars():
     CD_tot = [
@@ -106,16 +112,21 @@ def cruise_polars():
     # add angle of attack points
     y = [-0.29451, 0.19974, 0.52697, 1.00628]
     x = [0.01971088318, 0.01770689687, 0.02788089001, 0.05932263602]
-    labels = [r'$\alpha$=-5$^{\circ}$', r'$\alpha$=0$^{\circ}$', r'$\alpha$=5$^{\circ}$', r'$\alpha$=10$^{\circ}$']
+    labels = [
+        r"  $\alpha$=-5$^{\circ}$",
+        r"  $\alpha$=0$^{\circ}$",
+        r"    $\alpha$=5$^{\circ}$",
+        r"      $\alpha$=10$^{\circ}$",
+    ]
 
-    plt.figure(figsize=(8,7))
+    plt.figure(figsize=(8, 7))
     plt.rcParams["font.size"] = 14
     plt.plot(cd_smooth, cl_smooth, color="blue")
     plt.title("Cruise")
     plt.xlabel("$C_D$")
     plt.ylabel("$C_L$")
 
-    plt.scatter(x,y)
+    plt.scatter(x, y)
     for i, label in enumerate(labels):
         plt.text(x[i], y[i], labels[i])
 
@@ -123,5 +134,5 @@ def cruise_polars():
 
 
 if __name__ == "__main__":
-    cruise_polars()
     takeoff_polars()
+    cruise_polars()
