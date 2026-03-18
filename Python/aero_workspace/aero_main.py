@@ -33,14 +33,13 @@ class TakeoffCoeff:
         # CD.append(run["CD"])
         Cm.append(run["Cm"])
 
-        CDind.append(run["CDind"])
+        CDind.append(run["CDi"])
         e.append(run["e"])
 
         # NOTE: For drag buildup, CD_ind is obtained from JVL;
         #       CD_form and CD_visc is obtained from Brenda's drag build up
     CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
     CD_tot = CDind + CD_DP
-
 
 @dataclass
 class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
@@ -62,7 +61,7 @@ class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
         # CD.append(run["CD"])
         Cm.append(run["Cm"])
 
-        CDind.append(run["CDind"])
+        CDind.append(run["CDi"])
         e.append(run["e"])
 
         # NOTE: For drag buildup, CD_ind is obtained from JVL;
@@ -93,7 +92,7 @@ class CruiseCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
         # CD.append(run["CD"])
         Cm.append(run["Cm"])
 
-        CDind.append(run["CDind"])
+        CDind.append(run["CDi"])
         e.append(run["e"])
 
         # NOTE: For drag buildup, CD_ind is obtained from JVL;
@@ -154,7 +153,7 @@ class LandingCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
         # CD.append(run["CD"])
         Cm.append(run["Cm"])
 
-        CDind.append(run["CDind"])
+        CDind.append(run["CDi"])
         e.append(run["e"])
     # # TODO: CD_DP = AircraftConfig.C_Dp_landing # profile drag from Brenda's model
     #     # NOTE: For drag buildup, CD_ind is obtained from JVL;
