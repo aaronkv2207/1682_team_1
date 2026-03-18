@@ -5,9 +5,6 @@ from dataclasses import dataclass
 from ambiance import Atmosphere
 
 # Temp arrays to help us print and troubleshoot
-CL_array=[]
-forces_array=[]
-
 # Imports from other subteam dependencies
 from ThrustVelocity import ThrustVelocity
 
@@ -86,14 +83,15 @@ class Aircraft:
         max 25-35 for rudders/elevator
         '''
         if self.phase=='takeoff':
-            throttle = 1
+            throttle = 1/(1+np.exp(-(t-1)/.8))
             ## ELEVATOR LOGIC
 
             #V1
-            if t>5:
-                delta_e=np.radians(-10)
+            if t>4:
+                delta_e=np.radians(-20)*1/(1+np.exp(-(t-6)/.6))
             else:
                 delta_e=0
+
 
             # V2
             # if t<3: #chang delta_e to change based off takeoff velcoity, maybe have CL_max known
@@ -115,14 +113,13 @@ class Aircraft:
             #     delta_e=0
 
             ## FLAP LOGIC
-            if t>5:
-                delta_f=np.radians(40)
-            else:
-                delta_f=0
+            delta_f=np.radians(40)*1/(1+np.exp(-(t-6)/.8))
+
+
 
             # throttle slowly reducing
             # throttle=1 - np.exp(-t/0.5)
-            throttle = 1
+
 
             '''
             using all linear functions to model takeoff controls inputs
@@ -148,7 +145,7 @@ class Aircraft:
             '''
             # small constant nose-down trim,
             '''do i want nose up or down during landing?'''
-            delta_e = np.radians(1)
+            delta_e = np.radians(5)
 
             # flaps deployed for landing
             if t < 8:
@@ -179,7 +176,8 @@ class Aircraft:
         # delta_qbar=q_bar-self.qbar0
 
         # state_vec=np.array([delta_alpha, delta_qbar, delta_dele, delta_delf])
-        state_vec=np.array([delta_alpha, delta_dele, delta_delf]) #in future ingnore CL due to elevator deflection
+        # state_vec=np.array([delta_alpha, delta_dele, delta_delf]) #in future ingnore CL due to elevator deflection
+        state_vec=np.array([delta_alpha, delta_dele, delta_delf])
 
         if self.phase=='takeoff':
             CL0=self.aero.CL0[0]
@@ -190,8 +188,6 @@ class Aircraft:
 
         CL=CL0+CL_vec@state_vec
         # print(f"CL: {CL:.3f} at alpha: {np.degrees(alpha):.2f} deg, delta_e: {np.degrees(delta_e):.2f} deg, delta_f: {np.degrees(delta_f):.2f} deg")
-        CL_array.append(CL)
-
         Cm=self.aero.Cm0+self.aero.Cm@state_vec
 
 
@@ -251,22 +247,18 @@ class Aircraft:
             Roll_resist = 0
             N=0 #otherwise, no normal force
 
-        forces_array.append((L, D, T, N, Roll_resist))
-
         # X and Z  are only the components of the aerodynamic force
         X = L*np.sin(alpha)+ T - D*np.cos(alpha) - Roll_resist
         Z = -L*np.cos(alpha) + D*np.sin(alpha) - N
         M = 0 #Q * self.geom.S * self.c * Cm
 
-        print(f'Lift Coefficient = {CL} at velocity {V} at time {t}')
-
-        return X, Z, M
+        return X, Z, M, L, D, T, N, Roll_resist
 
     def dynamics(self, t, x):
         g=9.81
         u, w, q, theta, xe, ze= x
 
-        X, Z, M = self.forces(x, t)
+        X, Z, M, _, _, _, _, _ = self.forces(x, t)
 
         u_dot = X/self.mass.m - g*np.sin(theta) -w*q
         w_dot = Z/self.mass.m + g*np.cos(theta) + u*q
@@ -370,7 +362,9 @@ aero = Aero(
     # CD0=AircraftConfig.Cd0_takeoff
 )
 '''CHOOSING PHASE OF FLIGHT'''
-phase='takeoff' #either 'takeoff' or 'landing'
+""""""""""""""""""""""""""""""
+phase='landing' #either 'takeoff' or 'landing'
+""""""""""""""""""""""""""""""
 
 '''SOLVING IVP FOR GENERAL'''
 # Initial state General
@@ -397,7 +391,7 @@ plane_1=Aircraft(phase, mass, geom, aero, prop, landing, rho=1.225, ic=x0, delta
 #Intergate over time span
 t = 30
 t_span = (0, t)
-t_eval = np.linspace(0, t, 250)
+t_eval = np.linspace(0, t, 1000)
 
 if phase=='takeoff':
     event=plane_1.takeoff_event
@@ -478,54 +472,74 @@ if phase=='takeoff':
 plt.plot(sol.y[4], -sol.y[5])
 if phase=='takeoff':
     plt.scatter(x_to, 0, label='Takeoff',c='red', marker='*')
+plt.axhline(y=15.24, color='red', linestyle='--', label='50 ft clearing')
 plt.xlabel("Downrange Distance (m)")
 plt.ylabel("Altitude (m)")
 plt.title("Trajectory")
 plt.grid(True)
 plt.axis("equal")
+plt.legend(loc='lower right')
 plt.show()
 
 #x and z Positions
-plt.plot(sol.t, sol.y[4], label='x Position')
-plt.plot(sol.t, -sol.y[5], label='z Position')
-plt.legend()
-plt.grid(True)
-plt.xlabel('Time (s)')
-plt.ylabel('Position (m)')
-plt.title("Position")
-plt.show()
+fig, ax, =plt.subplots(2)
+ax[0].plot(sol.t, sol.y[4], label='x Position')
+ax[0].plot(sol.t, -sol.y[5], label='z Position')
+ax[0].legend(loc='center right')
+ax[0].grid(True)
+# ax[0].set_xlabel('Time (s)')
+ax[0].set_ylabel('Position (m)')
+ax[0].set_title("Position")
 
 # Velocities
 u = sol.y[0]
 w = sol.y[1]
 v = np.sqrt(u**2 + w**2)
-plt.plot(sol.t, u, label='Forward Velocity (u)')
-plt.plot(sol.t, w, label='Vertical Velocity (w)')
-plt.plot(sol.t, v, label='Total Velocity (v)')
-plt.xlabel("Time (s)")
-plt.ylabel("Velocity (m/s)")
-plt.title("Velocity")
-plt.legend()
-plt.grid(True)
+ax[1].plot(sol.t, u, label='Forward Velocity (u)')
+ax[1].plot(sol.t, w, label='Vertical Velocity (w)')
+ax[1].plot(sol.t, v, label='Total Velocity (v)')
+ax[1].set_xlabel("Time (s)")
+ax[1].set_ylabel("Velocity (m/s)")
+ax[1].set_title("Velocity")
+ax[1].legend(loc='center right')
+ax[1].grid(True)
 plt.show()
 
 # Climb angle wrt ground
 
-alpha=np.arctan2(sol.y[1], sol.y[0])
-theta=sol.y[3]
-plt.plot(sol.t, np.degrees(theta)-np.degrees(alpha))
-# plt.plot(v, np.degrees(theta)-np.degrees(alpha))
-plt.xlabel("Time (s)")
-plt.ylabel("Climb Angle (deg)")
-plt.title("Climb Angle")
-plt.grid(True)
-plt.show()
+# alpha=np.arctan2(sol.y[1], sol.y[0])
+# theta=sol.y[3]
+# plt.plot(sol.t, np.degrees(theta)-np.degrees(alpha))
+# # plt.plot(v, np.degrees(theta)-np.degrees(alpha))
+# plt.xlabel("Time (s)")
+# plt.ylabel("Climb Angle (deg)")
+# plt.title("Climb Angle")
+# plt.grid(True)
+# plt.show()
 
 # Lift coefficient plot
+CL_clean = []
+L_clean=[]
+D_clean=[]
+T_clean=[]
+N_clean=[]
+Roll_resist_clean=[]
+for i in range(len(sol.t)):
+    x = sol.y[:, i] #grab current state vector
+    t = sol.t[i]
+    controls = plane_1.controls(t)
+    CL, _, _ = plane_1.aero_coefficents(x, controls)
+    CL_clean.append(CL)
+    _, _, _, L, D, T, N, Roll_resist=plane_1.forces(x, t)
+    L_clean.append(L/10**3)
+    D_clean.append(D/10**3)
+    T_clean.append(T/10**3)
+    N_clean.append(N/10**3)
+    Roll_resist_clean.append(Roll_resist/10**3)
 
-# CL_time = np.linspace(0, t, len(CL_array))
-# print(CL_array)
-plt.plot(sol.t, CL_array[0: len(sol.t)])
+
+plt.plot(sol.t, CL_clean)
+plt.plot(sol.t, CL_clean)
 plt.xlabel("Time (s)")
 plt.ylabel("Lift Coefficient (CL)")
 plt.title("Lift Coefficient over Time")
@@ -533,15 +547,26 @@ plt.grid(True)
 plt.show()
 
 # Forces
-plt.plot(sol.t[0: len(forces_array)], [f[0] for f in forces_array], label='Lift (N)')
-plt.plot(sol.t[0: len(forces_array)], [f[1] for f in forces_array], label='Drag (N)')
-plt.plot(sol.t[0: len(forces_array)], [f[2] for f in forces_array], label='Thrust (N)')
-plt.plot(sol.t[0: len(forces_array)], [f[3] for f in forces_array], label='Normal Force (N)')
-plt.plot(sol.t[0: len(forces_array)], [f[4] for f in forces_array], label='Rolling Resistance (N)')
+if phase=='takeoff':
+    plt.axvline(x=t_to, label='Takeoff',c='red', linestyle='--')
+plt.plot(sol.t, L_clean, label='Lift')
+plt.plot(sol.t, D_clean, label='Drag')
+plt.plot(sol.t, T_clean, label='Thrust')
 plt.xlabel("Time (s)")
-plt.ylabel("Force (N)")
+plt.ylabel("Force (kN)")
 plt.title("Forces over Time")
-plt.legend()
+plt.legend(loc='lower right')
+plt.grid(True)
+plt.show()
+
+if phase=='takeoff':
+    plt.axvline(x=t_to, label='Takeoff',c='red', linestyle='--')
+plt.plot(sol.t, N_clean, label='Normal Force')
+plt.plot(sol.t, Roll_resist_clean, label='Rolling Resistance')
+plt.xlabel("Time (s)")
+plt.ylabel("Force (kN)")
+plt.title("Forces over Time")
+plt.legend(loc='lower right')
 plt.grid(True)
 plt.show()
 
@@ -572,8 +597,7 @@ if phase=='landing':
 
     F_shock=plane_1.landing.b*(sol_landing.y[2]-sol_landing.y[3])+plane_1.landing.k1*(sol_landing.y[0]-sol_landing.y[1])
     plt.plot(sol_landing.t, F_shock/10**3, label='Current loading')
-    plt.axhline(y=220, color='r', linestyle='--', label='3 g')
-    plt.axhline(y=188, color='r', linestyle='--', label='2.5 g')
+    plt.axhline(y=151, color='r', linestyle='--', label='2 g')
     plt.xlabel("Time (s)")
     plt.ylabel("Gear Load (kN)")
     plt.title("Landing Gear Force")
