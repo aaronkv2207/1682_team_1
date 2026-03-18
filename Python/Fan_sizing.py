@@ -205,87 +205,74 @@ def P_shaft_required(v, R):
 
 
 
-# # ============================================================
-# # PLOT: Tradeoff Plot
-# # ============================================================
-
-# R_plot = np.linspace(0.5, 5, 200)  # [m]
-# vel = np.linspace(0.1, V_to, 200) # [m/s]
-
-# P_vals = [] 
-# for r in R_plot:
-#     P_curve = N_fans * P_shaft_required(vel, r)
-#     P_vals.append(np.max(P_curve) / 1000)
-# eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
-# M_vals = [M_tip(r) for r in R_plot]
-
-# fig, ax1 = plt.subplots(figsize=(9, 6))
-# # Power curve
-# ax1.plot(np.pi * R_plot**2, P_vals, label="Takeoff Power Required (kW)")
-# ax1.set_xlabel("Effective Total Propeller Area [m^2]")
-# ax1.set_ylabel("Power (kW)")
-
-# motor_power = 2050  # kW 
-# # ax1.axhline(motor_power, linestyle=":", label="Motor Power")
-
-# # Propulsor Values from radius chosen using plots above
-# R_selected = .583 # [m]
-# A_selected = N_fans * np.pi * R_selected**2 # [m^2]
-# lam = V_cruise / (omega*R_selected) 
-# J = np.pi*lam
-# torque_TO = 2.1e6/omega
-# print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
-# print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
-# print("Effective Total Fan Area:", A_selected)
-# print("Advance Ratio: ", J)
-# print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected))
-# print("Torque at takeoff:", torque_TO)
-
-# # # Second axis for tip Mach
-# # ax2 = ax1.twinx()
-# # ax2.plot(R_plot, M_vals, color="red", label="Tip Mach")
-# # ax2.set_ylabel("Tip Mach Number")
-# # Mach limits
-# # ax2.axhline(1.1, color="red", linestyle="--", label=f"Mach Limit={1.1}")
-
-# # Combine legends
-# lines1, labels1 = ax1.get_legend_handles_labels()
-# # lines2, labels2 = ax2.get_legend_handles_labels()
-# # ax1.legend(lines1 + lines2, labels1 + labels2)
-# ax1.legend(lines1, labels1)
-
-# plt.title("Power vs Propeller Effective Area")
-# plt.show()
-
-
-
-
-
 # ============================================================
-# THRUST INTERPOLATOR (first used in takeoff model) (0–22 m/s)
+# PLOT: Tradeoff Plot
 # ============================================================
 
-V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
-T_data = 8 * np.array([3604.0, 3280.0, 2999.0, 2759.0, 2557.0, 2381.0, 2224.0, 2088.0, 1969.0, 1866.0, 1776.0]) # Thrust per fan [N]
-degree = 5          # change this to 1,2,3,4,... to test fits
-coeffs = np.polyfit(V_data, T_data, degree)
-T_poly = np.poly1d(coeffs)
-print("Current Thrust at Takeoff:", T_poly(V_to)/1000, " [kN]")
+R_plot = np.linspace(0.5, 5, 200)  # [m]
+vel = np.linspace(0.1, V_to, 200) # [m/s]
 
-class ThrustInterpolator:
-    def __init__(self, V_data=V_data, T_data=T_data, degree=degree):
-        self.coeffs = np.polyfit(V_data, T_data, degree)
-        self.poly = np.poly1d(self.coeffs)
+P_vals = [] 
+for r in R_plot:
+    P_curve = N_fans * P_shaft_required(vel, r)
+    P_vals.append(np.max(P_curve) / 1000)
+eta_vals = [Eta_ideal_cruise(V_cruise, r) for r in R_plot]
+M_vals = [M_tip(r) for r in R_plot]
 
-    def get_T(self, v):
-        """Interpolated thrust per fan [N]"""
-        return self.poly(v)
+fig, ax1 = plt.subplots(figsize=(9, 6))
+ax1.plot(np.pi * R_plot**2, P_vals, label="Takeoff Power Required (kW)")
+ax1.set_xlabel("Effective Total Propeller Area [m^2]")
+ax1.set_ylabel("Power (kW)")
 
-def T_fan_interp(v):
-        """Interpolated thrust per fan [N]"""
-        return T_poly(v)
+motor_power = 2050  # kW 
+ax1.axhline(motor_power, linestyle=":", label="Motor Power")
+lines1, labels1 = ax1.get_legend_handles_labels()
+ax1.legend(lines1, labels1)
+plt.title("Power vs Propeller Effective Area")
+plt.show()
 
-vel = np.linspace(0,130,500)
+# Propulsor Values from radius chosen using plots above
+R_selected = .583 # [m]
+A_selected = N_fans * np.pi * R_selected**2 # [m^2]
+lam = V_cruise / (omega*R_selected) 
+J = np.pi*lam
+print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
+print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
+print("Effective Total Fan Area:", A_selected)
+print("Advance Ratio: ", J)
+# print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected)) # USE QFAN FOR M_TIP
+
+
+
+
+
+
+
+# # ============================================================
+# # THRUST INTERPOLATOR (first used in takeoff model) (0–22 m/s)
+# # ============================================================
+
+# V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
+# T_data = 8 * np.array([3604.0, 3280.0, 2999.0, 2759.0, 2557.0, 2381.0, 2224.0, 2088.0, 1969.0, 1866.0, 1776.0]) # Thrust per fan [N]
+# degree = 5          # change this to 1,2,3,4,... to test fits
+# coeffs = np.polyfit(V_data, T_data, degree)
+# T_poly = np.poly1d(coeffs)
+# print("Current Thrust at Takeoff:", T_poly(V_to)/1000, " [kN]")
+
+# class ThrustInterpolator:
+#     def __init__(self, V_data=V_data, T_data=T_data, degree=degree):
+#         self.coeffs = np.polyfit(V_data, T_data, degree)
+#         self.poly = np.poly1d(self.coeffs)
+
+#     def get_T(self, v):
+#         """Interpolated thrust per fan [N]"""
+#         return self.poly(v)
+
+# def T_fan_interp(v):
+#         """Interpolated thrust per fan [N]"""
+#         return T_poly(v)
+
+# vel = np.linspace(0,130,500)
 # plt.figure(figsize=(8,6))
 # plt.scatter(V_data, T_data/1000, label="Original Data")
 # plt.plot(vel, T_fan_interp(vel)/1000, label=f"Polynomial Fit (deg={degree})")
@@ -373,12 +360,13 @@ plt.show()
 
 
 
-
-
+# # ============================================================
+# # ============================================================
 # # ============================================================
 # # GRAVEYARD PLOTS/FUNCTIONS
 # # ============================================================
-
+# # ============================================================
+# # ============================================================
 
 
 # # ============================================================
