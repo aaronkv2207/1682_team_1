@@ -51,12 +51,22 @@ def cruise_polars():
     spl = make_interp_spline(C_D, C_L, k=4)
     cl_smooth = spl(cd_smooth)
 
+    # add angle of attack points
+    y = [4.46391, 5.0136, 5.77082, 6.22638]
+    x = [0.852526822, 1.075416152, 1.42479456, 1.658625877]
+    labels = [r'$\alpha$=0$^{\circ}$', r'$\alpha$=5$^{\circ}$', r'$\alpha$=10$^{\circ}$', r'$\alpha$=15$^{\circ}$']
+
     plt.figure(figsize=(8,7))
     plt.rcParams["font.size"] = 14
     plt.title("Takeoff")
     plt.plot(cd_smooth, cl_smooth, color="blue")
     plt.xlabel("$C_D$")
     plt.ylabel("$C_L$")
+
+    plt.scatter(x,y)
+    for i, label in enumerate(labels):
+        plt.text(x[i], y[i], labels[i])
+
     plt.show()
 
 def takeoff_polars():
@@ -77,7 +87,7 @@ def takeoff_polars():
         -0.29451,
         -0.12985,
         0.03503,
-        0.11974,
+        0.19974,
         0.36386,
         0.52697,
         0.68867,
@@ -93,12 +103,22 @@ def takeoff_polars():
     poly_func = np.poly1d(coeffs)
     cd_smooth = poly_func(cl_smooth)
 
+    # add angle of attack points
+    y = [-0.29451, 0.19974, 0.52697, 1.00628]
+    x = [0.01971088318, 0.01770689687, 0.02788089001, 0.05932263602]
+    labels = [r'$\alpha$=-5$^{\circ}$', r'$\alpha$=0$^{\circ}$', r'$\alpha$=5$^{\circ}$', r'$\alpha$=10$^{\circ}$']
+
     plt.figure(figsize=(8,7))
     plt.rcParams["font.size"] = 14
     plt.plot(cd_smooth, cl_smooth, color="blue")
     plt.title("Cruise")
     plt.xlabel("$C_D$")
     plt.ylabel("$C_L$")
+
+    plt.scatter(x,y)
+    for i, label in enumerate(labels):
+        plt.text(x[i], y[i], labels[i])
+
     plt.show()
 
 
