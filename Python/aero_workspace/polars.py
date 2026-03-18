@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import make_interp_spline
 
 
-def cruise_polars():
+def takeoff_polars():
     CD_ind = [
         0.004911222748,
         0.07646259794,
@@ -69,7 +69,7 @@ def cruise_polars():
 
     plt.show()
 
-def takeoff_polars():
+def cruise_polars():
     CD_tot = [
         0.01971088318,
         0.01672137502,
