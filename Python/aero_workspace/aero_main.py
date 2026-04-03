@@ -18,6 +18,10 @@ from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
 
 DEG2RAD_CONV = ureg("deg").to("rad").magnitude
 
+raise NotImplementedError(
+    "Design sweep not yet performed. See polars.py for first round estimates."
+)
+
 
 @dataclass
 class TakeoffCoeff:
@@ -47,12 +51,17 @@ class TakeoffCoeff:
     CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
     CD_tot = (CDind + CD_DP) * 1.2
 
+
 @dataclass
 class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     """Will read a summary of JVL output dataframe at various operating points. Defines functions
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    warnings.warn("DEPRECATED! Climb coefficients are no longer produced by aero team.", DeprecationWarning, stacklevel=2)
+    warnings.warn(
+        "DEPRECATED! Climb coefficients are no longer produced by aero team.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     FILE_NAME = "Python/aero_workspace/jvl_run_outputs/climb.pkl"
     with open(FILE_NAME, "rb") as f:
         data = pickle.load(f)

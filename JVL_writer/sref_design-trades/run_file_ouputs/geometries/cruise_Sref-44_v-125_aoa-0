@@ -6,7 +6,7 @@ Initial Aircraft
 #Sref    Cref    Bref
 43.45 2.317500782596302 18.76166303929372
 #Xref    Yref    Zref
-0 0 0
+0.5863019699779287 0.0 0.0
 # CDp
 0
 #===============================================================================
@@ -35,7 +35,7 @@ Flap1 1 0.75 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet1 1.000 1.000
+FlapJet1 0.000 1.000
 
 #--------------------------------------------------
 SECTION
@@ -51,11 +51,11 @@ Flap1 1 0.75 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet1 1.000 1.000
+FlapJet1 0.000 1.000
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet2 1.000 1.000
+FlapJet2 0.000 1.000
 
 #--------------------------------------------------
 SECTION
@@ -71,11 +71,11 @@ Flap1 1 0.75 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet2 1.000 1.000
+FlapJet2 0.000 1.000
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet3 1.000 1.000
+FlapJet3 0.000 1.000
 
 #--------------------------------------------------
 SECTION
@@ -95,11 +95,11 @@ Flap2 1 0.75 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet3 1.000 1.000
+FlapJet3 0.000 1.000
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet4 1.000 1.000
+FlapJet4 0.000 1.000
 
 #--------------------------------------------------
 SECTION
@@ -123,7 +123,7 @@ Flaperon 1 0.7 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet4 1.000 1.000
+FlapJet4 0.000 1.000
 
 #--------------------------------------------------
 SECTION
