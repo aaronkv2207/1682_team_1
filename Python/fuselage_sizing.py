@@ -111,7 +111,7 @@ class Fuselage:
     # Longeron sizing from bending
     # -------------------------
     def required_stringer_area_bending(self, M_max, skin_thickness, yield_strength,
-                                       n_stringers=4, safety_factor=1.5,
+                                       n_stringers=10, safety_factor=1.5,
                                        min_stringer_area=1e-5):
         """
         Size equal-area stringers with skin included in global bending stiffness.
@@ -188,9 +188,9 @@ class Fuselage:
                                M_max,
                                V_max,
                                T_max=0.0,
-                               yield_strength=490e6,
-                               density=2810.0,
-                               n_stringers=4,
+                               yield_strength=400e6,
+                               density=2700,
+                               n_stringers=10,
                                safety_factor=1.5,
                                min_skin_gauge=0.0010):
         """
@@ -239,10 +239,10 @@ class Fuselage:
         return {
             "stringer_area_each_m2": self.stringer_area,
             "skin_thickness_m": self.skin_t,
-            "t_hoop_m": t_hoop,
-            "t_shear_m": t_shear,
-            "t_torsion_m": t_torsion,
-            "t_min_gauge_m": min_skin_gauge
+            "t_hoop_m": self.t_hoop,
+            "t_shear_m": self.t_shear,
+            "t_torsion_m": self.t_torsion,
+            "t_min_gauge_m": self.t_min
         }
 
     # -------------------------
@@ -346,10 +346,10 @@ if __name__ == "__main__":
     # Aircraft geometry
     # -------------------------
 
-    length = 12          # m  (approx Caravan fuselage length)
-    radius = 0.85        # m  (approx 1.9 m diameter fuselage)
-    n_people = 10        # passengers (9) + pilot
-    cabin_width = 1.6    # m usable cabin width
+    length = 9          # m  
+    radius = 1.1        # m  
+    n_people = 19        # 
+    cabin_width = 1.25    # m usable cabin width
 
     fuse = Fuselage(length, radius, n_people, cabin_width)
 
@@ -358,9 +358,10 @@ if __name__ == "__main__":
     # (placeholder estimates — replace with your team's values)
     # -------------------------
 
-    M_max = 1.2e6     # N*m  max fuselage bending moment
-    V_max = 2.5e5     # N    max shear force
-    T_max = 5.0e4     # N*m  torsion
+    M_max = 1e6   # N*m  max fuselage bending moment
+    V_max = 1e5     # N    max shear force
+    h_Tforce = 1.6   # m  height from neutral axis where rudder force applied
+    T_max = V_max*h_Tforce     # N*m  torsion
 
     # -------------------------
     # Size structure
@@ -398,7 +399,7 @@ if __name__ == "__main__":
     landing_gear_mass = 102.43   # kg
     total_mass_with_lg = total_mass + landing_gear_mass
 
-    print("Passenger + seat mass:", n_people*120, "kg")
+    print("Passenger + seat mass:", n_people*113, "kg")
     print("Landing gear mass:", landing_gear_mass, "kg")
     print("Total fuselage mass (including passengers and landing gear):", total_mass_with_lg, "kg")
 

@@ -32,7 +32,7 @@ class JVL(AVL):
         self,
         airplane,
         op_point,
-        xyz_ref=[0, 0, 0],
+        # xyz_ref=[0, 0, 0],
         ground_effect=False,
         ground_effect_height=0.0,
         AVL_spacing_parameters=None,
@@ -41,7 +41,7 @@ class JVL(AVL):
         super().__init__(
             airplane=airplane,
             op_point=op_point,
-            xyz_ref=xyz_ref,
+            xyz_ref=airplane.xyz_ref,
             ground_effect=ground_effect,
             ground_effect_height=ground_effect_height,
             avl_command=avl_command,
@@ -284,6 +284,8 @@ class JVL(AVL):
     def run(
         self,
         run_command: str = None,
+        trim_Cm_to_zero: bool = False,
+        trim_variable: str = "d6",
     ) -> Dict[str, float]:
         with tempfile.TemporaryDirectory() as directory:
             directory = Path(directory)
@@ -298,7 +300,9 @@ class JVL(AVL):
             self.write_jvl(directory / airplane_file)
 
             # Build keystroke script
-            keystroke_file_contents = self._default_keystroke_file_contents()
+            keystroke_file_contents = self._default_keystroke_file_contents(
+                trim_Cm_to_zero, trim_variable
+            )
             if run_command is not None:
                 keystroke_file_contents += [run_command]
             keystroke_file_contents += [
@@ -366,7 +370,7 @@ class JVL(AVL):
             b = self.airplane.b_ref
             c = self.airplane.c_ref
 
-            res['velocity'] = self.op_point.velocity
+            res["velocity"] = self.op_point.velocity
             res["p"] = res["pb/2V"] * (2 * self.op_point.velocity / b)
             res["q"] = res["qc/2V"] * (2 * self.op_point.velocity / c)
             res["r"] = res["rb/2V"] * (2 * self.op_point.velocity / b)
@@ -410,7 +414,9 @@ class JVL(AVL):
 
             return res
 
-    def _default_keystroke_file_contents(self) -> List[str]:
+    def _default_keystroke_file_contents(
+        self, trim_Cm_to_zero: bool = False, trim_variable: str = "d6"
+    ) -> List[str]:
         run_file_contents = []
 
         # Disable graphics
@@ -454,9 +460,15 @@ class JVL(AVL):
             f"p p {float(q_bar)}",
             f"y y {float(r_bar)}",
         ]
-
-        # Set control surface deflections
-        run_file_contents += ["d1 d1 1"]
+        # ADDED: Trim functionality
+        if trim_Cm_to_zero:
+            run_file_contents += [
+                trim_variable,  # design variable
+                "pm 0",
+            ]
+        else:
+            # Set control surface deflections
+            run_file_contents += ["d1 d1 1"]
 
         return run_file_contents
 

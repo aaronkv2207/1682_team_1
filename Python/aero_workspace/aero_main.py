@@ -1,7 +1,7 @@
 import pickle
+import warnings
 from dataclasses import dataclass
 
-import jvl_run_outputs
 import numpy as np
 import pandas as pd
 from aero_dict import AircraftConfig
@@ -10,7 +10,17 @@ from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
 
 # get jvl cg --> mset, run file, input file, ...; can shift around masses to shift cg in .mass file
 
+# identify sizing cases
+# tail size --> trim on descent or takeoff rotation
+
+# define operating points
+# communicate with prop for trades with range and takeoff distance
+
 DEG2RAD_CONV = ureg("deg").to("rad").magnitude
+
+raise NotImplementedError(
+    "Design sweep not yet performed. See polars.py for first round estimates."
+)
 
 
 @dataclass
@@ -39,13 +49,19 @@ class TakeoffCoeff:
         # NOTE: For drag buildup, CD_ind is obtained from JVL;
         #       CD_form and CD_visc is obtained from Brenda's drag build up
     CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
-    CD_tot = CDind + CD_DP
+    CD_tot = (CDind + CD_DP) * 1.2
+
 
 @dataclass
 class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     """Will read a summary of JVL output dataframe at various operating points. Defines functions
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
+    warnings.warn(
+        "DEPRECATED! Climb coefficients are no longer produced by aero team.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     FILE_NAME = "Python/aero_workspace/jvl_run_outputs/climb.pkl"
     with open(FILE_NAME, "rb") as f:
         data = pickle.load(f)
@@ -67,7 +83,7 @@ class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
         # NOTE: For drag buildup, CD_ind is obtained from JVL;
         #       CD_form and CD_visc is obtained from Brenda's drag build up
     # CD_DP = AircraftConfig.C_Dp_climb  # profile drag from Brenda's model
-    # CD_tot = (CDind + CD_DP)
+    # CD_tot = (CDind + CD_DP) * 1.2
 
     # TODO: CD_DP = AircraftConfig.C_Dp_climb # profile drag from Brenda's model
 
@@ -98,7 +114,7 @@ class CruiseCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
         # NOTE: For drag buildup, CD_ind is obtained from JVL;
         #       CD_form and CD_visc is obtained from Brenda's drag build up
     CD_DP = AircraftConfig.C_Dp_cruise  # profile drag from Brenda's model
-    CD_tot = CDind + CD_DP
+    CD_tot = (CDind + CD_DP) * 1.2
 
 
 class CruiseModel:
@@ -159,7 +175,7 @@ class LandingCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
     #     # NOTE: For drag buildup, CD_ind is obtained from JVL;
     #     #       CD_form and CD_visc is obtained from Brenda's drag build up
     # CD_DP = AircraftConfig.C_Dp_landing  # profile drag from Brenda's model
-    # CD_tot = (CDind + CD_DP)
+    # CD_tot = (CDind + CD_DP) * 1.2
 
 
 # Runner script
