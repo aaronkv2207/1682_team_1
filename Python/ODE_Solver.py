@@ -8,6 +8,9 @@ from ambiance import Atmosphere
 # Imports from other subteam dependencies
 from ThrustVelocity import ThrustVelocity
 
+'''
+TAKEOFF AOA=14'''
+
 # from aero_workspace.aero_main import AircraftConfig, TakeoffCoeff
 #eigenmodes can be calculated from JVL!  lowkey might still caculate them in this
 @dataclass
@@ -24,17 +27,24 @@ class Geometry:
     Vv: float
     vt_ar: float
     Vh: float
+    Sh: float
 
 @dataclass
 class Aero:
     CL0: float
     Cm0: float
     CD0: float
+    CD_ind: float
+    CD_profile: float
     cd_w: float
     cd_t: float
     CL_to: np.ndarray #[CLa, CLq, CLde, CLdf]
     CL_td: np.ndarray
     Cm: np.ndarray #[CMa, Cmq, Cmde, Cmddf]
+    alpha_list: np.ndarray
+    CL_alpha_list: np.ndarray
+    flap_deg_list: np.ndarray
+    CD_tot_list: np.ndarray
 
 @dataclass
 class Landing_Gear:
@@ -81,6 +91,7 @@ class Aircraft:
         ##### TAKEOFF ##########
         max 25 degrees for ailerons
         max 25-35 for rudders/elevator
+        50 deg flaps chosen for takeoff?
         '''
         if self.phase=='takeoff':
             throttle = 1/(1+np.exp(-(t-1)/.8))
@@ -113,8 +124,9 @@ class Aircraft:
             #     delta_e=0
 
             ## FLAP LOGIC
-            delta_f=np.radians(40)*1/(1+np.exp(-(t-6)/.8))
-
+            #delta_f=np.radians(20)*1/(1+np.exp(-(t-6)/.8)) #add increase up back in after fix CD
+            delta_f=np.radians(50)
+            '''change this so that it's zero until velocity=15 m/s'''
 
 
             # throttle slowly reducing
@@ -163,12 +175,16 @@ class Aircraft:
         delta_e, delta_f, throttle=controls
 
         V = np.sqrt(u**2 + w**2)
-        alpha=np.arctan2(w, u)
-        alpha=np.clip(alpha, np.radians(-30), np.radians(30))
-        if V<1e-6:
-            q_bar=0
-        else:
-            q_bar=(q*self.c)/(2*V)
+        alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], self.aero.alpha_list[-1])
+        # alpha=np.clip(alpha, np.radians(-15), np.radians(15))
+        # if V<1e-6:
+        #     q_bar=0
+        # else:
+        #     q_bar=(q*self.c)/(2*V)
+        # if V<15:
+        #     alpha=0
+        # else:
+        #     alpha=np.radians(14)
 
         delta_dele=delta_e-self.deltae0
         delta_delf=delta_f-self.deltaf0
@@ -180,15 +196,19 @@ class Aircraft:
         state_vec=np.array([delta_alpha, delta_dele, delta_delf])
 
         if self.phase=='takeoff':
-            CL0=self.aero.CL0[0]
-            CL_vec=self.aero.CL_to
+            # CL0=self.aero.CL0[0]
+            # CL_vec=self.aero.CL_to
+            alpha_interp=0
+            CL0=np.interp(alpha_interp, self.aero.alpha_list, self.aero.CL_alpha_list)
+
         if self.phase=='landing':
             CL0=self.aero.CL0[1]
             CL_vec=self.aero.CL_td
 
-        CL=CL0+CL_vec@state_vec
+        # CL=CL0+CL_vec@state_vec
+        CL=np.interp(alpha, self.aero.alpha_list, self.aero.CL_alpha_list)
         # print(f"CL: {CL:.3f} at alpha: {np.degrees(alpha):.2f} deg, delta_e: {np.degrees(delta_e):.2f} deg, delta_f: {np.degrees(delta_f):.2f} deg")
-        Cm=self.aero.Cm0+self.aero.Cm@state_vec
+        Cm=0 #self.aero.Cm0+self.aero.Cm@state_vec
 
 
         if ze>=0: #include ground effect factor due to rolling resistance
@@ -196,18 +216,18 @@ class Aircraft:
         else:
             phi=1
 
-        Sv=self.geom.Vv*self.geom.S*self.b/self.geom.lv
-        vt_c=np.sqrt(Sv/self.geom.vt_ar)
-        lh=self.geom.lv+vt_c/3
-        Sh=self.geom.Vh*self.geom.S*self.c/lh
+        # Sv=self.geom.Vv*self.geom.S*self.b/self.geom.lv
+        # vt_c=np.sqrt(Sv/self.geom.vt_ar)
+        # lh=self.geom.lv+vt_c/3
+        # Sh=self.geom.Vh*self.geom.S*self.c/lh
 
-        CD=self.aero.CD0+self.aero.cd_w+self.aero.cd_t*Sh/self.geom.S+phi*CL**2/(np.pi*self.geom.AR)
+        'START HERE'
+        # CD=self.aero.CD0+self.aero.cd_w+self.aero.cd_t*self.geom.Sh/self.geom.S+phi*CL**2/(np.pi*self.geom.AR)
+        # CD=self.aero.CD0+self.aero.CD_ind
+        # CD=self.aero.CD_profile+self.aero.CD_ind
 
-
-        '''once JVL inputs can be used'''
-        # CL=TakeoffCoeff.CL_alpha(alpha)+TakeoffCoeff.CL_flap(delta_f)+TakeoffCoeff.CL_velocity(V)
-        # Cm=TakeoffCoeff.CM_alpha(alpha)+TakeoffCoeff.CM_flap(delta_f)+TakeoffCoeff.CM_velocity(V)
-        # CD=TakeoffCoeff.CD_alpha(alpha)+TakeoffCoeff.CD_flap(delta_f)+TakeoffCoeff.CD_velocity(V)
+        #set both alpha=15 and flap deflection=50 once v=15 m/s
+        CD=np.interp(delta_delf, self.aero.flap_deg_list, self.aero.CD_tot_list)
         return CL, Cm, CD
 
     #Forces
@@ -215,16 +235,15 @@ class Aircraft:
 
         u, w, q, theta, xe, ze = x
 
-        # print(f'altitude: {-ze}')
+        print(f'altitude: {-ze}')
 
         controls = self.controls(t)
         delta_e, delta_f, throttle = controls
 
         V = np.sqrt(u**2 + w**2)
 
-        alpha = np.arctan2(w, u)
-        alpha=np.clip(alpha, np.radians(-15), np.radians(15))
-
+        alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], self.aero.alpha_list[-1])
+        # alpha=np.clip(alpha, np.radians(-15), np.radians(15)) #changed from -15 to 15
 
         rho=Atmosphere(h=ze*-1).density[0]
         Q = 0.5 * rho * V**2
@@ -234,7 +253,7 @@ class Aircraft:
 
         L = Q * self.geom.S * CL
         D = Q * self.geom.S * CD
-        T = self.prop.get_T(V) * throttle
+        T = self.prop.get_T(V)* throttle
         W = self.mass.m * 9.81
 
         '''TAKEOFF: if altitude for zome reason negative or zero
@@ -317,19 +336,20 @@ Aircraft.touchdown_event.direction=1
 
 '''PARAMETER INPUTS'''
 geom = Geometry(
-    S=49.5,
+    S=50.1,
     AR=8,
     h=5.5,
     lv=10,
     Vv=.1,
     vt_ar=1.2,
     Vh=1.05,
+    Sh=11.98
     # S=AircraftConfig.s_ref
     # AR=AircraftConfig.AR
     )
 
 mass = Mass(
-    m=7500,
+    m=7400,
     Iy=40000
     )
 
@@ -352,18 +372,23 @@ aero = Aero(
     CD0=0.02,
     cd_w=0.01,
     cd_t=0.01,
+    CD_ind=1.645,
+    CD_profile=0.02,
     # CL=np.array([6.5, 5, 0.4, 1.2]), use if CL_qbar known
     CL_to=np.array([6.5, 0.4, 6.5]), #change for takeoff to be 3 for CLdeltaf
     CL_td=np.array([6.5, 0.4, 1.2]),
     # Cm=np.array([-1.2, -12, -1, -0.1]),
     Cm=np.array([-1.2, -1, -0.1]),
     # Cm=np.array([-0.1, -0.2, -0.05]),
-
     # CD0=AircraftConfig.Cd0_takeoff
+    alpha_list=np.radians([-15, -13,-11,-9,-7,-5,-3,-1,1,3,5,7,9,11,13,15]),
+    CL_alpha_list=[1.99602,2.32163,2.64366,2.96144,3.2743,3.58159,3.88268,4.17698,4.46391,4.74295,5.0136,5.2754,5.52793,5.77082,6.00373,6.22638],
+    flap_deg_list=np.radians([40, 50, 60]),
+    CD_tot_list=[0.31508, 0.3842, 0.45865] #CD_prof+CD_ind
 )
 '''CHOOSING PHASE OF FLIGHT'''
 """"""""""""""""""""""""""""""
-phase='landing' #either 'takeoff' or 'landing'
+phase='takeoff' #either 'takeoff' or 'landing'
 """"""""""""""""""""""""""""""
 
 '''SOLVING IVP FOR GENERAL'''
@@ -386,10 +411,10 @@ if phase=='takeoff':
     x0 = [u0_to, w0_to, q0_to, theta0_to, x_e0_to, z_e0_to]
 if phase=='landing':
     x0=[u0_td, w0_td, q0_td, theta0_td, x_e0_td, z_e0_td]
-plane_1=Aircraft(phase, mass, geom, aero, prop, landing, rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0)
+plane_1=Aircraft(phase, mass, geom, aero, prop, landing, rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0) #change alpha_0 to 0
 
 #Intergate over time span
-t = 30
+t = 12
 t_span = (0, t)
 t_eval = np.linspace(0, t, 1000)
 
@@ -407,7 +432,7 @@ sol = solve_ivp(
     events=event,
     # rtol=1e-8,
     # atol=1e-8,
-    # max_step=.02
+    max_step=.05
 )
 
 '''SOLVING IVP FOR LANDING'''
@@ -436,7 +461,7 @@ if phase=='landing':
     z2_dot0=0
     z0=[z10, z20, z1_dot0, z2_dot0]
 
-    landing_tspan=(0,8)
+    landing_tspan=(0,5)
     # landing_teval=np.linspace(0,5,300)
     sol_landing=solve_ivp(
         lambda t,z: plane_1.landing_dynamics(plane_1.controls(t), t, x_touch, z),
@@ -524,18 +549,32 @@ D_clean=[]
 T_clean=[]
 N_clean=[]
 Roll_resist_clean=[]
+alpha_clean=[]
 for i in range(len(sol.t)):
-    x = sol.y[:, i] #grab current state vector
+    x = sol.y[:, i] #grab current state vector)
+    '''START FIXING HERE'''
+    u, w, ze, =x[0], x[1], x[5]
+    alpha_i=np.arctan2(-w, u)
+    alpha_clean.append(alpha_i)
+    print(f'ze: {-ze}, u: {u}, w: {w}, Alpha: {np.degrees(alpha_i)}') #problem is alpha is negative, could be because w is defined as negative
+
     t = sol.t[i]
     controls = plane_1.controls(t)
     CL, _, _ = plane_1.aero_coefficents(x, controls)
     CL_clean.append(CL)
     _, _, _, L, D, T, N, Roll_resist=plane_1.forces(x, t)
+    #Forces in kN
     L_clean.append(L/10**3)
     D_clean.append(D/10**3)
     T_clean.append(T/10**3)
     N_clean.append(N/10**3)
     Roll_resist_clean.append(Roll_resist/10**3)
+
+print(f'CL at takeoff: {CL_clean[-1]}')
+print(f'Thrust at takeoff: {T_clean[-1]}')
+print(f'Lift at takeoff: {L_clean[-1]}')
+print(f'Drag at takeoff: {D_clean[-1]}')
+
 
 
 plt.plot(sol.t, CL_clean)
