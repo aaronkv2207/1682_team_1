@@ -235,7 +235,7 @@ class Aircraft:
 
         u, w, q, theta, xe, ze = x
 
-        print(f'altitude: {-ze}')
+        # print(f'altitude: {-ze}')
 
         controls = self.controls(t)
         delta_e, delta_f, throttle = controls
@@ -550,13 +550,15 @@ T_clean=[]
 N_clean=[]
 Roll_resist_clean=[]
 alpha_clean=[]
+
+alpha_list=np.radians([-15, -13,-11,-9,-7,-5,-3,-1,1,3,5,7,9,11,13,15])
 for i in range(len(sol.t)):
     x = sol.y[:, i] #grab current state vector)
     '''START FIXING HERE'''
     u, w, ze, =x[0], x[1], x[5]
-    alpha_i=np.arctan2(-w, u)
+    alpha_i=np.clip(np.arctan2(-w, u), alpha_list[0], alpha_list[-1])
     alpha_clean.append(alpha_i)
-    print(f'ze: {-ze}, u: {u}, w: {w}, Alpha: {np.degrees(alpha_i)}') #problem is alpha is negative, could be because w is defined as negative
+    # print(f'ze: {-ze}, u: {u}, w: {w}, Alpha: {np.degrees(alpha_i)}')
 
     t = sol.t[i]
     controls = plane_1.controls(t)
@@ -575,9 +577,13 @@ print(f'Thrust at takeoff: {T_clean[-1]}')
 print(f'Lift at takeoff: {L_clean[-1]}')
 print(f'Drag at takeoff: {D_clean[-1]}')
 
+plt.plot(sol.t, np.degrees(alpha_clean))
+plt.xlabel("Time (s)")
+plt.ylabel("AoA [deg]")
+plt.title("AoA over Time")
+plt.grid(True)
+plt.show()
 
-
-plt.plot(sol.t, CL_clean)
 plt.plot(sol.t, CL_clean)
 plt.xlabel("Time (s)")
 plt.ylabel("Lift Coefficient (CL)")
