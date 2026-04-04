@@ -24,7 +24,7 @@ class TakeoffCoeff_config:
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
     try:
-        FILE_NAME = f"JVL_writer/sref_design-trades/run_file_ouputs/coefficient_results/Sref-{S}/takeoff.pkl"
+        FILE_NAME = f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/takeoff.pkl"
         with open(FILE_NAME, "rb") as f:
             data = pickle.load(f)
 
@@ -58,7 +58,7 @@ class CruiseCoeff_config:
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
     try:
-        FILE_NAME = f"JVL_writer/sref_design-trades/run_file_ouputs/coefficient_results/Sref-{S}/cruise.pkl"
+        FILE_NAME = f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/cruise.pkl"
         with open(FILE_NAME, "rb") as f:
             data = pickle.load(f)
 
@@ -93,7 +93,7 @@ class LandingCoeff_config:
 
     # raise NotImplementedError("Not implemented in V1 sizing. Will need to update configuration in runner.py")
     try:
-        FILE_NAME = f"JVL_writer/sref_design-trades/run_file_ouputs/coefficient_results/Sref-{S}/landing.pkl"
+        FILE_NAME = f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/landing.pkl"
         with open(FILE_NAME, "rb") as f:
             data = pickle.load(f)
 

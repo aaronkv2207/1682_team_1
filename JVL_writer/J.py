@@ -32,7 +32,7 @@ class JVL(AVL):
         self,
         airplane,
         op_point,
-        # xyz_ref=[0, 0, 0],
+        xyz_ref=[0, 0, 0],
         ground_effect=False,
         ground_effect_height=0.0,
         AVL_spacing_parameters=None,
@@ -41,7 +41,7 @@ class JVL(AVL):
         super().__init__(
             airplane=airplane,
             op_point=op_point,
-            xyz_ref=airplane.xyz_ref,
+            # xyz_ref=airplane.xyz_ref,
             ground_effect=ground_effect,
             ground_effect_height=ground_effect_height,
             avl_command=avl_command,
@@ -221,7 +221,7 @@ class JVL(AVL):
                     {xsec_def_line}
                     
                     AFIL
-                    {af_filepath}
+                    {af_filepath.name.split("/")[-1]}
                     
                     """
                 )
@@ -286,6 +286,7 @@ class JVL(AVL):
         run_command: str = None,
         trim_Cm_to_zero: bool = False,
         trim_variable: str = "d6",
+        blowing=None,
     ) -> Dict[str, float]:
         with tempfile.TemporaryDirectory() as directory:
             directory = Path(directory)
@@ -301,7 +302,7 @@ class JVL(AVL):
 
             # Build keystroke script
             keystroke_file_contents = self._default_keystroke_file_contents(
-                trim_Cm_to_zero, trim_variable
+                trim_Cm_to_zero, trim_variable, blowing
             )
             if run_command is not None:
                 keystroke_file_contents += [run_command]
@@ -415,8 +416,21 @@ class JVL(AVL):
             return res
 
     def _default_keystroke_file_contents(
-        self, trim_Cm_to_zero: bool = False, trim_variable: str = "d6"
+        self,
+        trim_Cm_to_zero: bool = False,
+        trim_variable: str = "d6",
+        blowing: dict | None = None,
     ) -> List[str]:
+        """_summary_
+
+        Args:
+            trim_Cm_to_zero (bool, optional): Defaults to False.
+            trim_variable (str, optional): Defaults to "d6".
+            blowing (dict, optional): Dictionary mapping jet variables to their respective magnitudes. Defaults to None.
+
+        Returns:
+            List[str]: _description_
+        """
         run_file_contents = []
 
         # Disable graphics
@@ -460,6 +474,15 @@ class JVL(AVL):
             f"p p {float(q_bar)}",
             f"y y {float(r_bar)}",
         ]
+
+        # ADDED: Blowing Modulation
+        if blowing:
+            for jet_name, magnitude in blowing.items():
+                run_file_contents += [
+                    f"{jet_name} {float(magnitude)}", # Set index and value
+                    ""
+                ]
+
         # ADDED: Trim functionality
         if trim_Cm_to_zero:
             run_file_contents += [
