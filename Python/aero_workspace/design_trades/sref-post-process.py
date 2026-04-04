@@ -24,7 +24,9 @@ class TakeoffCoeff_config:
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
     try:
-        FILE_NAME = f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/takeoff.pkl"
+        FILE_NAME = (
+            f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/takeoff.pkl"
+        )
         with open(FILE_NAME, "rb") as f:
             data = pickle.load(f)
 
@@ -58,7 +60,9 @@ class CruiseCoeff_config:
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
     try:
-        FILE_NAME = f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/cruise.pkl"
+        FILE_NAME = (
+            f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/cruise.pkl"
+        )
         with open(FILE_NAME, "rb") as f:
             data = pickle.load(f)
 
@@ -93,7 +97,9 @@ class LandingCoeff_config:
 
     # raise NotImplementedError("Not implemented in V1 sizing. Will need to update configuration in runner.py")
     try:
-        FILE_NAME = f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/landing.pkl"
+        FILE_NAME = (
+            f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/landing.pkl"
+        )
         with open(FILE_NAME, "rb") as f:
             data = pickle.load(f)
 
@@ -120,3 +126,15 @@ class LandingCoeff_config:
     CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
     CD_tot = (CDind + CD_DP) * 1.2
 
+
+if __name__ == "__main__":
+    print("")
+    for config in [TakeoffCoeff_config, CruiseCoeff_config, LandingCoeff_config]:
+        name = config.__name__.replace("Coeff_config", "")
+        print(f"\n*** {name} Configuration ***")
+
+        print(f"Velocities: {np.round(config.velocities, 4)}")
+        print(f"AOAs: {np.round(config.alphas, 4)}")
+        print(f"CL: {np.round(config.CL, 4)}")
+        print(f"CD_tot: {np.round(config.CD_tot, 4)}")
+        print(f"Cm: {np.round(config.Cm, 4)}")

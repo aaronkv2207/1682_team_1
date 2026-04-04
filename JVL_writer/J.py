@@ -285,7 +285,6 @@ class JVL(AVL):
         self,
         run_command: str = None,
         trim_Cm_to_zero: bool = False,
-        trim_variable: str = "d6",
         flap_deflections=None,
         blowing=None,
     ) -> Dict[str, float]:
@@ -303,7 +302,7 @@ class JVL(AVL):
 
             # Build keystroke script
             keystroke_file_contents = self._default_keystroke_file_contents(
-                trim_Cm_to_zero, trim_variable, flap_deflections, blowing
+                trim_Cm_to_zero, flap_deflections, blowing
             )
             if run_command is not None:
                 keystroke_file_contents += [run_command]
@@ -419,7 +418,6 @@ class JVL(AVL):
     def _default_keystroke_file_contents(
         self,
         trim_Cm_to_zero: bool = False,
-        trim_variable: str = "d6",
         flap_deflections: dict | None = None,
         blowing: dict | None = None,
     ) -> List[str]:
@@ -484,20 +482,20 @@ class JVL(AVL):
                     f"{jet_name} {jet_name} {float(magnitude)}",  # Set index and value
                 ]
 
-        # ADDED: Trim functionality
-        if trim_Cm_to_zero:
-            run_file_contents += [
-                f"{trim_variable} pm 0",
-            ]
-
         if flap_deflections:
             for flap_name, magnitude in flap_deflections.items():
                 run_file_contents += [
                     f"{flap_name} {flap_name} {float(magnitude)}",  # Set index and value
                 ]
-        # else:
-        #     # Set control surface deflections
-        #     run_file_contents += ["d1 d1 1"]
+        else:
+            # Set control surface deflections
+            run_file_contents += ["d1 d1 1"]
+
+        # ADDED: Trim functionality
+        if trim_Cm_to_zero:
+            run_file_contents += [
+                "a pm 0",
+            ]
 
         return run_file_contents
 

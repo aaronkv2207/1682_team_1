@@ -17,7 +17,7 @@ from J import JVL, JetControl, JetParam, JWing, WingJSec
 # assumed cruise height
 h_cruise = 5486.4  # m
 
-max_deflection = 50  # degrees; for takeoff
+max_deflection = 60  # degrees; for takeoff
 
 # TODO: Fix inner and outer flap spans
 
@@ -151,13 +151,11 @@ def run_case(phase, surface, velocity, alpha):
         out = surface.run(
             run_command=None,
             trim_Cm_to_zero=True,
-            trim_variable="d6",
         )
     else:  # landing
         out = surface.run(
             run_command=None,
             trim_Cm_to_zero=True,
-            trim_variable="d6",
             flap_deflections={"d1": max_deflection, "d2": max_deflection},
             blowing={
                 "J1": 2.0,
@@ -840,15 +838,15 @@ if __name__ == "__main__":
 
     oper_dict = {
         "takeoff": {
-            "alphas": np.linspace(14, 20, 1),
+            "alphas": np.linspace(14, 20, 3),
             "velocities": np.linspace(18, 25, 3),
         },
         "cruise": {
-            "alphas": np.array([2]),
+            "alphas": np.array([0]),  # ends up getting overwritten for trim
             "velocities": np.array([80, 125, 150]),
         },
         "landing": {
-            "alphas": np.linspace(8, 20, 1),
+            "alphas": np.linspace(8, 20, 1),  # ends up getting overwritten for trim
             "velocities": np.linspace(18, 25, 3),
         },
     }
