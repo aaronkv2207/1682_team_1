@@ -7,4 +7,4 @@ Determine whether the constraints below are satisfied:
 - Cruise (V1+V2 sizing): Characterize trade with cruise performance.
 - Landing (V2 sizing): Can the aircraft be trimmed and controlled at high lift without exceeding control deflection limits? (Will primarily be assessed with aft-end control surfaces in later stages.)
 
-Finally, post-process saved outputs in `Python/aero_workspace/design_trades_analysis` for each of the cases.
+Finally, post-process saved outputs in `Python/aero_workspace/design_trades` for each of the cases.

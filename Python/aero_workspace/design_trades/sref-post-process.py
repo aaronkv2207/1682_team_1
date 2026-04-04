@@ -14,7 +14,7 @@ from aero_dict import AircraftConfig
 from conceptual_design import ureg
 
 DEG2RAD_CONV = ureg("deg").to("rad").magnitude
-S = 44  # NOTE: User-specified value based on the case you're interested in analyzing. See available options in runner script.
+S = 52  # NOTE: User-specified value based on the case you're interested in analyzing. See available options in runner script.
 AR = 8
 
 

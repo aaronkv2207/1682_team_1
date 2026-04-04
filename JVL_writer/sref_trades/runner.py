@@ -16,6 +16,9 @@ from J import JVL, JetControl, JetParam, JWing, WingJSec
 
 # assumed cruise height
 h_cruise = 5486.4  # m
+
+max_deflection = 50  # degrees; for takeoff
+
 # TODO: Fix inner and outer flap spans
 
 # fuselage (not very well parametrized at the moment)
@@ -134,11 +137,9 @@ def save_results(data, filename):
 
 
 def run_case(phase, surface, velocity, alpha):
-    if phase in ("cruise", "landing"):
+    if phase == "takeoff":
         out = surface.run(
-            run_command=None,
-            trim_Cm_to_zero=True,
-            trim_variable="d6",
+            flap_deflections={"d1": max_deflection, "d2": max_deflection},
             blowing={
                 "J1": 2.0,
                 "J2": 2.0,
@@ -146,8 +147,25 @@ def run_case(phase, surface, velocity, alpha):
                 "J4": 2.0,
             },
         )
-    else:
-        out = surface.run()
+    elif phase == "cruise":
+        out = surface.run(
+            run_command=None,
+            trim_Cm_to_zero=True,
+            trim_variable="d6",
+        )
+    else:  # landing
+        out = surface.run(
+            run_command=None,
+            trim_Cm_to_zero=True,
+            trim_variable="d6",
+            flap_deflections={"d1": max_deflection, "d2": max_deflection},
+            blowing={
+                "J1": 2.0,
+                "J2": 2.0,
+                "J3": 2.0,
+                "J4": 2.0,
+            },
+        )
 
     return {
         "velocity": velocity,
@@ -360,7 +378,6 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                 )
 
                 # used to get CLmax @takeoff
-                max_deflection = 60  # degrees
                 wingB_maxdelta = JWing(
                     name="Main Wing",
                     symmetric=True,
