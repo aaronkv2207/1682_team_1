@@ -32,7 +32,7 @@ class AeroCoeffConfig:
             data = pickle.load(f)
 
         self.alphas, self.velocities, self.d_elevator = [], [], []
-        self.CL, self.CD, self.Cm, self.CDind = [], [], [], []
+        self.CL, self.CD, self.Cm, self.CDind, self.e = [], [], [], [], []
 
         for run in data:
             self.alphas.append(run["alpha"] * DEG2RAD_CONV)
@@ -40,6 +40,7 @@ class AeroCoeffConfig:
             self.d_elevator.append(run["d6"])
             self.CL.append(run["CL"])
             self.Cm.append(run["Cm"])
+            self.e.append(run["e"])
 
             _CDind = run["CL"] ** 2 / (AR * np.pi * run["e"])
             self.CDind.append(_CDind)
@@ -59,6 +60,7 @@ class AeroCoeffConfig:
         self.CL = np.array(self.CL)
         self.Cm = np.array(self.Cm)
         self.CDind = np.array(self.CDind)
+        self.e = np.array(self.e)
 
         # Filter based on reasonable elevator deflections
         elevator_mask = np.abs(self.d_elevator) < self.max_elevator
@@ -73,6 +75,7 @@ class AeroCoeffConfig:
             self.Cm = self.Cm[cl_best_real_mask]
             self.CDind = self.CDind[cl_best_real_mask]
             self.CD_tot = self.CD_tot[cl_best_real_mask]
+            self.e = self.e[1]
 
         if self.phase == "cruise":  # for cl_max; assuming vcruise of 125 [m/s]
             self.alphas = self.alphas[1]
@@ -82,6 +85,7 @@ class AeroCoeffConfig:
             self.Cm = self.Cm[1]
             self.CDind = self.CDind[1]
             self.CD_tot = self.CD_tot[1]
+            self.e = self.e[1]
 
 
 if __name__ == "__main__":
@@ -99,3 +103,4 @@ if __name__ == "__main__":
             print(f"CL: {np.round(config.CL, 4)}")
             print(f"CD_tot: {np.round(config.CD_tot, 4)}")
             print(f"Cm: {np.round(config.Cm, 4)}")
+            print(f"e: {np.round(config.e, 4)}")
