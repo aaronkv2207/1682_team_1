@@ -1134,7 +1134,7 @@ if __name__ == "__main__":
     mass_budget = 2700 #kg
     motor_mass = 35 #kg
     number_fans = 8
-    duct_mass_factor = 1.5
+    duct_mass_factor = 1.285
     duct_mass = motor_mass * duct_mass_factor
     generator_mass = trade["generator_mass_best_kg"]
     dry_mass = generator_mass + number_fans * (duct_mass + motor_mass)
