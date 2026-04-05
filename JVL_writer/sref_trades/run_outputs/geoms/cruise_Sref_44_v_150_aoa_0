@@ -133,6 +133,14 @@ SECTION
 AFIL
 cruise_Sref_44_v_150_aoa_0.af5
 
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Aileron 1 0.7 0 0 0 -1
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flaperon 1 0.8 0 0 0 1
+
 #===============================================================================
 SURFACE
 Vertical Tail
@@ -158,6 +166,10 @@ SECTION
 
 AFIL
 cruise_Sref_44_v_150_aoa_0.af7
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Rudder 1 0.7 0 0 0 1
 
 #===============================================================================
 SURFACE
@@ -187,4 +199,8 @@ SECTION
 
 AFIL
 cruise_Sref_44_v_150_aoa_0.af9
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Elevator 1 0.7 0 0 0 1
 

@@ -4,7 +4,6 @@ import sys
 from dataclasses import dataclass
 
 import numpy as np
-import pandas as pd
 from ambiance import Atmosphere
 from pint import UnitRegistry
 
@@ -14,127 +13,66 @@ from aero_dict import AircraftConfig
 from conceptual_design import ureg
 
 DEG2RAD_CONV = ureg("deg").to("rad").magnitude
-S = 52  # NOTE: User-specified value based on the case you're interested in analyzing. See available options in runner script.
 AR = 8
 
 
 @dataclass
-class TakeoffCoeff_config:
+class AeroCoeffConfig:
     """Reads a summary of JVL output dataframe at various operating points. Defines functions
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    try:
-        FILE_NAME = (
-            f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/takeoff.pkl"
-        )
-        with open(FILE_NAME, "rb") as f:
+    S: int
+    phase: str  # 'takeoff', 'cruise', or 'landing'
+
+    def __post_init__(self):
+        file_path = f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{self.S}/{self.phase}.pkl"
+
+        with open(file_path, "rb") as f:
             data = pickle.load(f)
 
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            "User must correctly specify FILE_NAME based on the case you're interested in analyzing"
-        )
+        self.alphas, self.velocities, self.d_elevator = [], [], []
+        self.CL, self.CD, self.Cm, self.CDind = [], [], [], []
 
-    alphas, velocities, betas = [], [], []
-    CL, CD, Cm, CDind, e = [], [], [], [], []
+        for run in data:
+            self.alphas.append(run["alpha"] * DEG2RAD_CONV)
+            self.velocities.append(run["velocity"])
+            self.d_elevator.append(run['d6'])
+            self.CL.append(run["CL"])
+            self.Cm.append(run["Cm"])
 
-    for _, run in enumerate(data):
-        alphas.append(run["alpha"] * DEG2RAD_CONV)
-        velocities.append(run["velocity"])
-        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
-        # CD.append(run["CD"])
-        Cm.append(run["Cm"])
+            _CDind = run["CL"] ** 2 / (AR * np.pi * run["e"])
+            self.CDind.append(_CDind)
 
-        _CDind = run["CL"] ** 2 / (AR * np.pi * run["e"])
-        CDind.append(_CDind)
+        if self.phase == "cruise":
+            CD_DP = AircraftConfig.C_Dp_cruise
+        else:
+            CD_DP = (
+                AircraftConfig.C_Dp_t0
+            )  # Default for takeoff/landing; may need to modify in future iterations
 
-        # NOTE: For drag buildup, CD_ind is obtained from JVL;
-        #       CD_form and CD_visc is obtained from Brenda's drag build up
-    CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
-    CD_tot = (CDind + CD_DP) * 1.2
+        self.CD_tot = (self.CDind + CD_DP) * 1.2
 
+        self.alphas = np.array(self.alphas)
+        self.velocities = np.array(self.velocities)
+        self.d_elevator = np.array(self.d_elevator)
+        self.CL = np.array(self.CL)
+        self.Cm = np.array(self.Cm)
+        self.CDind = np.array(self.CDind)
 
-@dataclass
-class CruiseCoeff_config:
-    """Reads a summary of JVL output dataframe at various operating points. Defines functions
-    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
-
-    try:
-        FILE_NAME = (
-            f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/cruise.pkl"
-        )
-        with open(FILE_NAME, "rb") as f:
-            data = pickle.load(f)
-
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            "User must correctly specify FILE_NAME based on the case you're interested in analyzing"
-        )
-
-    alphas, velocities, betas = [], [], []
-    CL, CD, Cm, CDind, e = [], [], [], [], []
-
-    for _, run in enumerate(data):
-        alphas.append(run["alpha"] * DEG2RAD_CONV)
-        velocities.append(run["velocity"])
-        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
-        # CD.append(run["CD"])
-        Cm.append(run["Cm"])
-
-        _CDind = run["CL"] ** 2 / (AR * np.pi * run["e"])
-        CDind.append(_CDind)
-
-        # NOTE: For drag buildup, CD_ind is obtained from JVL;
-        #       CD_form and CD_visc is obtained from Brenda's drag build up
-    CD_DP = AircraftConfig.C_Dp_cruise  # profile drag from Brenda's model
-    CD_tot = (CDind + CD_DP) * 1.2
-
-
-@dataclass  # NOTE: Validate drag build-up
-class LandingCoeff_config:
-    """Reads a summary of JVL output dataframe at various operating points. Defines functions
-    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
-
-    # raise NotImplementedError("Not implemented in V1 sizing. Will need to update configuration in runner.py")
-    try:
-        FILE_NAME = (
-            f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{S}/landing.pkl"
-        )
-        with open(FILE_NAME, "rb") as f:
-            data = pickle.load(f)
-
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            "User must correctly specify FILE_NAME based on the case you're interested in analyzing"
-        )
-
-    alphas, velocities, betas = [], [], []
-    CL, CD, Cm, CDind, e = [], [], [], [], []
-
-    for _, run in enumerate(data):
-        alphas.append(run["alpha"] * DEG2RAD_CONV)
-        velocities.append(run["velocity"])
-        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
-        # CD.append(run["CD"])
-        Cm.append(run["Cm"])
-
-        _CDind = run["CL"] ** 2 / (AR * np.pi * run["e"])
-        CDind.append(_CDind)
-
-        # NOTE: For drag buildup, CD_ind is obtained from JVL;
-        #       CD_form and CD_visc is obtained from Brenda's drag build up
-    CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
-    CD_tot = (CDind + CD_DP) * 1.2
 
 
 if __name__ == "__main__":
-    print("")
-    for config in [TakeoffCoeff_config, CruiseCoeff_config, LandingCoeff_config]:
-        name = config.__name__.replace("Coeff_config", "")
-        print(f"\n*** {name} Configuration ***")
+    S_list = [44, 48, 52]  # NOTE: See available options in runner script.
 
-        print(f"Velocities: {np.round(config.velocities, 4)}")
-        print(f"AOAs: {np.round(config.alphas, 4)}")
-        print(f"CL: {np.round(config.CL, 4)}")
-        print(f"CD_tot: {np.round(config.CD_tot, 4)}")
-        print(f"Cm: {np.round(config.Cm, 4)}")
+    for S in S_list:
+        print("")
+        for phase in ["takeoff", "cruise", "landing"]:
+            config = AeroCoeffConfig(S=S, phase=phase)
+            print(f"\n=== {phase.capitalize()} (S = {S} [m^2]) ===")
+
+            print(f"Velocities: {np.round(config.velocities, 4)}")
+            print(f"AOAs: {np.round(config.alphas * (1 / DEG2RAD_CONV), 4)} [degrees]")
+            print(f"d_elevator: {np.round(config.d_elevator, 4)}")
+            print(f"CL: {np.round(config.CL, 4)}")
+            print(f"CD_tot: {np.round(config.CD_tot, 4)}")
+            print(f"Cm: {np.round(config.Cm, 4)}")

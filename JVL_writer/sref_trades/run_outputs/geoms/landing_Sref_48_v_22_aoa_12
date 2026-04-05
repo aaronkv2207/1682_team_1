@@ -2,7 +2,7 @@ Initial Aircraft
 #Mach
 0        ! AeroSandbox note: This is overwritten later to match the current OperatingPoint Mach during the AVL run.
 #IYsym   IZsym   Zsym
-0       0   0.0
+0       1   -2.6
 #Sref    Cref    Bref
 47.39999999999999 2.420550623459157 19.595917942265423
 #Xref    Yref    Zref
@@ -27,7 +27,7 @@ SECTION
 0 0 0 2.4494897 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af0
+landing_Sref_48_v_22_aoa_12.af0
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -35,7 +35,7 @@ Flap1 1 0.75 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet1 0.000 1.000
+FlapJet1 1.000 1.000
 
 #--------------------------------------------------
 SECTION
@@ -43,7 +43,7 @@ SECTION
 0 2.4371173 0 2.4494897 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af1
+landing_Sref_48_v_22_aoa_12.af1
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -51,11 +51,11 @@ Flap1 1 0.75 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet1 0.000 1.000
+FlapJet1 1.000 1.000
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet2 0.000 1.000
+FlapJet2 1.000 1.000
 
 #--------------------------------------------------
 SECTION
@@ -63,7 +63,7 @@ SECTION
 0 4.0742346 0 2.4494897 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af2
+landing_Sref_48_v_22_aoa_12.af2
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -71,11 +71,11 @@ Flap1 1 0.75 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet2 0.000 1.000
+FlapJet2 1.000 1.000
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet3 0.000 1.000
+FlapJet3 1.000 1.000
 
 #--------------------------------------------------
 SECTION
@@ -83,7 +83,7 @@ SECTION
 0 5.7113519 0 2.4494897 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af3
+landing_Sref_48_v_22_aoa_12.af3
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -95,11 +95,11 @@ Flap2 1 0.75 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet3 0.000 1.000
+FlapJet3 1.000 1.000
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet4 0.000 1.000
+FlapJet4 1.000 1.000
 
 #--------------------------------------------------
 SECTION
@@ -107,7 +107,7 @@ SECTION
 0 7.3484692 0 2.4494897 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af4
+landing_Sref_48_v_22_aoa_12.af4
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -123,7 +123,7 @@ Flaperon 1 0.7 0 0 0 1
 
 JETCONTROL
 #Djet  1.0   1.0  ! name, gain, SgnDup
-FlapJet4 0.000 1.000
+FlapJet4 1.000 1.000
 
 #--------------------------------------------------
 SECTION
@@ -131,7 +131,7 @@ SECTION
 0.17146428 9.797959 0 2.2045408 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af5
+landing_Sref_48_v_22_aoa_12.af5
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -153,7 +153,7 @@ SECTION
 7.3597691 0 0 2.4246186 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af6
+landing_Sref_48_v_22_aoa_12.af6
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -165,7 +165,7 @@ SECTION
 8.6526664 0 2.9095423 2.4246186 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af7
+landing_Sref_48_v_22_aoa_12.af7
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -186,7 +186,7 @@ SECTION
 8.6526664 0 2.9095423 2.4246186 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af8
+landing_Sref_48_v_22_aoa_12.af8
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
@@ -198,7 +198,7 @@ SECTION
 8.9750184 4.5268853 2.9095423 2.1022667 0
 
 AFIL
-cruise_Sref_48_v_150_aoa_0.af9
+landing_Sref_48_v_22_aoa_12.af9
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup

@@ -173,7 +173,7 @@ class JVL(AVL):
 
             ### Build up a buffer of the control surface strings to write to each section
             control_surface_commands: List[List[str]] = [[] for _ in wing.xsecs]
-            for i, xsec in enumerate(wing.xsecs[:-1]):
+            for i, xsec in enumerate(wing.xsecs):
                 for surf in xsec.control_surfaces:
                     xhinge = (
                         surf.hinge_point if surf.trailing_edge else -surf.hinge_point
@@ -285,6 +285,7 @@ class JVL(AVL):
         self,
         run_command: str = None,
         trim_Cm_to_zero: bool = False,
+        trim_variable=None,
         flap_deflections=None,
         blowing=None,
     ) -> Dict[str, float]:
@@ -302,7 +303,7 @@ class JVL(AVL):
 
             # Build keystroke script
             keystroke_file_contents = self._default_keystroke_file_contents(
-                trim_Cm_to_zero, flap_deflections, blowing
+                trim_Cm_to_zero, trim_variable, flap_deflections, blowing
             )
             if run_command is not None:
                 keystroke_file_contents += [run_command]
@@ -418,6 +419,7 @@ class JVL(AVL):
     def _default_keystroke_file_contents(
         self,
         trim_Cm_to_zero: bool = False,
+        trim_variable=None,
         flap_deflections: dict | None = None,
         blowing: dict | None = None,
     ) -> List[str]:
@@ -494,7 +496,7 @@ class JVL(AVL):
         # ADDED: Trim functionality
         if trim_Cm_to_zero:
             run_file_contents += [
-                "a pm 0",
+                f"{trim_variable} pm 0",
             ]
 
         return run_file_contents
