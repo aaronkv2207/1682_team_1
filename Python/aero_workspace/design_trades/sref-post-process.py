@@ -27,7 +27,7 @@ def get_runway_length(
     CD=1.88,
     mu=0.01,
     rho=AircraftConfig.rho_t0,
-    T=62000,#27496,
+    T=62000,  # 27496,
     m=7504,
     g=9.81,
 ):
@@ -42,18 +42,8 @@ def get_runway_length(
 
     x_runway = (m * v**2) / (2 * net_force)
     return x_runway
-x = get_runway_length(
-    v=22,
-    S=50,
-    CL=6.1,
-    CD=1.88,
-    mu=0.01,
-    rho=AircraftConfig.rho_t0,
-    T=27496,
-    m=7504,
-    g=9.81,
-)
-print(x)
+
+
 def get_climb_gradient(
     v,
     S,
@@ -114,9 +104,6 @@ class AeroCoeffConfig:
 
             _CDind = run["CL"] ** 2 / (AR * np.pi * run["e"])
             self.CDind.append(_CDind)
-
-            if run["CD"] < 0:
-                print(run["e"])
 
             if self.phase in ("takeoff", "landing"):
                 self.xto.append(
@@ -330,7 +317,7 @@ if __name__ == "__main__":
     plt.show()
 
     # ####################################################################
-    # x_TO Trade (Largely insensitive)
+    # x_TO Trade
     plt.figure()
     # for name in blow_configs:
     for name in ["full_blow"]:
