@@ -301,7 +301,7 @@ if __name__ == "__main__":
     mass_budget=2700,
     motor_mass=35,
     fan_mass=10,
-    duct_mass=35,
+    duct_mass=10,
     num_fans=8,
 )
 
