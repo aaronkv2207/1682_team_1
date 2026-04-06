@@ -195,28 +195,31 @@ class Aircraft:
         # else:
         #     alpha=np.radians(14)
 
-        delta_dele=delta_e-self.deltae0
-        delta_delf=delta_f-self.deltaf0
-        delta_alpha=alpha-self.alpha0
+
         # delta_qbar=q_bar-self.qbar0
 
         # state_vec=np.array([delta_alpha, delta_qbar, delta_dele, delta_delf])
         # state_vec=np.array([delta_alpha, delta_dele, delta_delf]) #in future ingnore CL due to elevator deflection
-        state_vec=np.array([delta_alpha, delta_dele, delta_delf])
+
 
         if self.phase=='takeoff':
-            # CL0=self.aero.CL0[0]
-            # CL_vec=self.aero.CL_to
-            alpha_interp=0
-            CL0=np.interp(alpha_interp, self.aero.alpha_list, self.aero.CL_alpha_list)
+            alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], np.radians(14))
+            CL=np.interp(alpha, self.aero.alpha_list, self.aero.CL_alpha_list)
+            CD=np.interp(delta_f, self.aero.flap_deg_list, self.aero.CD_tot_list)
 
         if self.phase=='landing':
+            alpha=np.arctan2(w, u)
             CL0=self.aero.CL0[1]
             CL_vec=self.aero.CL_td
 
-        # CL=CL0+CL_vec@state_vec
-        CL=np.interp(alpha, self.aero.alpha_list, self.aero.CL_alpha_list)
-        # print(f"CL: {CL:.3f} at alpha: {np.degrees(alpha):.2f} deg, delta_e: {np.degrees(delta_e):.2f} deg, delta_f: {np.degrees(delta_f):.2f} deg")
+            delta_dele=delta_e-self.deltae0
+            delta_delf=delta_f-self.deltaf0
+            delta_alpha=alpha-self.alpha0
+            state_vec=np.array([delta_alpha, delta_dele, delta_delf])
+
+            CL=CL0+CL_vec@state_vec
+            CD = self.aero.CD0 + CL**2 / (np.pi * self.geom.AR)
+
         Cm=0 #self.aero.Cm0+self.aero.Cm@state_vec
 
 
@@ -235,8 +238,6 @@ class Aircraft:
         # CD=self.aero.CD0+self.aero.CD_ind
         # CD=self.aero.CD_profile+self.aero.CD_ind
 
-        #set both alpha=15 and flap deflection=50 once v=15 m/s
-        CD=np.interp(delta_delf, self.aero.flap_deg_list, self.aero.CD_tot_list)
         return CL, Cm, CD
 
     #Forces
@@ -279,6 +280,7 @@ class Aircraft:
             N=max(W-L, 0) #if the altitude is for some reason negative, use normal force to clamp on ground
         else:
             Roll_resist = 0
+
             N=0 #otherwise, no normal force
 
         # X and Z  are only the components of the aerodynamic force
@@ -416,7 +418,7 @@ x_e0_to = 0      # initial x-position in meters
 z_e0_to = 0  # initial altitude above runwayin meters
 
 u0_td = 30       # forward velocity in m/s
-w0_td = 3       # vertical velocity in m/s
+w0_td = 1       # vertical velocity in m/s
 q0_td = 0        # pitch rate in rad/s
 theta0_td = np.radians(-2)   # pitch angle in rad
 x_e0_td = 0      # initial x-position in meters
@@ -548,6 +550,7 @@ u = sol.y[0]
 w = sol.y[1]
 v = np.sqrt(u**2 + w**2)
 ax[1].plot(sol.t, u, label='Forward Velocity (u)')
+ax[1].plot(sol.t, -w, label='Vertical Velocity (w)')
 ax[1].plot(sol.t, -w, label='Vertical Velocity (w)')
 ax[1].plot(sol.t, v, label='Total Velocity (v)')
 ax[1].set_xlabel("Time (s)")
