@@ -70,7 +70,10 @@ class Aircraft:
         self.deltaf0=deltaf0
         self.alpha0=alpha0
         self.qbar0=qbar0
-
+    
+    def theta_schedule(self, t):
+        # stays 0, then ramps to 14 deg
+        return np.radians(20) * (1 / (1 + np.exp(-(t - 5)/0.8)))
 
     def controls(self, t):
         # u, w, q, theta, xe, ze = x
@@ -94,7 +97,7 @@ class Aircraft:
         50 deg flaps chosen for takeoff?
         '''
         if self.phase=='takeoff':
-            throttle = 1/(1+np.exp(-(t-1)/.8))
+            throttle = 1/(1+np.exp(-(t-1)/.3))
             ## ELEVATOR LOGIC
 
             #V1
@@ -103,7 +106,7 @@ class Aircraft:
             else:
                 delta_e=0
 
-
+            theta = self.theta_schedule(t)
             # V2
             # if t<3: #chang delta_e to change based off takeoff velcoity, maybe have CL_max known
             #     delta_e=0
@@ -170,12 +173,18 @@ class Aircraft:
 
         return delta_e, delta_f, throttle
 
-    def aero_coefficents(self, x, controls):
+    def aero_coefficents(self, x, controls, t):
         u, w, q, theta, xe, ze=x
         delta_e, delta_f, throttle=controls
 
         V = np.sqrt(u**2 + w**2)
-        alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], self.aero.alpha_list[-1])
+        # alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], self.aero.alpha_list[-1])
+        u_e = u*np.cos(theta) + w*np.sin(theta)
+        w_e = -u*np.sin(theta) + w*np.cos(theta)
+        gamma = np.arctan2(-w_e, u_e)
+
+        theta = self.theta_schedule(t)
+        alpha = theta - gamma
         # alpha=np.clip(alpha, np.radians(-15), np.radians(15))
         # if V<1e-6:
         #     q_bar=0
@@ -242,13 +251,19 @@ class Aircraft:
 
         V = np.sqrt(u**2 + w**2)
 
-        alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], self.aero.alpha_list[-1])
+        # alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], self.aero.alpha_list[-1])
+        u_e = u*np.cos(theta) + w*np.sin(theta)
+        w_e = -u*np.sin(theta) + w*np.cos(theta)
+        gamma = np.arctan2(-w_e, u_e)
+
+        theta = self.theta_schedule(t) 
+        alpha = theta - gamma
         # alpha=np.clip(alpha, np.radians(-15), np.radians(15)) #changed from -15 to 15
 
         rho=Atmosphere(h=ze*-1).density[0]
         Q = 0.5 * rho * V**2
 
-        CL, Cm, CD= self.aero_coefficents(x, controls)
+        CL, Cm, CD= self.aero_coefficents(x, controls, t)
 
 
         L = Q * self.geom.S * CL
@@ -298,7 +313,7 @@ class Aircraft:
         u, w, q, theta, xe, ze = x
         z1, z2, z1_dot, z2_dot=z
 
-        CL, _, _= self.aero_coefficents(x, controls)
+        CL, _, _= self.aero_coefficents(x, controls, t)
         rho=Atmosphere(h=ze*-1).density[0]
         V=np.sqrt(u**2+w**2)
         Q = 0.5 * rho * V**2
@@ -317,7 +332,7 @@ class Aircraft:
         V = np.sqrt(u**2 + w**2)
         rho=Atmosphere(h=ze*-1).density[0]
         Q = 0.5 * rho * V**2
-        CL, Cm, CD= self.aero_coefficents(x, self.controls(t))
+        CL, Cm, CD= self.aero_coefficents(x, self.controls(t), t)
 
         L=Q*self.geom.S*CL
         W = self.mass.m * 9.81
@@ -414,7 +429,7 @@ if phase=='landing':
 plane_1=Aircraft(phase, mass, geom, aero, prop, landing, rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0) #change alpha_0 to 0
 
 #Intergate over time span
-t = 12
+t = 20
 t_span = (0, t)
 t_eval = np.linspace(0, t, 1000)
 
@@ -480,11 +495,23 @@ if phase=='takeoff':
     if sol.t_events[0].size > 0:
         t_to=sol.t_events[0][0]
         x_to=sol.y_events[0][0][4]
+        theta_to=plane_1.theta_schedule(t_to)
+        print(f"theta at takeoff: {np.degrees(theta_to):.2f} deg")
+        # theta_to=sol.y_events[0][0][3]
+        u_to=sol.y_events[0][0][0]
+        w_to=sol.y_events[0][0][1]
+
+        u_eto = u_to*np.cos(theta_to) + w_to*np.sin(theta_to)
+        w_eto = -u_to*np.sin(theta_to) + w_to*np.cos(theta_to)
+        gamma_to = np.arctan2(-w_eto, u_eto)
+        print(f"gamma at takeoff: {np.degrees(gamma_to):.2f} deg")
+        alpha_to=theta_to-gamma_to
         v_to=np.sqrt(sol.y_events[0][0][0]**2+sol.y_events[0][0][1]**2)
 
         print(f"Takeoff time: {t_to:.3f} s")
         print(f"Takeoff distance: {x_to:.2f} m")
         print(f"Takeoff velocity: {v_to:.2f} m/s")
+        print(f"Takeoff AoA: {np.degrees(alpha_to):.2f} deg")
 
     else:
         print("Aircraft did not lift off.")
@@ -521,7 +548,7 @@ u = sol.y[0]
 w = sol.y[1]
 v = np.sqrt(u**2 + w**2)
 ax[1].plot(sol.t, u, label='Forward Velocity (u)')
-ax[1].plot(sol.t, w, label='Vertical Velocity (w)')
+ax[1].plot(sol.t, -w, label='Vertical Velocity (w)')
 ax[1].plot(sol.t, v, label='Total Velocity (v)')
 ax[1].set_xlabel("Time (s)")
 ax[1].set_ylabel("Velocity (m/s)")
@@ -550,19 +577,27 @@ T_clean=[]
 N_clean=[]
 Roll_resist_clean=[]
 alpha_clean=[]
+theta_clean=[]
 
 alpha_list=np.radians([-15, -13,-11,-9,-7,-5,-3,-1,1,3,5,7,9,11,13,15])
 for i in range(len(sol.t)):
     x = sol.y[:, i] #grab current state vector)
     '''START FIXING HERE'''
-    u, w, ze, =x[0], x[1], x[5]
-    alpha_i=np.clip(np.arctan2(-w, u), alpha_list[0], alpha_list[-1])
-    alpha_clean.append(alpha_i)
+    u, w, ze, theta =x[0], x[1], x[5], x[3]
+    # alpha_i=np.clip(np.arctan2(-w, u), alpha_list[0], alpha_list[-1])
+    u_e = u*np.cos(theta) + w*np.sin(theta)
+    w_e = -u*np.sin(theta) + w*np.cos(theta)
+    gamma = np.arctan2(-w_e, u_e)
+
+    theta = plane_1.theta_schedule(t)
+    alpha = theta - gamma
+    alpha_clean.append(alpha)
+    theta_clean.append(theta)
     # print(f'ze: {-ze}, u: {u}, w: {w}, Alpha: {np.degrees(alpha_i)}')
 
     t = sol.t[i]
     controls = plane_1.controls(t)
-    CL, _, _ = plane_1.aero_coefficents(x, controls)
+    CL, _, _ = plane_1.aero_coefficents(x, controls, t)
     CL_clean.append(CL)
     _, _, _, L, D, T, N, Roll_resist=plane_1.forces(x, t)
     #Forces in kN
@@ -577,10 +612,13 @@ print(f'Thrust at takeoff: {T_clean[-1]}')
 print(f'Lift at takeoff: {L_clean[-1]}')
 print(f'Drag at takeoff: {D_clean[-1]}')
 
-plt.plot(sol.t, np.degrees(alpha_clean))
+plt.plot(sol.t, np.degrees(alpha_clean), label='AoA')
+plt.plot(sol.t, np.degrees(theta_clean), label='Theta')
+plt.plot(sol.t, np.degrees(theta_clean)-np.degrees(alpha_clean), label='Climb Angle')
 plt.xlabel("Time (s)")
-plt.ylabel("AoA [deg]")
-plt.title("AoA over Time")
+plt.ylabel("Angles [deg]")
+plt.title("Angles of Interest over time")
+plt.legend()
 plt.grid(True)
 plt.show()
 
@@ -649,3 +687,5 @@ if phase=='landing':
     plt.legend()
     plt.grid()
     plt.show()
+
+# print(np.degrees(theta_clean))
