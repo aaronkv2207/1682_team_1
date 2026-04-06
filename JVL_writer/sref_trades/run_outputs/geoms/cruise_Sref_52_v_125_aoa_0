@@ -20,7 +20,7 @@ YDUPLICATE
 
 JETPARAM
 #hdisk   fh   djet0   djet1   djet3
-0.571 0.000 0.000 0.000 0.000000
+0.624 0.000 0.000 0.000 0.000000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]

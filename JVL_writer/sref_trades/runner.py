@@ -43,7 +43,7 @@ Vh = 0.75
 ht_ar = 2
 
 # fan - fixed parameters
-fan_radius = 1.116 / 2
+fan_radius = 1.166 / 2
 n_fans = 8
 
 # Wing geometry
@@ -988,7 +988,11 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
 
 if __name__ == "__main__":
     S_list = [44, 48, 52]
-    v_stall = 20  # [m/s]; NOTE: assumed
+
+    # NOTE: assumed; technically stall velocity slightly changes, but so does mass. At this stage, we can't
+    # accurately predict the relative magnitude of W/S & which effect dominates due to lack of correct mass models.
+    # Assumed that v_stall is largely constant. (W / (0.5 * rho * S))^0.5
+    v_stall = 20  # [m/s]
 
     oper_dict = {
         "takeoff": {
