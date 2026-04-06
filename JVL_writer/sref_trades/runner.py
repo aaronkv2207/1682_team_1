@@ -1123,7 +1123,6 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
                         ),  # no ground effect
                         avl_command="jvl",
                     )
-
                 else:
                     plane = [planeB_landing if phase == "landing" else planeB_takeoff][
                         0
@@ -1164,7 +1163,7 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
 
 
 if __name__ == "__main__":
-    S_list = np.linspace(40, 52, 3)
+    S_list = np.linspace(40, 52, 13)
     # S_list = np.linspace(40, 52, 13)
 
     # NOTE: Technically stall velocity slightly changes, but so does mass. At this stage, we can't
@@ -1172,34 +1171,29 @@ if __name__ == "__main__":
     # Assumed that v_stall is largely constant. (W / (0.5 * rho * S))^0.5
     v_stall = 20  # [m/s]; (7600 / (0.5 * 1.225 * S_list)) ** 0.5 --> exact but rounded to 20 for simplicitly
 
-    # oper_dict = {
-    #     "takeoff": {
-    #         "alphas": np.linspace(14, 20, 3),
-    #         "velocities": np.array(
-    #             [v_stall * 1.1]
-    #         ),  # largely unaffected by V_inf; dominated by blowing
-    #     },
-    #     "climb": {
-    #         "alphas": np.array([5, 10, 15]),  # ends up getting overwritten for trim
-    #         "velocities": np.array([80]),
-    #     },
-    #     "cruise": {
-    #         "alphas": np.array([0]),  # ends up getting overwritten for trim
-    #         "velocities": np.array([80, 125, 150]),
-    #     },
-    #     "landing": {
-    #         "alphas": np.linspace(12, 18, 3),  # ends up getting overwritten for trim
-    #         "velocities": np.array(
-    #             [v_stall * 1.1]  # TODO: Look into precise value
-    #         ),
-    #     },
-    # }
     oper_dict = {
+        "takeoff": {
+            "alphas": np.linspace(14, 20, 3),
+            "velocities": np.array(
+                [v_stall * 1.1]
+            ),  # largely unaffected by V_inf; dominated by blowing
+        },
         "climb": {
-            "alphas": np.array([20, 25, 30]),  # ends up getting overwritten for trim
+            "alphas": np.array([20, 25, 30]),
             "velocities": np.array([20]),
-        }
+        },
+        "cruise": {
+            "alphas": np.array([0]),
+            "velocities": np.array([80, 125, 150]),
+        },
+        "landing": {
+            "alphas": np.linspace(12, 18, 3),
+            "velocities": np.array(
+                [v_stall * 1.1]  # TODO: Look into precise value
+            ),
+        },
     }
+
     for folder_name, val in {"full_blow": 1.0, "half_blow": 0.5}.items():
         run_sref_cases(
             S_list, oper_dict=oper_dict, folder_name=folder_name, blowing_perturb=val
