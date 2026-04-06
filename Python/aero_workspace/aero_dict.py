@@ -38,7 +38,13 @@ class AircraftConfig:
     # CL_takeoff: float = ...  # TODO: fill-in based on JVL outputs
     # CM_takeoff: float = ...  # TODO: fill-in based on JVL outputs
 
-    # #### CLIMB DEFINITIONS ###
+    # #### CLIMB DEFINITIONS (at a single point) ###
+    h_climb: float = 0.0
+    rho_climb = Atmosphere(h=h_climb).density[0]  # [kg/m^2]
+    v_climb: float = 1.1 * V_STALL.magnitude
+    mu_climb: float = Atmosphere(h=h_climb).dynamic_viscosity[0]
+    h_climb = 3135
+    Dp_climb, C_Dp_climb = calc_C_Dp(rho_climb, v_climb, mu_climb)
     # v_climb: int = ...
     # weight_climb: ...  # TODO: update to varied model
     # h_dot: ...

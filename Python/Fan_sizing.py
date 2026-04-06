@@ -19,6 +19,7 @@ m = W / g  # Aircraft mass [kg]
 
 wing_loading = 1484.56  # Wing loading [N/m^2]
 S = W / wing_loading  # Wing area [m^2]
+print(S)
 
 AR = 8  # Aspect ratio [-]
 e = 0.8  # Oswald efficiency factor [-]
@@ -192,13 +193,12 @@ def P_shaft_required(v, R):
 # PLOT: Tradeoff Plot
 # ============================================================
 
-R_plot = np.linspace(0.5, 5, 200)   # radius range [m]
-V_TO = V_to                         # takeoff velocity
+R_plot = np.linspace(0.5, 5, 200)   # radius range [m]                       
 P_vals = []
 A_vals = []
 
 for R in R_plot:
-    P_total = N_fans * P_shaft_required(V_TO, R)  # total power
+    P_total = N_fans * P_shaft_required(V_to, R)  # total power
     A_total = np.pi * R**2                          # total area
 
     P_vals.append(P_total / 1000)  # convert to kW
@@ -226,32 +226,48 @@ A_selected = N_fans * np.pi * R_selected**2 # [m^2]
 lam = V_cruise / (omega*R_selected) 
 J = np.pi*lam
 
-# # ============================================================
-# # Printing Section for important values
-# # ============================================================
+
+
+
+
+
+
+
+# ============================================================
+# Printing Section for important values
+# ============================================================
 
 # TAKEOFF
 # At takeoff, (W-L(v)) is not included, as there is no friction force when we are off the ground
+print("--------------------------------")
+print("TAKOFF VALUES")
 T_to = D(V_to) + acc(V_to)
 print("Velocity at Takeoff:", V_to)
 print("BASIC/NAIVE Thrust at takeoff:", T_to)
 print("T/W at takeoff: ", T_to/W)
 print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
+print("Tc taekoff = ", T_c(V_to, R_selected))
+print("-------------------------------")
 
 # CRUISE
+print("CRUISE VALUES")
 print("Effeciency during cruise =", Eta_ideal_cruise(125,3.5))
-print("Cl_cruise =", CL_cruise(130))
-print("Cd_cruise =", CD_cruise(130))
-print("T_cruise =",T_cruise(130), "N")
-print("Tc cruise:, ", T_c(V_to, R_selected))
-print("P_cruise =", P_cruise(130, 1.8)/1000, "kW")
+print("Cl_cruise =", CL_cruise(V_cruise))
+print("Cd_cruise =", CD_cruise(V_cruise))
+print("T_cruise =",T_cruise(V_cruise), "N")
+print("Tc cruise:, ", Tc_cruise(V_to, R_selected))
+print("P_cruise =", P_cruise(V_cruise, 1.8)/1000, "kW")
 print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
 print("Cruise Advance Ratio: ", J)
+print("-------------------------------")
 
 
 # FAN GEOMETRY
+print("FAN GEOMETRY VALUES")
 print("Effective Total Fan Area:", A_selected)
 print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected)) # USE QFAN FOR M_TIP
+print("-------------------------------")
+
 
 
 
@@ -266,12 +282,12 @@ print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected))
 #     0.36152, 0.3804, 0.39928, 0.41816, 0.43704, 0.45592, 0.4748, 0.49368,
 #     0.51256, 0.522
 # ])
-# c = R_selected* np.array([
-#     0.1856, 0.111, 0.17096, 0.22447, 0.26976, 0.30662, 0.33561, 0.35768,
-#     0.36382, 0.37497, 0.38193, 0.38534, 0.3857, 0.38336, 0.37849, 0.37115,
-#     0.36122, 0.34838, 0.33212, 0.3116, 0.29555, 0.28201, 0.26759, 0.25536,
-#     0.24299, 0.22757
-# ])
+c = R_selected* np.array([
+    0.1856, 0.111, 0.17096, 0.22447, 0.26976, 0.30662, 0.33561, 0.35768,
+    0.36382, 0.37497, 0.38193, 0.38534, 0.3857, 0.38336, 0.37849, 0.37115,
+    0.36122, 0.34838, 0.33212, 0.3116, 0.29555, 0.28201, 0.26759, 0.25536,
+    0.24299, 0.22757
+])
 # beta = np.deg2rad(np.array([
 #     85.0212, 80.8544, 77.7618, 74.7565, 71.849, 69.047, 66.3561, 63.7793,
 #     61.3179, 58.9711, 56.7372, 54.6132, 52.5953, 50.6792, 48.8601, 47.1332,
@@ -311,11 +327,66 @@ print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected))
 # plt.show()
 
 
+# ============================================================
+# Mass calculation for ducted fan system
+# ============================================================
+
+
+
+def fan_mass_composites(R, chord_distribution, t, N_blades=5, materials=None):
+    """
+    Estimate the mass of a fan for different composite materials.
+
+    Parameters:
+    R : float
+        Fan radius [m]
+    chord_distribution : array-like
+        Chord at each radial station (m)
+    N_blades : int
+        Number of blades
+    t : float
+        Thickness of the blade (m)
+    materials : dict
+        Dictionary of materials with density [kg/m^3].
+        Example: {'Carbon Fiber': 1600, 'Aluminum': 2700}
+    
+    Returns:
+    dict
+        Estimated mass of a single fan for each material [kg]
+    """
+    if materials is None:
+        materials = {'Carbon Fiber': 1600}  # default
+    
+    chord_distribution = np.array(chord_distribution)
+    c_avg = np.mean(chord_distribution)
+    volume_blade = c_avg * t * R  # m^3
+    mass_dict = {}
+    
+    for mat, rho in materials.items():
+        mass_dict[mat] = N_blades * volume_blade * rho
+    
+    return mass_dict
+
+# materials = {
+#     'Carbon Fiber': 1600,
+#     'Fiberglass': 2000,
+#     'Aluminum': 2700,
+#     'Titanium': 4500
+# }
+
+print("MASS VALUES FOR EACH MATERIAL")
+t = 0.0121 # blade thickness [cm]
+fan_masses = fan_mass_composites(R_selected, c, t, N_blades=5)
+for mat, mass in fan_masses.items():
+    print(f"{mat}: {8*mass:.2f} kg")
 
 
 
 
-
+# CL_max, C_D_total, S, e, 
+# ============================================================
+# FINAL FUNCTION FOR MASS CLOSURE
+# ============================================================
 
 
 

@@ -267,6 +267,7 @@ class Aircraft:
             N=max(W-L, 0) #if the altitude is for some reason negative, use normal force to clamp on ground
         else:
             Roll_resist = 0
+
             N=0 #otherwise, no normal force
 
         # X and Z  are only the components of the aerodynamic force
