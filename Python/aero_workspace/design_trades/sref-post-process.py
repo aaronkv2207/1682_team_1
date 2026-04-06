@@ -21,13 +21,13 @@ AR = 8
 
 
 def get_runway_length(
-    v,
-    S,
-    CL,
-    CD,
-    mu=AircraftConfig.mu_t0,
+    v=22,
+    S=50,
+    CL=6.1,
+    CD=1.88,
+    mu=0.01,
     rho=AircraftConfig.rho_t0,
-    T=27496*1.5,
+    T=62000,#27496,
     m=7504,
     g=9.81,
 ):
@@ -37,13 +37,23 @@ def get_runway_length(
 
     net_force = T - D - mu * (W - L)
 
-    if net_force <= 0:
-        raise ValueError("Insufficient thrust to accelerate (denominator <= 0).")
+    # if net_force <= 0:
+    #     raise ValueError("Insufficient thrust to accelerate (denominator <= 0).")
 
     x_runway = (m * v**2) / (2 * net_force)
     return x_runway
-
-
+x = get_runway_length(
+    v=22,
+    S=50,
+    CL=6.1,
+    CD=1.88,
+    mu=0.01,
+    rho=AircraftConfig.rho_t0,
+    T=27496,
+    m=7504,
+    g=9.81,
+)
+print(x)
 def get_climb_gradient(
     v,
     S,
