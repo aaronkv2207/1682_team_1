@@ -27,7 +27,7 @@ def get_runway_length(
     CD,
     mu=AircraftConfig.mu_t0,
     rho=AircraftConfig.rho_t0,
-    T=27496,
+    T=27496*1.5,
     m=7504,
     g=9.81,
 ):
@@ -87,6 +87,12 @@ class AeroCoeffConfig:
             [],
             [],
         )
+        if self.phase == "cruise":
+            CD_DP = AircraftConfig.C_Dp_cruise
+        else:
+            CD_DP = (
+                AircraftConfig.C_Dp_t0
+            )  # Default for takeoff/landing; may need to modify in future iterations
 
         for run in data:
             self.alphas.append(run["alpha"] * DEG2RAD_CONV)
@@ -99,20 +105,16 @@ class AeroCoeffConfig:
             _CDind = run["CL"] ** 2 / (AR * np.pi * run["e"])
             self.CDind.append(_CDind)
 
+            if run["CD"] < 0:
+                print(run["e"])
+
             if self.phase in ("takeoff", "landing"):
                 self.xto.append(
                     get_runway_length(
-                        v=run["velocity"], S=self.S, CL=run["CL"], CD=run["CD"]
+                        v=run["velocity"], S=self.S, CL=run["CL"], CD=(CD_DP + _CDind)
                     )
                     * METERS2FT_CONV
                 )
-
-        if self.phase == "cruise":
-            CD_DP = AircraftConfig.C_Dp_cruise
-        else:
-            CD_DP = (
-                AircraftConfig.C_Dp_t0
-            )  # Default for takeoff/landing; may need to modify in future iterations
 
         self.CD_tot = (self.CDind + CD_DP) * 1.2
 
@@ -190,9 +192,7 @@ if __name__ == "__main__":
                 print(f"\n=== {phase.upper()} (S = {S} [m^2]) ===")
 
                 print(f"Velocities: {np.round(config.velocities, 4)}")
-                print(
-                    f"AOAs: {np.round(config.alphas * (1 / DEG2RAD_CONV), 4)} [°]"
-                )
+                print(f"AOAs: {np.round(config.alphas * (1 / DEG2RAD_CONV), 4)} [°]")
                 print(f"d_elevator: {np.round(config.d_elevator, 4)}")
                 print(f"CL: {np.round(config.CL, 4)}")
                 print(f"CD_tot: {np.round(config.CD_tot, 4)}")
@@ -294,9 +294,10 @@ if __name__ == "__main__":
     plt.show()
 
     # ####################################################################
-    # x_TO Trade (Largely insensitive)
+    # x_TO & CL
     REQUIRED_XTO = 300  # ft
-    for name in blow_configs:
+    # for name in blow_configs:
+    for name in ["full_blow"]:
         plt.figure()
         for S in S_list:
             config = AeroCoeffConfig(S=S, phase="takeoff", name=name)
@@ -313,25 +314,25 @@ if __name__ == "__main__":
         plt.xlabel("CL")
         plt.ylabel("Runway Length [ft]")
         plt.title(f"Runway Length vs CL - ({name.replace('_', ' ').capitalize()})")
-
-        # Add colorbar (represents S)
         cbar = plt.colorbar(sc)
         cbar.set_label("Wing Area, S [m^2]")
 
     plt.show()
-# plt.figure()
-# for name in blow_configs:
-#     xto_vals = []
 
-#     for S in S_list:
-#         config = AeroCoeffConfig(S=S, phase="takeoff", name=name)
-#         xto_vals.append(config.xto)
+    # ####################################################################
+    # x_TO Trade (Largely insensitive)
+    plt.figure()
+    # for name in blow_configs:
+    for name in ["full_blow"]:
+        xto_vals = []
 
-#     plt.plot(S_list, xto_vals, label=name, marker='o')
+        for S in S_list:
+            config = AeroCoeffConfig(S=S, phase="takeoff", name=name)
+            xto_vals.append(config.xto)
+        plt.plot(S_list, xto_vals, label=name, marker="o")
 
-# plt.xlabel("Wing Area, S [m^2]")
-# plt.ylabel("Runway Length [ft]")
-# plt.title("Takeoff Distance vs Wing Area")
-# plt.grid(True)
-# plt.legend()
-# plt.show()
+    plt.xlabel("Wing Area, S [m^2]")
+    plt.ylabel("Runway Length [ft]")
+    plt.title("Takeoff Distance vs Wing Area")
+    plt.legend()
+    plt.show()
