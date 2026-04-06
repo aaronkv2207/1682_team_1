@@ -3,8 +3,8 @@ import pickle
 import sys
 from dataclasses import dataclass
 
+import matplotlib.pyplot as plt
 import numpy as np
-from ambiance import Atmosphere
 from pint import UnitRegistry
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -12,8 +12,53 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from aero_dict import AircraftConfig
 from conceptual_design import ureg
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from range_model import get_range
+
 DEG2RAD_CONV = ureg("deg").to("rad").magnitude
+METERS2FT_CONV = ureg("m").to("ft").magnitude
 AR = 8
+
+
+def get_runway_length(
+    v,
+    S,
+    CL,
+    CD,
+    mu=AircraftConfig.mu_t0,
+    rho=AircraftConfig.rho_t0,
+    T=27496,
+    m=7504,
+    g=9.81,
+):
+    W = m * g
+    L = 0.5 * rho * v**2 * S * CL
+    D = 0.5 * rho * v**2 * S * CD
+
+    net_force = T - D - mu * (W - L)
+
+    if net_force <= 0:
+        raise ValueError("Insufficient thrust to accelerate (denominator <= 0).")
+
+    x_runway = (m * v**2) / (2 * net_force)
+    return x_runway
+
+
+def get_climb_gradient(
+    v,
+    S,
+    CD,
+    rho=AircraftConfig.rho_climb,
+    T=27496,
+    m=7504,
+    g=9.81,
+):
+    W = m * g
+    q = 0.5 * rho * v**2
+    D = q * S * CD
+    gamma = (T - D) / W
+
+    return gamma
 
 
 @dataclass
@@ -23,16 +68,25 @@ class AeroCoeffConfig:
 
     S: int
     phase: str  # 'takeoff', 'cruise', or 'landing'
+    name: str  # specify sub-folder
     max_elevator: float = 20.0  # degrees
 
     def __post_init__(self):
-        file_path = f"JVL_writer/sref_trades/run_outputs/coeff_results/Sref-{self.S}/{self.phase}.pkl"
+        file_path = f"JVL_writer/sref_trades/run_outputs/{self.name}/coeff_results/Sref-{self.S}/{self.phase}.pkl"
 
         with open(file_path, "rb") as f:
             data = pickle.load(f)
 
         self.alphas, self.velocities, self.d_elevator = [], [], []
-        self.CL, self.CD, self.Cm, self.CDind, self.e = [], [], [], [], []
+        self.CL, self.CD, self.Cm, self.CDind, self.e, self.xto, self.gamma = (
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+        )
 
         for run in data:
             self.alphas.append(run["alpha"] * DEG2RAD_CONV)
@@ -44,6 +98,14 @@ class AeroCoeffConfig:
 
             _CDind = run["CL"] ** 2 / (AR * np.pi * run["e"])
             self.CDind.append(_CDind)
+
+            if self.phase in ("takeoff", "landing"):
+                self.xto.append(
+                    get_runway_length(
+                        v=run["velocity"], S=self.S, CL=run["CL"], CD=run["CD"]
+                    )
+                    * METERS2FT_CONV
+                )
 
         if self.phase == "cruise":
             CD_DP = AircraftConfig.C_Dp_cruise
@@ -66,8 +128,8 @@ class AeroCoeffConfig:
         elevator_mask = np.abs(self.d_elevator) < self.max_elevator
         cl_best_real_mask = np.argmax(self.CL[elevator_mask])
 
-        # produces best
-        if self.phase == "takeoff":  # for cl_max
+        # produces best - for cl_max
+        if self.phase == "takeoff":
             self.alphas = self.alphas[cl_best_real_mask]
             self.velocities = self.velocities[cl_best_real_mask]
             self.d_elevator = self.d_elevator[cl_best_real_mask]
@@ -75,9 +137,10 @@ class AeroCoeffConfig:
             self.Cm = self.Cm[cl_best_real_mask]
             self.CDind = self.CDind[cl_best_real_mask]
             self.CD_tot = self.CD_tot[cl_best_real_mask]
-            self.e = self.e[1]
+            self.e = self.e[cl_best_real_mask]
+            self.xto = np.array(self.xto)[cl_best_real_mask]
 
-        if self.phase == "cruise":  # for cl_max; assuming vcruise of 125 [m/s]
+        if self.phase == "cruise":  # assuming vcruise of 125 [m/s]
             self.alphas = self.alphas[1]
             self.velocities = self.velocities[1]
             self.d_elevator = self.d_elevator[1]
@@ -87,20 +150,188 @@ class AeroCoeffConfig:
             self.CD_tot = self.CD_tot[1]
             self.e = self.e[1]
 
+        if self.phase == "climb":
+            # picks best climb condition (max gamma)
+            gamma_all = get_climb_gradient(
+                self.velocities,
+                self.S,
+                self.CD_tot,
+                rho=AircraftConfig.rho_climb,
+                T=27496,  # TODO: update with correct climb thrust
+                m=7504,  # TODO: update with correct climb thrust
+                g=9.81,
+            )
+            self.gamma = gamma_all
+
+            # for steepest climb angle
+            idx = np.argmax(gamma_all)
+            self.alphas_best = self.alphas[idx]
+            self.velocities_best = self.velocities[idx]
+            self.d_elevator_best = self.d_elevator[idx]
+            self.CL_best = self.CL[idx]
+            self.Cm_best = self.Cm[idx]
+            self.CDind_best = self.CDind[idx]
+            self.CD_tot_best = self.CD_tot[idx]
+            self.e_best = self.e[idx]
+            self.gamma_best = self.gamma[idx]
+
 
 if __name__ == "__main__":
-    S_list = [44, 48, 52]  # NOTE: See available options in runner script.
+    S_list = np.linspace(40, 52, 13)  # NOTE: See available options in runner script.
+    # S_list = np.linspace(40, 52, 13)  # NOTE: See available options in runner script.
+    blow_configs = ["full_blow", "half_blow"]
 
-    for idx, S in enumerate(S_list):
-        print(f"\n{'=' * 40}\nS = {S} [m^2] Performance")
-        for phase in ["takeoff", "cruise", "landing"]:
-            config = AeroCoeffConfig(S=S, phase=phase)
-            print(f"\n=== {phase.upper()} (S = {S} [m^2]) ===")
+    for name in blow_configs:
+        print(f"\n\n{'*' * 50}\n{'*' * 50}\n{name.upper()}")
+        for idx, S in enumerate(S_list):
+            print(f"\n{'=' * 40}\nS = {S} [m^2] Performance")
+            for phase in ["takeoff", "cruise", "climb"]:
+                config = AeroCoeffConfig(S=S, phase=phase, name=name)
+                print(f"\n=== {phase.upper()} (S = {S} [m^2]) ===")
 
-            print(f"Velocities: {np.round(config.velocities, 4)}")
-            print(f"AOAs: {np.round(config.alphas * (1 / DEG2RAD_CONV), 4)} [degrees]")
-            print(f"d_elevator: {np.round(config.d_elevator, 4)}")
-            print(f"CL: {np.round(config.CL, 4)}")
-            print(f"CD_tot: {np.round(config.CD_tot, 4)}")
-            print(f"Cm: {np.round(config.Cm, 4)}")
-            print(f"e: {np.round(config.e, 4)}")
+                print(f"Velocities: {np.round(config.velocities, 4)}")
+                print(
+                    f"AOAs: {np.round(config.alphas * (1 / DEG2RAD_CONV), 4)} [°]"
+                )
+                print(f"d_elevator: {np.round(config.d_elevator, 4)}")
+                print(f"CL: {np.round(config.CL, 4)}")
+                print(f"CD_tot: {np.round(config.CD_tot, 4)}")
+                print(f"Cm: {np.round(config.Cm, 4)}")
+                print(f"e: {np.round(config.e, 4)}")
+                if phase in ("takeoff", "landing"):
+                    print(f"xto: {np.round(config.xto, 4)} [ft]")
+
+    # ####################################################################
+    # L/D @Takeoff Trade
+    plt.figure()
+    for name in blow_configs:
+        ld_vals = []
+
+        for S in S_list:
+            config = AeroCoeffConfig(S=S, phase="takeoff", name=name)
+            ld_vals.append(config.CL / config.CD_tot)
+
+        plt.plot(S_list, ld_vals, label=name, marker="o")
+
+    plt.xlabel("Wing Area, S [m^2]")
+    plt.ylabel("L/D")
+    plt.title("L/D vs Wing Area (Takeoff)")
+    # plt.grid(True)
+    plt.legend()
+    plt.show()
+    # ####################################################################
+
+    # ####################################################################
+    # Climb Trade
+    REQUIRED_GAMMA = 10  # TODO: based on clearing 50 [ft] tree
+    gamma_vals = {}
+    cmap = plt.get_cmap("cividis")
+    plt.figure()
+    for S in S_list:
+        config = AeroCoeffConfig(S=S, phase="climb", name="full_blow")
+        alphas_deg = config.alphas / DEG2RAD_CONV
+
+        unique_alphas = np.unique(alphas_deg)
+
+        for i, alpha in enumerate(unique_alphas):
+            mask = alphas_deg == alpha
+
+            plt.scatter(
+                [S] * np.sum(mask),
+                config.gamma[mask] / DEG2RAD_CONV,
+                color=cmap(i / len(unique_alphas)),
+                s=70,
+                label=f"AoA = {alpha:.1f}°" if S == S_list[0] else None,
+            )
+    plt.axhline(
+        REQUIRED_GAMMA, linestyle="--", color="red", label="Requirement (minimum)"
+    )
+    plt.xlabel("Wing Area, S [m^2]")
+    plt.ylabel("Climb Gradient [°]")
+    plt.title("Climb Gradient vs Wing Area")
+    plt.legend()
+    plt.show()
+    # ####################################################################
+
+    # ####################################################################
+    # Range Trade
+    cmap = plt.get_cmap("cividis")
+    plt.figure()
+
+    S_vals = []
+    range_vals_plot = []
+    colors = []
+
+    for i, S in enumerate(S_list):
+        color = cmap(i / len(S_list))
+        config = AeroCoeffConfig(S=S, phase="cruise", name="full_blow")
+        config_clmax = AeroCoeffConfig(S=S, phase="takeoff", name="full_blow")
+        config_climb = AeroCoeffConfig(S=S, phase="climb", name="full_blow")
+
+        range_vals = get_range(
+            mass=7600,
+            Cd0=AircraftConfig.C_Dp_cruise,
+            Cdi_cruise=config.CDind,
+            CLmax=config_clmax.CL,
+            AR=AR,
+            wing_area=S,
+            v_cruise=config.velocities,
+            takeoff_power=2500.0,
+            climb_angle=config_climb.gamma_best,
+            cruise_altitude=AircraftConfig.h_cruise,
+        )
+
+        cruise_range = range_vals["cruise_range_km"]
+        max_range = np.max(cruise_range)
+        S_vals.append(S)
+        range_vals_plot.append(max_range)
+        colors.append(color)
+
+    plt.bar([str(S) for S in S_vals], range_vals_plot, color=colors)
+    plt.xlabel("Wing Area, S [m^2]")
+    plt.ylabel("Max Cruise Range (km)")
+    plt.title("Max Range vs Wing Area")
+    plt.show()
+
+    # ####################################################################
+    # x_TO Trade (Largely insensitive)
+    REQUIRED_XTO = 300  # ft
+    for name in blow_configs:
+        plt.figure()
+        for S in S_list:
+            config = AeroCoeffConfig(S=S, phase="takeoff", name=name)
+            sc = plt.scatter(
+                config.CL,
+                config.xto,
+                c=[S],
+                cmap="magma",
+                vmin=40,
+                vmax=60,
+                s=70,
+            )
+
+        plt.xlabel("CL")
+        plt.ylabel("Runway Length [ft]")
+        plt.title(f"Runway Length vs CL - ({name.replace('_', ' ').capitalize()})")
+
+        # Add colorbar (represents S)
+        cbar = plt.colorbar(sc)
+        cbar.set_label("Wing Area, S [m^2]")
+
+    plt.show()
+# plt.figure()
+# for name in blow_configs:
+#     xto_vals = []
+
+#     for S in S_list:
+#         config = AeroCoeffConfig(S=S, phase="takeoff", name=name)
+#         xto_vals.append(config.xto)
+
+#     plt.plot(S_list, xto_vals, label=name, marker='o')
+
+# plt.xlabel("Wing Area, S [m^2]")
+# plt.ylabel("Runway Length [ft]")
+# plt.title("Takeoff Distance vs Wing Area")
+# plt.grid(True)
+# plt.legend()
+# plt.show()
