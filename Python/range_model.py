@@ -224,7 +224,7 @@ def get_range(
     # -------------------------
     # Fuel bookkeeping
     # -------------------------
-    fuel_mass_cruise_kg = total_fuel_available_kg - best["fuel_mass_climb_kg"]
+    fuel_mass_cruise_kg = total_fuel_available_kg - best["fuel_mass_climb_kg"] - best["fuel_mass_climb_kg"] * 0.5 #descent reserve
 
     if fuel_mass_cruise_kg < 0.0:
         return {
@@ -295,7 +295,7 @@ if __name__ == "__main__":
     AR=8.0,
     wing_area=(16550 / 2.2) / (1484.56 / 9.81),
     v_cruise=125.0,
-    takeoff_power=2500.0,      # kW
+    takeoff_power=2100.0,      # kW
     climb_angle=10.0,          # deg
     cruise_altitude=18000.0 * 0.3048,
     mass_budget=2700,
@@ -305,7 +305,7 @@ if __name__ == "__main__":
     num_fans=8,
 )
 
-    print(result["total_range_km"])
-    print(result["V_climb_opt_mps"])
-    print(result["fuel_mass_climb_kg"])
-    print(result["P_elec_cruise_kW"])
+    print(f"Total range: {result['total_range_km']:.1f} km")
+    print(f"Optimal climb speed: {result['V_climb_opt_mps']:.1f} m/s")
+    print(f"Climb fuel mass: {result['fuel_mass_climb_kg']:.1f} kg")
+    print(f"Cruise electrical power: {result['P_elec_cruise_kW']:.1f} kW")
