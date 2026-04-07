@@ -12,6 +12,10 @@ coeffs = np.polyfit(V_data, T_data, degree)
 T_poly = np.poly1d(coeffs)
 
 
+# # Values assuming takeoff thrust of about 41kN
+# V_data = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
+# T_data = [5936.0, 5511.0, 5135.0, 4791.0, 4485.0, 4209.0, 3962.0, 3744.0, 3549.0, 3372.0, 3209.0]
+
 class ThrustVelocity:
     def __init__(self, V_data=V_data, T_data=T_data, degree=degree):
         self.coeffs = np.polyfit(V_data, T_data, degree)
