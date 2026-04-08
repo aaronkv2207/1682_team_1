@@ -166,8 +166,8 @@ class JVL(AVL):
                     jvl_file += clean(
                         f"""\
                             JETPARAM
-                            #hdisk   fh   djet0   djet1   djet3
-                            {JetParam.hdisk:.3f} {JetParam.fh:.3f} {JetParam.djet0:.3f} {JetParam.djet1:.3f} {JetParam.djet3:.6f}
+                            #hdisk   fh   djet0   djet1   djet3 dxdsk dndsk
+                            {JetParam.hdisk:.3f} {JetParam.fh:.3f} {JetParam.djet0:.3f} {JetParam.djet1:.3f} {JetParam.djet3:.6f} {JetParam.dxdsk:.6f} {JetParam.dndsk:.6f}
                             """
                     )
 
