@@ -1,0 +1,206 @@
+Initial Aircraft
+#Mach
+0        ! AeroSandbox note: This is overwritten later to match the current OperatingPoint Mach during the AVL run.
+#IYsym   IZsym   Zsym
+0       0   0.0
+#Sref    Cref    Bref
+43.45 2.317500782596302 18.76166303929372
+#Xref    Yref    Zref
+0.5863019699779287 0.0 0.0
+# CDp
+0
+#===============================================================================
+SURFACE
+Main Wing
+#Nchord  Cspace  [ Nspan Sspace  Nujet Cusp  Nwjet Cwsp ]
+16   1   25   1   0.2   0.0   12   -2.0
+
+YDUPLICATE
+0
+
+JETPARAM
+#hdisk   fh   djet0   djet1   djet3
+0.685 0.000 0.000 0.000 0.000000
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+0 0 0 2.3452079 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af0
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flap1 1 0.75 0 0 0 1
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet1 1.000 1.000
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+0 2.3589059 0 2.3452079 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af1
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flap1 1 0.75 0 0 0 1
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet1 1.000 1.000
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet2 1.000 1.000
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+0 3.9178118 0 2.3452079 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af2
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flap1 1 0.75 0 0 0 1
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet2 1.000 1.000
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet3 1.000 1.000
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+0 5.4767177 0 2.3452079 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af3
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flap1 1 0.75 0 0 0 1
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flap2 1 0.75 0 0 0 1
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet3 1.000 1.000
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet4 1.000 1.000
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+0 7.0356236 0 2.3452079 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af4
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flap2 1 0.8 0 0 0 1
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Aileron 1 0.7 0 0 0 -1
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flaperon 1 0.7 0 0 0 1
+
+JETCONTROL
+#Djet  1.0   1.0  ! name, gain, SgnDup
+FlapJet4 1.000 1.000
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+0.16416455 9.3808315 0 2.1106871 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af5
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Aileron 1 0.7 0 0 0 -1
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Flaperon 1 0.8 0 0 0 1
+
+#===============================================================================
+SURFACE
+Vertical Tail
+#Nchord  Cspace  [ Nspan Sspace  Nujet Cusp  Nwjet Cwsp ]
+8   1   10   1
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+7.4140149 0 0 2.2714439 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af6
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Rudder 1 0.7 0 0 0 1
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+8.6228671 0 2.7257327 2.2714439 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af7
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Rudder 1 0.7 0 0 0 1
+
+#===============================================================================
+SURFACE
+Horizontal Tail
+#Nchord  Cspace  [ Nspan Sspace  Nujet Cusp  Nwjet Cwsp ]
+8   1   10   1
+
+YDUPLICATE
+0
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+8.6228671 0 2.7257327 2.2714439 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af8
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Elevator 1 0.7 0 0 0 1
+
+#--------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
+8.9153878 4.250367 2.7257327 1.9789231 0
+
+AFIL
+climb_Sref_44.0_v_73_aoa_12.af9
+
+CONTROL
+#name, gain, Xhinge, XYZhvec, SgnDup
+Elevator 1 0.7 0 0 0 1
+

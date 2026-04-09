@@ -19,7 +19,7 @@ h_cruise = 5486.4  # m
 h_climb = 3135  # TODO: completely arbitrary --> needs correction
 
 takeoff_deflection = 50  # degrees
-climb_deflection = 30
+climb_deflection = 2
 landing_deflection = 65
 trim_variable = "d6"  # elevator
 
@@ -1172,26 +1172,26 @@ if __name__ == "__main__":
     v_stall = 20  # [m/s]; (7600 / (0.5 * 1.225 * S_list)) ** 0.5 --> exact but rounded to 20 for simplicitly
 
     oper_dict = {
-        "takeoff": {
-            "alphas": np.linspace(14, 20, 3),
-            "velocities": np.array(
-                [v_stall * 1.1]
-            ),  # largely unaffected by V_inf; dominated by blowing
-        },
+        # "takeoff": {
+        #     "alphas": np.array([0, 5, 10, 15, 20]), #np.linspace(0, 20, 3),
+        #     "velocities": np.array(
+        #         [v_stall * 1.1]
+        #     ),  # largely unaffected by V_inf; dominated by blowing
+        # },
         "climb": {
-            "alphas": np.array([20, 25, 30]),
-            "velocities": np.array([20]),
+            "alphas": np.linspace(2, 20, 19),  # sweep AoA
+            "velocities": np.linspace(60, 80, 21),
         },
-        "cruise": {
-            "alphas": np.array([0]),
-            "velocities": np.array([80, 125, 150]),
-        },
-        "landing": {
-            "alphas": np.linspace(12, 18, 3),
-            "velocities": np.array(
-                [v_stall * 1.1]  # TODO: Look into precise value
-            ),
-        },
+        # "cruise": {
+        #     "alphas": np.array([0]),
+        #     "velocities": np.array([125]),
+        # },
+        # "landing": {
+        #     "alphas": np.linspace(12, 18, 3),
+        #     "velocities": np.array(
+        #         [v_stall * 1.1]  # TODO: Look into precise value
+        #     ),
+        # },
     }
 
     for folder_name, val in {"full_blow": 1.0, "half_blow": 0.5}.items():
