@@ -19,7 +19,6 @@ m = W / g  # Aircraft mass [kg]
 
 wing_loading = 1484.56  # Wing loading [N/m^2]
 S = W / wing_loading  # Wing area [m^2]
-print(S)
 
 AR = 8  # Aspect ratio [-]
 e = 0.8  # Oswald efficiency factor [-]
@@ -34,7 +33,7 @@ V_stall = 19.933  # Stall speed [m/s]
 V_to = 1.1*V_stall # Takeoff speed [m/s]
 V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
-RPM = 6000 # RPM of propeller [rev/min]
+RPM = 7500 # RPM of propeller [rev/min]
 omega = RPM * 2 * np.pi / 60  # [rad/s]
 N_fans = 8  # number of fans
 
@@ -70,6 +69,13 @@ def acc(v):
 def T(v):
     """Thrust required during ground roll [N]."""
     return D(v) + mu * (W - L(v)) + m * acc(v)
+
+print("Thrust at takeoff with friction force:", T(V_to))
+print("Thrust at takeoff no friction force:", D(V_to)+m*acc(V_to))
+print("Friction force:", mu * (W - L(V_to)))
+print("Drag:", D(V_to))
+print("ma force:", m*(acc(V_to)))
+print("Acceleration:", acc(V_to))
 
 
 # ============================================================
@@ -125,7 +131,6 @@ def M_tip(R):
 # ACTUATOR DISK MODEL
 # ============================================================
 
-
 def Disk_area(R):
     """Disk area [m^2]"""
     return np.pi * R**2
@@ -133,24 +138,13 @@ def Disk_area(R):
 
 def T_c(v, R):
     """Velocity-based thrust coefficient Tc [-]"""
-
-    v = np.asarray(v)
-    A = Disk_area(R)
-
-    Tc = np.zeros_like(v)
+    A_total = N_fans*Disk_area(R)  # total disk area for all fans
 
     # Avoid divide-by-zero
-    small_mask = v < 1e-6
-    dynamic_mask = ~small_mask
-
-    if np.any(dynamic_mask):
-        T_per_fan = T(v[dynamic_mask]) / N_fans
-        Tc[dynamic_mask] = T_per_fan / (0.5 * rho * v[dynamic_mask] ** 2 * A)
-
-    # For very small velocity → treat as large loading
-    Tc[small_mask] = 1e6
-
-    return Tc
+    if v < 1e-6:
+        return 1e6
+    else:
+        return T(v) / (0.5 * rho * v ** 2 * A_total)
 
 
 def Eta_ideal(v, R):
@@ -160,34 +154,24 @@ def Eta_ideal(v, R):
 
 
 # ============================================================
-# POWER FUNCTION (FIXED FOR ARRAYS)
+# POWER FUNCTION (TOTAL, SCALAR VERSION)
 # ============================================================
-
 
 def P_shaft_required(v, R):
     """Ideal shaft power required [W]"""
+    A = Disk_area(R)
 
-    v = np.asarray(v)
-    P = np.zeros_like(v)
-
-    # Static case (v very small)
-    static_mask = v < 1e-6
-    if np.any(static_mask):
-        T_static = T(0) / N_fans
-        A = Disk_area(R)
+    if v < 1e-6:  # Static case
+        T_static = T(0)
         delta_V = np.sqrt(2 * T_static / (rho * A))
-        P[static_mask] = T_static * delta_V / 2
+        return T_static * delta_V / 2
+    else:  # Non-static case
+        ##### TRY ASSUMING THE EFFECINECY QFAN GIVES AND SEE IF THAT WORKS WITH 27.5E3
+        eta = Eta_ideal(v, R)
+        T_total = 62e3
+        return T_total * v / eta
 
-    # Non-static case
-    dynamic_mask = ~static_mask
-    if np.any(dynamic_mask):
-        eta = Eta_ideal(v[dynamic_mask], R)
-        T_per_fan = T(v[dynamic_mask]) / N_fans
-        P[dynamic_mask] = T_per_fan * v[dynamic_mask] / eta
-
-    return P
-
-
+# print("P_required: ", P_shaft_required(V_to, 0.583))
 
 # ============================================================
 # PLOT: Tradeoff Plot
@@ -198,8 +182,8 @@ P_vals = []
 A_vals = []
 
 for R in R_plot:
-    P_total = N_fans * P_shaft_required(V_to, R)  # total power
-    A_total = np.pi * R**2                          # total area
+    P_total = P_shaft_required(V_to, R)  # total power
+    A_total = np.pi * R**2                         # total area
 
     P_vals.append(P_total / 1000)  # convert to kW
     A_vals.append(A_total)
@@ -229,8 +213,66 @@ J = np.pi*lam
 
 
 
+# def runway_dist(TW, CL_val, v_eval):
+#     """
+#     Compute takeoff distance assuming constant average acceleration.
+#     """
+
+#     # Induced drag
+#     CDi = CL_val**2 / (np.pi * AR * e)
+#     CD = CD0 + CDi
+
+#     # Local lift and drag functions
+#     def L_local(v):
+#         return 0.5 * rho * v**2 * S * CL_val
+
+#     def D_local(v):
+#         return 0.5 * rho * v**2 * S * CD
+
+#     # Forces at representative velocity
+#     L_eval = L_local(v_eval)
+#     D_eval = D_local(v_eval)
+
+#     # Thrust from T/W
+#     T_const = TW * W
+
+#     # Acceleration including rolling friction
+#     a = (T_const - D_eval - mu*(W - L_eval)) / m
+
+#     if a <= 0:
+#         return np.nan  # cannot take off
+
+#     # Runway distance using kinematics
+#     x = V_to**2 / (2 * a)
+
+#     return x
+
+# TW_range = np.linspace(0.2, 1.5, 60)
+# CL_range = np.linspace(1.5, 10.5, 60)
+
+# X, Y = np.meshgrid(TW_range, CL_range)
+# Z = np.zeros_like(X)
+
+# # Representative velocity ~ 60% of takeoff speed
+# v_eval = 0.6 * V_to
+
+# for i in range(len(CL_range)):
+#     for j in range(len(TW_range)):
+#         Z[i, j] = runway_dist(TW_range[j], CL_range[i], v_eval)
 
 
+# Z_plot = np.ma.masked_where(Z > 200, Z) # Mask extreme values for plotting
+
+# # Plot
+# plt.figure(figsize=(10, 7))
+# cp = plt.contourf(X, Y, Z_plot, levels=np.linspace(0, 200, 11))
+# plt.colorbar(cp, label="Runway Distance [m]")
+
+# plt.xlabel("Thrust-to-Weight Ratio (T/W)")
+# plt.ylabel("Lift Coefficient (CL)")
+# plt.title("Takeoff Distance Trade Study (Constant Acceleration)")
+# plt.grid(alpha=0.3)
+# plt.show()
 
 
 # ============================================================
@@ -239,34 +281,37 @@ J = np.pi*lam
 
 # TAKEOFF
 # At takeoff, (W-L(v)) is not included, as there is no friction force when we are off the ground
-print("--------------------------------")
-print("TAKOFF VALUES")
-T_to = D(V_to) + acc(V_to)
-print("Velocity at Takeoff:", V_to)
-print("BASIC/NAIVE Thrust at takeoff:", T_to)
+# T_to = D(V_to) + m*acc(V_to)
+T_to = 40e3
 print("T/W at takeoff: ", T_to/W)
-print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
-print("Tc taekoff = ", T_c(V_to, R_selected))
-print("-------------------------------")
+if False:
+    print("--------------------------------")
+    print("TAKOFF VALUES")
+    print("Velocity at Takeoff:", V_to)
+    print("BASIC/NAIVE Thrust at takeoff:", T_to)
+    print("T/W at takeoff: ", T_to/W)
+    print("Ideal Effeciency at Takeoff:", Eta_ideal(V_to, R_selected))
+    print("Tc taekoff = ", T_c(V_to, R_selected))
+    print("-------------------------------")
 
-# CRUISE
-print("CRUISE VALUES")
-print("Effeciency during cruise =", Eta_ideal_cruise(125,3.5))
-print("Cl_cruise =", CL_cruise(V_cruise))
-print("Cd_cruise =", CD_cruise(V_cruise))
-print("T_cruise =",T_cruise(V_cruise), "N")
-print("Tc cruise:, ", Tc_cruise(V_to, R_selected))
-print("P_cruise =", P_cruise(V_cruise, 1.8)/1000, "kW")
-print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
-print("Cruise Advance Ratio: ", J)
-print("-------------------------------")
+    # CRUISE
+    print("CRUISE VALUES")
+    print("Effeciency during cruise =", Eta_ideal_cruise(125,3.5))
+    print("Cl_cruise =", CL_cruise(V_cruise))
+    print("Cd_cruise =", CD_cruise(V_cruise))
+    print("T_cruise =",T_cruise(V_cruise), "N")
+    print("Tc cruise:, ", Tc_cruise(V_to, R_selected))
+    print("P_cruise =", P_cruise(V_cruise, 1.8)/1000, "kW")
+    print("Ideal Effeciency at Cruise:", Eta_ideal_cruise(V_cruise, R_selected))
+    print("Cruise Advance Ratio: ", J)
+    print("-------------------------------")
 
 
-# FAN GEOMETRY
-print("FAN GEOMETRY VALUES")
-print("Effective Total Fan Area:", A_selected)
-print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected)) # USE QFAN FOR M_TIP
-print("-------------------------------")
+    # FAN GEOMETRY
+    print("FAN GEOMETRY VALUES")
+    print("Effective Total Fan Area:", A_selected)
+    print("Individual Mach Tip number per fan for chosen radius:",M_tip(R_selected)) # USE QFAN FOR M_TIP
+    print("-------------------------------")
 
 
 
@@ -282,12 +327,12 @@ print("-------------------------------")
 #     0.36152, 0.3804, 0.39928, 0.41816, 0.43704, 0.45592, 0.4748, 0.49368,
 #     0.51256, 0.522
 # ])
-c = R_selected* np.array([
-    0.1856, 0.111, 0.17096, 0.22447, 0.26976, 0.30662, 0.33561, 0.35768,
-    0.36382, 0.37497, 0.38193, 0.38534, 0.3857, 0.38336, 0.37849, 0.37115,
-    0.36122, 0.34838, 0.33212, 0.3116, 0.29555, 0.28201, 0.26759, 0.25536,
-    0.24299, 0.22757
-])
+# c = R_selected* np.array([
+#     0.1856, 0.111, 0.17096, 0.22447, 0.26976, 0.30662, 0.33561, 0.35768,
+#     0.36382, 0.37497, 0.38193, 0.38534, 0.3857, 0.38336, 0.37849, 0.37115,
+#     0.36122, 0.34838, 0.33212, 0.3116, 0.29555, 0.28201, 0.26759, 0.25536,
+#     0.24299, 0.22757
+# ])
 # beta = np.deg2rad(np.array([
 #     85.0212, 80.8544, 77.7618, 74.7565, 71.849, 69.047, 66.3561, 63.7793,
 #     61.3179, 58.9711, 56.7372, 54.6132, 52.5953, 50.6792, 48.8601, 47.1332,
@@ -331,41 +376,39 @@ c = R_selected* np.array([
 # Mass calculation for ducted fan system
 # ============================================================
 
+# def fan_mass_composites(R, chord_distribution, t, N_blades=5, materials=None):
+#     """
+#     Estimate the mass of a fan for different composite materials.
 
-
-def fan_mass_composites(R, chord_distribution, t, N_blades=5, materials=None):
-    """
-    Estimate the mass of a fan for different composite materials.
-
-    Parameters:
-    R : float
-        Fan radius [m]
-    chord_distribution : array-like
-        Chord at each radial station (m)
-    N_blades : int
-        Number of blades
-    t : float
-        Thickness of the blade (m)
-    materials : dict
-        Dictionary of materials with density [kg/m^3].
-        Example: {'Carbon Fiber': 1600, 'Aluminum': 2700}
+#     Parameters:
+#     R : float
+#         Fan radius [m]
+#     chord_distribution : array-like
+#         Chord at each radial station (m)
+#     N_blades : int
+#         Number of blades
+#     t : float
+#         Thickness of the blade (m)
+#     materials : dict
+#         Dictionary of materials with density [kg/m^3].
+#         Example: {'Carbon Fiber': 1600, 'Aluminum': 2700}
     
-    Returns:
-    dict
-        Estimated mass of a single fan for each material [kg]
-    """
-    if materials is None:
-        materials = {'Carbon Fiber': 1600}  # default
+#     Returns:
+#     dict
+#         Estimated mass of a single fan for each material [kg]
+#     """
+#     if materials is None:
+#         materials = {'Carbon Fiber': 1600}  # default
     
-    chord_distribution = np.array(chord_distribution)
-    c_avg = np.mean(chord_distribution)
-    volume_blade = c_avg * t * R  # m^3
-    mass_dict = {}
+#     chord_distribution = np.array(chord_distribution)
+#     c_avg = np.mean(chord_distribution)
+#     volume_blade = c_avg * t * R  # m^3
+#     mass_dict = {}
     
-    for mat, rho in materials.items():
-        mass_dict[mat] = N_blades * volume_blade * rho
+#     for mat, rho in materials.items():
+#         mass_dict[mat] = N_blades * volume_blade * rho
     
-    return mass_dict
+#     return mass_dict
 
 # materials = {
 #     'Carbon Fiber': 1600,
@@ -374,19 +417,12 @@ def fan_mass_composites(R, chord_distribution, t, N_blades=5, materials=None):
 #     'Titanium': 4500
 # }
 
-print("MASS VALUES FOR EACH MATERIAL")
-t = 0.0121 # blade thickness [cm]
-fan_masses = fan_mass_composites(R_selected, c, t, N_blades=5)
-for mat, mass in fan_masses.items():
-    print(f"{mat}: {8*mass:.2f} kg")
+# print("MASS VALUES FOR EACH MATERIAL")
+# t = 0.0121 # blade thickness [cm]
+# fan_masses = fan_mass_composites(R_selected, c, t, N_blades=5)
+# for mat, mass in fan_masses.items():
+#     print(f"{mat}: {8*mass:.2f} kg")
 
-
-
-
-# CL_max, C_D_total, S, e, 
-# ============================================================
-# FINAL FUNCTION FOR MASS CLOSURE
-# ============================================================
 
 
 
