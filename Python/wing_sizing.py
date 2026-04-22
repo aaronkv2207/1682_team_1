@@ -69,111 +69,10 @@ class Wing():
     # but give pretty seem values to the functions currently being used
 
     def axial_stress(self, L, T, D):
-
-        # Geometry
-        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
-        c = np.sqrt(aircraft.s_ref/aircraft.AR)
-
-        x_T1 = b/5
-        x_T2 = b*(2/5)
-        x_T3 = b*(3/5)
-        x_T4 = b*(4/5)
-
-        t_x1 = self.aero["t_x1"]
-        t_x2 = self.aero["t_x2"]
-
-        x_1 = self.aero["x_1"]
-        x_2 = self.aero["x_2"]
-
-        h = 0.5*(t_x1+t_x2)
-        w = x_2-x_1
-        t = t_x1*0.1
-
-        z = w/2
-        y = h/2
-
-        # thrust per fan
-        T = T/8
-
-        # weights
-        W_struct = self.weight_estimate
-        W_fuel = self.W_fuel_per_wing
-        W_duct = self.W_duct
-
-        # elliptical moment constants
-        lift_moment = (2*L*b)/(3*np.pi)
-        drag_moment = (2*D*b)/(3*np.pi)
-
-        struct_moment = (2*W_struct*b)/(3*np.pi)
-        fuel_moment = (2*W_fuel*b)/(3*np.pi)
-
-        # root bending moments
-        M_y = (
-            T*(x_T1+x_T2+x_T3+x_T4)
-            - drag_moment
-        )
-
-        M_z = (
-            struct_moment
-            + fuel_moment
-            + W_duct*(x_T1+x_T2+x_T3+x_T4)
-            - lift_moment
-        )
-
-        # inertia
-        I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
-        I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
-
-        # stresses
-        axial_yy = -(M_z*y)/I_z
-        axial_zz = (M_y*z)/I_y
-
-        axial_max = max(abs(axial_yy), abs(axial_zz))
-
-        # return 1.5*axial_max
         return 276e6
 
 
     def shear_stress(self, L, T, D):
-
-        b = np.sqrt(aircraft.AR*aircraft.s_ref)/2
-        c = np.sqrt(aircraft.s_ref/aircraft.AR)
-
-        t_x1 = self.aero["t_x1"]
-        t_x2 = self.aero["t_x2"]
-
-        x_1 = self.aero["x_1"]
-        x_2 = self.aero["x_2"]
-
-        h = 0.5*(t_x1+t_x2)
-        w = x_2-x_1
-        t = t_x1*0.1
-
-        T = T/8
-
-        # weights
-        W_struct = self.weight_estimate
-        W_fuel = self.W_fuel_per_wing
-        W_duct = self.W_duct
-
-        # shear forces
-        F_y = W_struct + 4*W_duct + W_fuel - L
-        F_z = -4*T + D
-
-        # first moments
-        Q_y = (h*w**2)/8 - ((h-2*t)*(w-2*t)**2)/8
-        Q_z = (w*h**2)/8 - ((w-2*t)*(h-2*t)**2)/8
-
-        # inertia
-        I_y = (h*w**3)/12 - ((h-2*t)*(w-2*t)**3)/12
-        I_z = (w*h**3)/12 - ((w-2*t)*(h-2*t)**3)/12
-
-        shear_xy = (F_y*Q_z)/(I_z*t)
-        shear_xz = (F_z*Q_y)/(I_y*t)
-
-        shear_max = max(abs(shear_xy), abs(shear_xz))
-
-        # return 1.5*shear_max
         return 207e6
 
     def max_moment(self, L, T, D, N_landing):
@@ -209,7 +108,7 @@ class Wing():
         W_duct = N_landing*self.W_duct
 
         # elliptical moment constants
-        lift_moment = (2*L*b)/(3*np.pi)
+        lift_moment = (2*N_landing*L*b)/(3*np.pi)
         drag_moment = (2*D*b)/(3*np.pi)
 
         struct_moment = (2*W_struct*b)/(3*np.pi)
@@ -228,7 +127,7 @@ class Wing():
             - lift_moment
         )
 
-        print("Moments", M_y, M_z)
+        print("Moment:", M_z)
 
         return abs(M_z)
         return max(abs(M_y), abs(M_z))
@@ -259,10 +158,10 @@ class Wing():
         print("D", D)
 
         # shear forces
-        F_y = W_struct + 4*W_duct + W_fuel - L
+        F_y = W_struct + 4*W_duct + W_fuel - L*N_landing
         F_z = -4*T + D
 
-        print("forces", F_y, F_z)
+        print("force", F_y)
 
         return abs(F_y)
         return max(abs(F_y), abs(F_z))
@@ -478,14 +377,14 @@ class Wing():
         shear_stress_landing = self.shear_stress(L_landing, T_landing, D_landing)
         print("axial stress landing:", axial_stress_landing)
         print("shear stress landing:", shear_stress_landing)
-        moment_landing = self.max_moment(L_landing, T_landing, D_landing, 3)
-        shear_load_landing = self.max_shear_load(L_landing, T_landing, D_landing, 3)
+        moment_landing = self.max_moment(L_landing, T_landing, D_landing, 1.8)
+        shear_load_landing = self.max_shear_load(L_landing, T_landing, D_landing, 1.8)
         print("moment and shear landing", moment_landing, shear_load_landing)
 
         # Find component sizing based on calculated loading
         # NOTE: setting a_z = 0 on all cases but landing so that N_land is not considered
-        landing_spar_cap_area = self.spar_cap_area(L_landing, self.aero["a_z"], axial_stress_landing, moment_landing)
-        landing_spar_web_area = self.spar_web_area(L_landing, self.aero["a_z"], shear_stress_landing, shear_load_landing)
+        landing_spar_cap_area = self.spar_cap_area(L_landing, self.aero["a_z"], axial_stress_landing, moment_landing)*1.5
+        landing_spar_web_area = self.spar_web_area(L_landing, self.aero["a_z"], shear_stress_landing, shear_load_landing)*1.5
         landing_skin_thickness = self.skin_thickness(q_landing, shear_stress_landing)
 
         return landing_spar_cap_area, landing_spar_web_area, landing_skin_thickness
@@ -517,19 +416,19 @@ class Wing():
         b = aircraft.b/2
         # for one of two wings
         sizing = self.max_load_sizing()
-        spar_cap_weight = sizing[0]*b*self.materials["spar_cap_density"]*0.75
-        spar_web_weight = sizing[1]*b*self.materials["spar_web_density"]*0.75
-        skin_weight = sizing[2]*self.aero["airfoil_surface_area"]*0.4*self.materials["skin_density"]
+        spar_cap_weight = sizing[0]*b*self.materials["spar_cap_density"]*0.5
+        spar_web_weight = sizing[1]*b*self.materials["spar_web_density"]*0.5
+        skin_weight = sizing[2]*self.aero["airfoil_surface_area"]*0.4*self.materials["skin_density"]*1.5
 
         print("spar_cap_weight", spar_cap_weight)
         print("spar_web_weight", spar_web_weight)
         print("skin_weight", skin_weight)
 
-        spar_and_skin = (2*spar_cap_weight + 2*spar_web_weight + skin_weight)*1.5
+        spar_and_skin = (2*spar_cap_weight + 2*spar_web_weight + skin_weight)
         print("Spar and skin weight:", spar_and_skin)
 
         # spar and skin is ~70% of total structural mass of the wing
-        return spar_and_skin/0.7
+        return spar_and_skin/0.6
 
 
 if __name__ == "__main__":
