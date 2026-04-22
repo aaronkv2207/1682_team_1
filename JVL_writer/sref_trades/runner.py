@@ -143,10 +143,10 @@ def save_results(data, filename):
         pickle.dump(data, f)
 
 
-def run_case(phase, surface, velocity, alpha):
+def run_case(phase, surface, velocity, alpha, deflection):
     if phase == "takeoff":
         out = surface.run(
-            flap_deflections={"d1": takeoff_deflection, "d2": takeoff_deflection},
+            flap_deflections={"d1": deflection, "d2": deflection},
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
             blowing={
@@ -158,7 +158,7 @@ def run_case(phase, surface, velocity, alpha):
         )
     elif phase == "climb":
         out = surface.run(
-            flap_deflections={"d1": climb_deflection, "d2": climb_deflection},
+            flap_deflections={"d1": deflection, "d2": deflection},
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
             blowing={
@@ -179,7 +179,7 @@ def run_case(phase, surface, velocity, alpha):
             run_command=None,
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
-            flap_deflections={"d1": landing_deflection, "d2": landing_deflection},
+            flap_deflections={"d1": deflection, "d2": deflection},
             blowing={
                 "J1": J_land,
                 "J2": J_land,
@@ -564,7 +564,9 @@ def run_sref_cases(S_list, oper_dict, folder_name):  # noqa: PLR0915
                     j=True,
                 )
 
-                results.append(run_case(phase, jvl_plane, velocity, alpha))  # run JVL
+                results.append(
+                    run_case(phase, jvl_plane, velocity, alpha, flap_d)
+                )  # run JVL
                 print(
                     f"Successfully ran case {case_idx + 1} of {len(cases)} in {phase}"
                 )
@@ -598,7 +600,7 @@ if __name__ == "__main__":
             "velocities": np.array(
                 [80.0, 90.0, 100.0, 110.0, 120.0, 125.0, 130.0, 140.0, 150.0]
             ),
-            "flap_deflections": None,
+            "flap_deflections": np.array([0, 2]),
         },
         "landing": {
             "alphas": np.array([0, 5, 10, 15, 20, 25, 30, 40, 60, 80]),
