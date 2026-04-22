@@ -28,7 +28,7 @@ trim_variable = "d6"  # elevator
 # fuselage (not very well parametrized at the moment)
 nose_x = -5
 fuse_width = 1.6  # width at the wing: 2 rows of seats
-AR = 8  # twin otter is 10.05
+AR = 7  # twin otter is 10.05
 ail_hinge = 0.7
 flap_hinge = 0.75
 wing_incidence = 0
@@ -39,10 +39,10 @@ lv = 8  # distance from wing quarter chord to vertical tail quarter chord
 Vv = 0.06  # Vertical tail volume coefficient
 vt_ar = 1.2
 tail_hinge = 0.7
-Vh = 0.75
+Vh = 1.0
 
 # h_tail - fixed parameters
-ht_ar = 2
+ht_ar = 3
 
 # fan - fixed parameters
 fan_radius = 1.166 / 2
@@ -51,6 +51,9 @@ n_fans = 8
 # Wing geometry
 main_foil = asb.Airfoil(coordinates="./JVL_writer/jw05.dat")
 # S = 49.6  # twin otter wing area is 39 m^2
+
+# Jet parameters
+J_takeoff, J_climb, J_land = ..., ..., ...
 
 
 def plane_operating_point(cond, plane, analysis_options):
@@ -140,17 +143,17 @@ def save_results(data, filename):
         pickle.dump(data, f)
 
 
-def run_case(phase, surface, velocity, alpha, blowing_perturb):
+def run_case(phase, surface, velocity, alpha):
     if phase == "takeoff":
         out = surface.run(
             flap_deflections={"d1": takeoff_deflection, "d2": takeoff_deflection},
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
             blowing={
-                "J1": 2.0 * blowing_perturb,
-                "J2": 2.0 * blowing_perturb,
-                "J3": 2.0 * blowing_perturb,
-                "J4": 2.0 * blowing_perturb,
+                "J1": J_takeoff,
+                "J2": J_takeoff,
+                "J3": J_takeoff,
+                "J4": J_takeoff,
             },
         )
     elif phase == "climb":
@@ -159,10 +162,10 @@ def run_case(phase, surface, velocity, alpha, blowing_perturb):
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
             blowing={
-                "J1": 1.0 * blowing_perturb,
-                "J2": 1.0 * blowing_perturb,
-                "J3": 1.0 * blowing_perturb,
-                "J4": 1.0 * blowing_perturb,
+                "J1": J_climb,
+                "J2": J_climb,
+                "J3": J_climb,
+                "J4": J_climb,
             },
         )
     elif phase == "cruise":
@@ -178,10 +181,10 @@ def run_case(phase, surface, velocity, alpha, blowing_perturb):
             trim_variable=trim_variable,
             flap_deflections={"d1": landing_deflection, "d2": landing_deflection},
             blowing={
-                "J1": 1.5 * blowing_perturb,
-                "J2": 1.5 * blowing_perturb,
-                "J3": 1.5 * blowing_perturb,
-                "J4": 1.5 * blowing_perturb,
+                "J1": J_land,
+                "J2": J_land,
+                "J3": J_land,
+                "J4": J_land,
             },
         )
 
@@ -194,28 +197,32 @@ def run_case(phase, surface, velocity, alpha, blowing_perturb):
 
 
 # NOTE: I am extending on planeB, since I am not looking at differential blowing
-def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PLR0915
+def run_sref_cases(S_list, oper_dict, folder_name):  # noqa: PLR0915
     for S in S_list:
         for phase in oper_dict:
-            velocities, alphas = (
+            velocities, alphas, flap_deflections = (
                 oper_dict[phase]["velocities"],
                 oper_dict[phase]["alphas"],
+                oper_dict[phase]["flap_deflections"],
             )
             cases = [
-                {"velocity": v, "alpha": a} for v, a in product(velocities, alphas)
+                {"velocity": v, "alpha": a, "flap_deflection": flap_d}
+                for v, a, flap_d in product(velocities, alphas, flap_deflections)
             ]
             results = []
             for case_idx, case in enumerate(cases):
-                velocity, alpha = case.values()
-                config = f"{phase}_Sref_{S}_v_{int(velocity)}_aoa_{int(alpha)}"
+                velocity, alpha, flap_d = case.values()
+                config = (
+                    f"{phase}_Sref_{S}_v_{int(velocity)}_aoa_{int(alpha)}_d-{flap_d}"
+                )
                 b = np.sqrt(AR * S)
                 aileron_y = (
                     aileron_fraction * b / 2
                 )  # start aileron at 2/3 of halfspan. No blowing at this point.
+
                 MAC = b / AR
                 tip_chord = 9 / 10 * MAC  # set taper ratio if desired
                 root_chord = MAC  # (2*MAC - tip_chord) #root chord needs to be adjusted for lost area from taper at the wingtips #TODO: fix
-
                 blown_span = (aileron_fraction) * b - fuse_width
 
                 fan_length = n_fans * 2 * fan_radius
@@ -443,7 +450,7 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
                         WingJSec(
                             xyz_le=[
                                 ht_rc - ht_tc,
-                                ht_b,
+                                ht_b / 2,
                                 0,
                             ],  # constant TE, okay for now but should update to be constant hinge line
                             chord=ht_tc,
@@ -503,7 +510,6 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
                     name="Initial Aircraft",
                     xyz_ref=[MAC / 4, 0, 0],
                     wings=[wingB, vertical_tail, horizontal_tail],
-                    # fuselages=[fuselage]
                 )
 
                 if phase.lower() == "cruise":
@@ -558,9 +564,7 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
                     j=True,
                 )
 
-                results.append(
-                    run_case(phase, jvl_plane, velocity, alpha, blowing_perturb)
-                )  # run JVL
+                results.append(run_case(phase, jvl_plane, velocity, alpha))  # run JVL
                 print(
                     f"Successfully ran case {case_idx + 1} of {len(cases)} in {phase}"
                 )
@@ -574,33 +578,34 @@ if __name__ == "__main__":
     S_list = np.array([42, 45])
     # S_list = np.linspace(40, 52, 13)
 
-    # NOTE: Technically stall velocity slightly changes, but so does mass. At this stage, we can't
-    # accurately predict the relative magnitude of W/S & which effect dominates due to lack of correct mass models.
-    # Assumed that v_stall is largely constant. (W / (0.5 * rho * S))^0.5
-    v_stall = 20  # [m/s]; (7600 / (0.5 * 1.225 * S_list)) ** 0.5 --> exact but rounded to 20 for simplicitly
+    # NOTE: Takeoff model is technically modeled via controls ODE solver.
+    # Only trade here would be modulating blowing
 
+    # NOTE: Enforce elevator trim in all phases of flight through elevator
     oper_dict = {
         "takeoff": {
-            "alphas": np.linspace(14, 20, 3),
-            "velocities": np.linspace(1, 30, 17),
+            "alphas": np.linspace(0, 20, 10),
+            "velocities": np.array([20, 24, 28]),
+            "flap_deflections": np.array([40, 50, 60, 65]),
         },
         "climb": {
             "alphas": np.array([20, 25, 30]),
             "velocities": np.array([20]),
+            "flap_deflections": np.array([0, 10, 20, 30, 40, 50]),
         },
         "cruise": {
             "alphas": np.array([0]),
-            "velocities": np.array([80, 125, 150]),
+            "velocities": np.array(
+                [80.0, 90.0, 100.0, 110.0, 120.0, 125.0, 130.0, 140.0, 150.0]
+            ),
+            "flap_deflections": None,
         },
         "landing": {
-            "alphas": np.linspace(12, 18, 3),
-            "velocities": np.array(
-                [v_stall * 1.1]  # TODO: Look into precise value
-            ),
+            "alphas": np.array([0, 5, 10, 15, 20, 25, 30, 40, 60, 80]),
+            "velocities": np.linspace(0, 80, 15),
+            "flap_deflections": np.array([40, 50, 60, 65]),
         },
     }
 
     for folder_name, val in {"full_blow": 1.0, "half_blow": 0.5}.items():
-        run_sref_cases(
-            S_list, oper_dict=oper_dict, folder_name=folder_name, blowing_perturb=val
-        )  # NOTE: blowing_perturb ~ [0, 1]
+        run_sref_cases(S_list, oper_dict=oper_dict, folder_name=folder_name)
