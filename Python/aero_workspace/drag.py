@@ -56,6 +56,12 @@ tire_radius = 0.818/2 # [m] = 32.2 [in] diameter
 # trouser_length = ...
 
 
+# strut
+c_s = ... # chord of strut
+l_s = ... # length of strut
+S_s = c_s * l_s
+
+
 # wetted area
 S_wet_fuse = np.pi * D_f * l_f * (1 - 2 / lambda_f) ** (2 / 3) * (1 + 1 / lambda_f**2)
 S_wet_fancowl = (l_n * D_n * (2 + 0.35 * l_1 * l_n + 0.8 * l_1 * D_hl / l_n * D_n + 1.15 * (1 - l_1 / l_n) * D_ef / D_n))
@@ -64,6 +70,7 @@ S_wet_htail = 2*S_h
 S_wet_vtail = 2*S_v 
 
 S_wet_gear = tire_width * (np.pi*tire_radius*2)
+S_wet_strut = 2*S_s
 # s_wet_trousers = ...
 
 # S_wet_total = S_wet_fuse + 8*S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail + S_wet_gear
@@ -139,9 +146,9 @@ def calc_K_f_axi(dl):
 def calc_C_Dp(rho, V, mu):
     V_i = V_inf = V
 
-    S_wets = [S_wet_fuse, S_wet_fancowl, S_wet_wing, S_wet_htail, S_wet_vtail, S_wet_gear]
-    ls = [l_f, l_n, c, c_h, c_v, tire_radius*2]
-    fineness_ratios = [D_f/l_f, D_n/(2*l_n), 0.12, 0.10, 0.10, 0.10] # need to check fineness for landing gear
+    S_wets = [S_wet_fuse, S_wet_fancowl, S_wet_wing, S_wet_htail, S_wet_vtail, S_wet_gear, S_wet_strut]
+    ls = [l_f, l_n, c, c_h, c_v, tire_radius*2, D_s]
+    fineness_ratios = [D_f/l_f, D_n/(2*l_n), 0.12, 0.10, 0.10, 0.10, 0.25] # need to check fineness for landing gear
 
     Re_ls = []
     C_fs = []
@@ -253,6 +260,8 @@ print('stall speed', V_STALL)
 print('cruise L/D', C_L_cruise/(C_Dp_cruise+C_Di_cruise))
 # print(C_L_takeoff/(C_Dp_takeoff+C_Di_takeoff))
 
+
+# # sensitivity plots! (for design decision memo)
 
 # # wing
 
