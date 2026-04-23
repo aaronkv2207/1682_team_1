@@ -101,7 +101,7 @@ def landing():
 
 
 if __name__ == "__main__":
-    sys.exit(DEPRECATION_MESSAGE)
+    # sys.exit(DEPRECATION_MESSAGE)
     takeoff()
     cruise()
     landing()

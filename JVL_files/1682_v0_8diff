@@ -4,9 +4,9 @@ Initial Aircraft
 #IYsym   IZsym   Zsym
 0       0   0.0
 #Sref    Cref    Bref
-48.98 2.460562435315579 19.91983935678197
+49.375 2.4704641350210967 20.0
 #Xref    Yref    Zref
-0 0 0
+0.625 0.0 0.0
 # CDp
 0
 #===============================================================================
@@ -20,11 +20,11 @@ YDUPLICATE
 
 JETPARAM
 #hdisk   fh   djet0   djet1   djet3 dxdsk dndsk
-0.587 0.000 0.000 0.000 0.000 0.070 -0.299
+0.584 0.000 0.000 0.000 0.000000 0.070000 -0.297834
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-0 0 0 2.4899799 0
+0 0 0 2.5 0
 
 AFIL
 1682_v0_8diff.af0
@@ -40,7 +40,7 @@ FlapJet1 1.000 1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-0 2.4674849 0 2.4899799 0
+0 2.475 0 2.5 0
 
 AFIL
 1682_v0_8diff.af1
@@ -60,7 +60,7 @@ FlapJet2 1.000 1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-0 4.1349699 0 2.4899799 0
+0 4.15 0 2.5 0
 
 AFIL
 1682_v0_8diff.af2
@@ -84,7 +84,7 @@ FlapJetO3 1.000 -1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-0 5.8024548 0 2.4899799 0
+0 5.825 0 2.5 0
 
 AFIL
 1682_v0_8diff.af3
@@ -116,7 +116,7 @@ FlapJetO4 1.000 -1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-0 7.4699398 0 2.4899799 0
+0 7.5 0 2.5 0
 
 AFIL
 1682_v0_8diff.af4
@@ -144,7 +144,7 @@ FlapJetO4 1.000 -1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-0.17429859 9.9599197 0 2.2409819 0
+0.175 10 0 2.25 0
 
 AFIL
 1682_v0_8diff.af5
@@ -155,7 +155,7 @@ Aileron 1 0.7 0 0 0 -1
 
 CONTROL
 #name, gain, Xhinge, XYZhvec, SgnDup
-Flaperon 1 0.7 0 0 0 1
+Flaperon 1 0.8 0 0 0 1
 
 #===============================================================================
 SURFACE
@@ -166,7 +166,7 @@ Vertical Tail
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-7.3381975 0 0 2.4849849 0
+7.3328155 0 0 2.5 0
 
 AFIL
 1682_v0_8diff.af6
@@ -178,7 +178,7 @@ Rudder 1 0.7 0 0 0 1
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-8.6643 0 2.9819819 2.4849849 0
+8.6671845 0 3 2.5 0
 
 AFIL
 1682_v0_8diff.af7
@@ -199,7 +199,7 @@ YDUPLICATE
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-8.6643 0 2.9819819 2.4849849 0
+8.6671845 0 3 2.5 0
 
 AFIL
 1682_v0_8diff.af8
@@ -211,7 +211,7 @@ Elevator 1 0.7 0 0 0 1
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-8.9987402 4.6355297 2.9819819 2.1505447 0
+9.0046605 4.662524 3 2.162524 0
 
 AFIL
 1682_v0_8diff.af9
@@ -226,7 +226,7 @@ Fuselage
 24 1
 
 BFIL
-1682_v0_8diff.fuse0
+JVL_files/1682_v0_8diff.fuse0
 
 TRANSLATE
 0 0 0

@@ -151,9 +151,6 @@ def run_case(phase, surface, velocity, alpha, deflection):
             trim_variable=trim_variable,
             blowing={
                 "J1": J_takeoff,
-                "J2": J_takeoff,
-                "J3": J_takeoff,
-                "J4": J_takeoff,
             },
         )
     elif phase == "climb":
@@ -163,9 +160,6 @@ def run_case(phase, surface, velocity, alpha, deflection):
             trim_variable=trim_variable,
             blowing={
                 "J1": J_climb,
-                "J2": J_climb,
-                "J3": J_climb,
-                "J4": J_climb,
             },
         )
     elif phase == "cruise":
@@ -182,9 +176,6 @@ def run_case(phase, surface, velocity, alpha, deflection):
             flap_deflections={"d1": deflection, "d2": deflection},
             blowing={
                 "J1": J_land,
-                "J2": J_land,
-                "J3": J_land,
-                "J4": J_land,
             },
         )
 
@@ -276,140 +267,63 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                     print(f"Horizontal tail area: {Sh:.2f} m^2")
                     print(f"Horizontal tail MA chord: {ht_mac:.2f} m")
                 # standard config
-                wingB = JWing(
+                
+                wingA = JWing(
                     name="Main Wing",
                     symmetric=True,
-                    JetParam=JetParam(
-                        hdisk=hdisk,
-                        fh=0.0,
-                        djet0=0.0,
-                        djet1=0.0,
-                        djet3=0.0,
-                        dxdsk=0.07,
-                        dndsk=-0.51 * hdisk,
-                    ),
+                    JetParam=JetParam(hdisk=hdisk, fh=0.0, djet0=0.0, djet1=0.0, djet3=0.0, dxdsk=.07, dndsk=-0.51*hdisk),
                     xsecs=[
                         WingJSec(
                             xyz_le=[0, 0, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap1", hinge_point=flap_hinge, deflection=0
-                                )
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet1", gain=1, sgn_dup=1)
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=1.5, sgn_dup=1)],
                         ),
                         WingJSec(
-                            xyz_le=[0, fuse_width / 2 + blowing_dy, 0],
+                            xyz_le=[0, fuse_width/2 + blowing_dy, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap1", hinge_point=flap_hinge, deflection=0
-                                )
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet1", gain=1, sgn_dup=1),
-                                JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1),
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=1.5, sgn_dup=1)],
                         ),
                         WingJSec(
-                            xyz_le=[0, fuse_width / 2 + 2 * blowing_dy, 0],
+                            xyz_le=[0, fuse_width/2 + 2*blowing_dy, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap1", hinge_point=flap_hinge, deflection=0
-                                )
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1),
-                                JetControl(jet_name="FlapJet3", gain=1, sgn_dup=1),
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=1, sgn_dup=1)],
                         ),
-                        WingJSec(  # flap1 goes to end of 3rd duct
-                            xyz_le=[0, fuse_width / 2 + 3 * blowing_dy, 0],
+                        WingJSec( #flap1 goes to end of 3rd duct
+                            xyz_le=[0, fuse_width/2 + 3*blowing_dy, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap1", hinge_point=flap_hinge, deflection=0
-                                ),
-                                asb.ControlSurface(
-                                    name="Flap2", hinge_point=flap_hinge, deflection=0
-                                ),
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet3", gain=1, sgn_dup=1),
-                                JetControl(jet_name="FlapJet4", gain=1, sgn_dup=1),
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0), asb.ControlSurface(name="Flap2", hinge_point=flap_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=1, sgn_dup=1)],
                         ),
-                        # WingJSec(
-                        #     xyz_le=[0, fuse_width/2 + 4*blowing_dy, 0],
-                        #     chord=root_chord,
-                        #     twist = wing_incidence,
-                        #     airfoil=main_foil,
-                        #     control_surfaces = [asb.ControlSurface(name="Flap2", hinge_point=flap_hinge, deflection=0)],
-                        #     JetControls= [JetControl(jet_name="FlapJet4", gain=1, sgn_dup=1), JetControl(jet_name="FlapJet5", gain=1, sgn_dup=1)],
-                        # ),
                         WingJSec(
                             xyz_le=[0, aileron_y, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap2", hinge_point=0.8, deflection=0
-                                ),
-                                asb.ControlSurface(
-                                    name="Aileron",
-                                    symmetric=False,
-                                    hinge_point=ail_hinge,
-                                    deflection=0,
-                                ),
-                                asb.ControlSurface(
-                                    name="Flaperon",
-                                    symmetric=True,
-                                    hinge_point=ail_hinge,
-                                    deflection=0,
-                                ),
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet4", gain=1, sgn_dup=1)
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap2", hinge_point=0.8, deflection=0), 
+                                                asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=ail_hinge, deflection=0),
+                                                asb.ControlSurface(name="Flaperon", symmetric=True, hinge_point=ail_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=0.5, sgn_dup=1)],
                         ),
                         WingJSec(
-                            xyz_le=[
-                                ail_hinge * root_chord - ail_hinge * tip_chord,
-                                1 / 2 * b,
-                                0,
-                            ],
+                            xyz_le=[ail_hinge*root_chord-ail_hinge*tip_chord, 1/2*b, 0],
                             chord=tip_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Aileron",
-                                    symmetric=False,
-                                    hinge_point=ail_hinge,
-                                    deflection=0,
-                                ),
-                                asb.ControlSurface(
-                                    name="Flaperon",
-                                    symmetric=True,
-                                    hinge_point=0.8,
-                                    deflection=0,
-                                ),
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=ail_hinge, deflection=0),
+                                                asb.ControlSurface(name="Flaperon", symmetric=True, hinge_point=0.8, deflection=0)],
                         ),
-                    ],
+                    ]
                 )
 
                 vertical_tail = asb.Wing(
@@ -516,15 +430,15 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                 }
 
                 # NOTE: Uncomment fuselage in asb.Airplane(...) below if you are a non-Mac user
-                planeB = asb.Airplane(
+                plane = asb.Airplane(
                     name="Initial Aircraft",
                     xyz_ref=[MAC / 4, 0, 0],
-                    wings=[wingB, vertical_tail, horizontal_tail],
+                    wings=[wingA, vertical_tail, horizontal_tail],
                 )
 
                 if phase.lower() == "cruise":
                     jvl_plane = JVL(
-                        airplane=planeB,
+                        airplane=plane,
                         op_point=asb.OperatingPoint(
                             velocity=velocity,
                             alpha=alpha,
@@ -538,7 +452,7 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                     )
                 elif phase.lower() == "climb":
                     jvl_plane = JVL(
-                        airplane=planeB,
+                        airplane=plane,
                         op_point=asb.OperatingPoint(
                             velocity=velocity,
                             alpha=alpha,
@@ -552,7 +466,7 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                     )
                 else:
                     jvl_plane = JVL(
-                        airplane=planeB,
+                        airplane=plane,
                         op_point=asb.OperatingPoint(
                             velocity=velocity,
                             alpha=alpha,

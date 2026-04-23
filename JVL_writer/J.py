@@ -327,12 +327,17 @@ class JVL(AVL):
                     command,
                     cwd=directory,
                     stdin=subprocess.PIPE,
-                    stdout=None if self.verbose else subprocess.DEVNULL,
-                    stderr=None if self.verbose else subprocess.DEVNULL,
+                    # stdout=None if self.verbose else subprocess.DEVNULL,
+                    # stderr=None if self.verbose else subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                     text=True,
                 )
 
+                
                 outs, errs = proc.communicate(input=keystrokes, timeout=self.timeout)
+                # print("STDOUT:", outs)
+                # print("STDERR:", errs)
                 return_code = proc.poll()
 
             except subprocess.TimeoutExpired:
@@ -478,11 +483,17 @@ class JVL(AVL):
         ]
 
         # ADDED: Blowing Modulation
+
         if blowing:
             for jet_name, magnitude in blowing.items():
-                run_file_contents += [
-                    f"{jet_name} {jet_name} {float(magnitude)}",  # Set index and value
-                ]
+                if jet_name == 'Tcp':
+                    run_file_contents += [
+                        f"{'J1'} {'JT'} {float(magnitude)}", #terrible way but ehh idk
+                    ]
+                else:
+                    run_file_contents += [
+                        f"{jet_name} {jet_name} {float(magnitude)}",  # Set index and value
+                    ]
 
         if flap_deflections:
             for flap_name, magnitude in flap_deflections.items():
