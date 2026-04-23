@@ -63,7 +63,7 @@ main_foil = asb.Airfoil(coordinates="./JVL_writer/jw05.dat")
 # S = 49.6  # twin otter wing area is 39 m^2
 
 # Jet parameters
-J_takeoff, J_climb, J_land = ..., ..., ...
+Tcp_takeoff, Tcp_land = 2, 2
 
 
 def plane_operating_point(cond, plane, analysis_options):
@@ -160,10 +160,7 @@ def run_case(phase, surface, velocity, alpha, deflection):
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
             blowing={
-                "J1": J_takeoff,
-                "J2": J_takeoff,
-                "J3": J_takeoff,
-                "J4": J_takeoff,
+                "Tcp": Tcp_takeoff,
             },
         )
     elif phase == "climb":
@@ -171,12 +168,9 @@ def run_case(phase, surface, velocity, alpha, deflection):
             flap_deflections={"d1": deflection, "d2": deflection},
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
-            blowing={
-                "J1": J_climb,
-                "J2": J_climb,
-                "J3": J_climb,
-                "J4": J_climb,
-            },
+            # blowing={
+            #     "Tcp": Tcp_climb,
+            # },
         )
     elif phase == "cruise":
         out = surface.run(
@@ -191,10 +185,7 @@ def run_case(phase, surface, velocity, alpha, deflection):
             trim_variable=trim_variable,
             flap_deflections={"d1": deflection, "d2": deflection},
             blowing={
-                "J1": J_land,
-                "J2": J_land,
-                "J3": J_land,
-                "J4": J_land,
+                "Tcp": Tcp_land,
             },
         )
 
@@ -621,7 +612,7 @@ if __name__ == "__main__":
             "alphas": np.array([10, 15, 20]),
             "velocities": np.array([20, 30, 40, 50]),
             "flap_deflections": np.array([0, 10, 20, 30, 40, 50]),
-        },
+        },  # NOTE: currently no blowing during climb
         "cruise": {
             "alphas": np.array([0]),
             "velocities": np.array([80.0, 100.0, 120.0, 125.0, 130.0, 140.0, 150.0]),

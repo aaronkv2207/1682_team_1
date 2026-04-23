@@ -334,7 +334,6 @@ class JVL(AVL):
                     text=True,
                 )
 
-                
                 outs, errs = proc.communicate(input=keystrokes, timeout=self.timeout)
                 # print("STDOUT:", outs)
                 # print("STDERR:", errs)
@@ -486,9 +485,9 @@ class JVL(AVL):
 
         if blowing:
             for jet_name, magnitude in blowing.items():
-                if jet_name == 'Tcp':
+                if jet_name == "Tcp":
                     run_file_contents += [
-                        f"{'J1'} {'JT'} {float(magnitude)}", #terrible way but ehh idk
+                        f"{'J1'} {'JT'} {float(magnitude)}",  # TODO: temporary general blowing parameter
                     ]
                 else:
                     run_file_contents += [
