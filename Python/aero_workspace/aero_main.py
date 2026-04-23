@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from aero_dict import AircraftConfig
+from aero_dict import AircraftConfig, AircraftConfig2
 from ambiance import Atmosphere
 from conceptual_design import ureg
 
@@ -16,9 +16,10 @@ class AeroCoeffConfig:
     """Reads a summary of JVL output dataframe at various operating points. Defines functions
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    S: int
     phase: str  # 'takeoff', 'cruise', or 'landing'
-    name: str  # specify sub-folder
+    aircraft: AircraftConfig  # NOTE: CHANGE TO either AircraftConfig or AircraftConfig2
+    S: int(aircraft.s_ref)
+    AR: int = aircraft.AR
     max_elevator: float = 20.0  # degrees
     max_flap_unblown: float = 40.0  # degrees # TODO: Needs more rigorous analysis
 
@@ -29,7 +30,17 @@ class AeroCoeffConfig:
             data = pickle.load(f)
 
         self.alphas, self.velocities, self.d_elevator = [], [], []
-        self.CL, self.CD, self.Cm, self.CDind, self.e, self.flap_1, self.flap_2 = (
+        (
+            self.CL,
+            self.CD,
+            self.Cm,
+            self.CDind,
+            self.CD_tot,
+            self.e,
+            self.flap_1,
+            self.flap_2,
+        ) = (
+            [],
             [],
             [],
             [],
@@ -38,12 +49,6 @@ class AeroCoeffConfig:
             [],
             [],
         )
-        if self.phase == "cruise":
-            CD_DP = AircraftConfig.C_Dp_cruise
-        else:
-            CD_DP = (
-                AircraftConfig.C_Dp_t0
-            )  # Default for takeoff/landing; may need to modify in future iterations
 
         for run in data:
             self.alphas.append(run["alpha"] * DEG2RAD_CONV)
@@ -55,10 +60,17 @@ class AeroCoeffConfig:
             self.flap_1.append(run["d1"])
             self.flap_2.append(run["d2"])
 
-            _CDind = run["CL"] ** 2 / (AR * np.pi * run["e"])
+            _CDind = run["CL"] ** 2 / (self.AR * np.pi * run["e"])
             self.CDind.append(_CDind)
 
-        self.CD_tot = (self.CDind + CD_DP) * 1.2  # TODO: Double check drag treatment
+            if self.phase == "cruise":
+                CD_DP = AircraftConfig(v_cruise=run["velocity"]).C_Dp_cruise
+            else:
+                CD_DP = AircraftConfig(v_t0=run["velocity"]).C_Dp_t0
+
+            self.CD_tot.append(
+                [(_CDind + CD_DP) * 1.2]
+            )  # TODO: Double check drag treatment
 
         self.alphas = np.array(self.alphas)
         self.velocities = np.array(self.velocities)
@@ -66,6 +78,7 @@ class AeroCoeffConfig:
         self.CL = np.array(self.CL)
         self.Cm = np.array(self.Cm)
         self.CDind = np.array(self.CDind)
+        self.CD_tot = np.array(self.CD_tot)
         self.e = np.array(self.e)
 
         # Filter based on reasonable elevator deflections
@@ -85,7 +98,6 @@ class AeroCoeffConfig:
             self.CDind = self.CDind[elevator_mask]
             self.CD_tot = self.CD_tot[elevator_mask]
             self.e = self.e[elevator_mask]
-            self.xto = np.array(self.xto)[elevator_mask]
 
         if self.phase == "cruise":
             self.alphas = self.alphas[flap_mask]

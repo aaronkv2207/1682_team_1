@@ -613,9 +613,9 @@ if __name__ == "__main__":
         #     "flap_deflections": np.array([40, 50, 60, 65]),
         # },
         "takeoff": {
-            "alphas": np.linspace(0, 25, 10),
+            "alphas": np.array([5, 10, 15, 20, 25]),
             "velocities": np.array([20, 24, 28]),
-            "flap_deflections": np.array([40, 50, 60, 65]),
+            "flap_deflections": np.array([50, 60, 65]),
         },
         "climb": {
             "alphas": np.array([10, 15, 20]),
@@ -628,11 +628,10 @@ if __name__ == "__main__":
             # "flap_deflections": np.array([0]),
         },
         "landing": {
-            "alphas": np.array([0, 5, 10, 15, 20, 25, 30, 40, 60, 80]),
+            "alphas": np.array([0, 5, 10, 15, 20, 25]),
             "velocities": np.linspace(0, 80, 9),
-            "flap_deflections": np.array([40, 50, 60, 65]),
+            "flap_deflections": np.array([50, 60, 65]),
         },
     }
 
-    # for folder_name, val in {"full_blow": 1.0, "half_blow": 0.5}.items():
     run_sref_cases(S_list, oper_dict=oper_dict)
