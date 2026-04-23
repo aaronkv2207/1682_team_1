@@ -1,3 +1,13 @@
+"""
+Main Run File. File is structured as follows:
+    1. Plane config of interest. (Can edit control surface deflections)
+    2. Operating conditions
+    3. Parameter sweep
+    4. Running will invoke jvl and save outputs as dataframes
+    NOTE:   Only use this script to produce new dataframes; otherwise use current run data in aero_main,
+            or run output folder. All post-processing should be done outside of this script.
+"""
+
 import os
 import pickle
 import sys
@@ -264,6 +274,7 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                 vt_sweep_x = ht_x - vt_x
 
                 if False:
+                    print(f"S_ref: {S:.2f} m^2")
                     print(f"Vertical tail area: {Sv:.2f} m^2")
                     print(f"Vertical tail chord: {vt_c:.2f} m")
                     print(f"Wing span: {b:.2f} m")
@@ -589,13 +600,18 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
 
 if __name__ == "__main__":
     S_list = np.array([42, 45])
-    # S_list = np.linspace(40, 52, 13)
 
     # NOTE: Takeoff model is technically modeled via controls ODE solver.
-    # Only trade here would be modulating blowing
+    # Only trade you can do here would be modulating blowing or wing area
 
-    # NOTE: Enforce elevator trim in all phases of flight through elevator
+    # NOTE: Enforcing elevator trim in all phases of flight
     oper_dict = {
+        # TODO: would technically need to change trim handling if implementing ground roll
+        # "ground-roll": {
+        #     "alphas": np.array([0]),
+        #     "velocities": np.linspace(0, 20, 5),
+        #     "flap_deflections": np.array([40, 50, 60, 65]),
+        # },
         "takeoff": {
             "alphas": np.linspace(0, 25, 10),
             "velocities": np.array([20, 24, 28]),
