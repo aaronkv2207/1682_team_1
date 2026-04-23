@@ -168,9 +168,6 @@ def run_case(phase, surface, velocity, alpha, deflection):
             flap_deflections={"d1": deflection, "d2": deflection},
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
-            # blowing={
-            #     "Tcp": Tcp_climb,
-            # },
         )
     elif phase == "cruise":
         out = surface.run(
@@ -197,7 +194,7 @@ def run_case(phase, surface, velocity, alpha, deflection):
     }
 
 
-# NOTE: I am extending on planeB, since I am not looking at differential blowing
+# NOTE: Extending on planeB & not looking at differential blowing
 def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
     for S in S_list:
         for phase in oper_dict:
@@ -616,11 +613,11 @@ if __name__ == "__main__":
         "cruise": {
             "alphas": np.array([0]),
             "velocities": np.array([80.0, 100.0, 120.0, 125.0, 130.0, 140.0, 150.0]),
-            # "flap_deflections": np.array([0]),
+            "flap_deflections": [None],
         },
         "landing": {
-            "alphas": np.array([0, 5, 10, 15, 20, 25]),
-            "velocities": np.linspace(0, 80, 9),
+            "alphas": np.array([1, 5, 10, 15, 20, 25]),
+            "velocities": np.linspace(1, 80, 9),
             "flap_deflections": np.array([50, 60, 65]),
         },
     }

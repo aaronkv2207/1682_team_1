@@ -1,11 +1,8 @@
 import pickle
-import warnings
 from dataclasses import dataclass
 
 import numpy as np
-import pandas as pd
 from aero_dict import AircraftConfig, AircraftConfig2
-from ambiance import Atmosphere
 from conceptual_design import ureg
 
 DEG2RAD_CONV = ureg("deg").to("rad").magnitude
@@ -17,11 +14,13 @@ class AeroCoeffConfig:
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
     phase: str  # 'takeoff', 'cruise', or 'landing'
-    aircraft: AircraftConfig  # NOTE: CHANGE TO either AircraftConfig or AircraftConfig2
-    S: int(aircraft.s_ref)
-    AR: int = aircraft.AR
+    # NOTE: CHANGE TO either AircraftConfig or AircraftConfig2
+    aircraft: object = AircraftConfig
     max_elevator: float = 20.0  # degrees
     max_flap_unblown: float = 40.0  # degrees # TODO: Needs more rigorous analysis
+
+    S = int(aircraft.s_ref)
+    AR = aircraft.AR
 
     def __post_init__(self):
         file_path = f"JVL_writer/v2_plane/run_outputs/coeff_results/Sref-{self.S}/{self.phase}.pkl"
@@ -30,25 +29,9 @@ class AeroCoeffConfig:
             data = pickle.load(f)
 
         self.alphas, self.velocities, self.d_elevator = [], [], []
-        (
-            self.CL,
-            self.CD,
-            self.Cm,
-            self.CDind,
-            self.CD_tot,
-            self.e,
-            self.flap_1,
-            self.flap_2,
-        ) = (
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-        )
+        self.CL, self.CD, self.Cm = [], [], []
+        self.CDind, self.CD_tot, self.e = [], [], []
+        self.flap_1, self.flap_2 = [], []
 
         for run in data:
             self.alphas.append(run["alpha"] * DEG2RAD_CONV)
@@ -83,9 +66,8 @@ class AeroCoeffConfig:
 
         # Filter based on reasonable elevator deflections
         elevator_mask = np.abs(self.d_elevator) < self.max_elevator
-        flap_mask = (
-            np.abs(self.flap_1) < self.max_flap_unblown
-            and np.abs(self.flap_2) < self.max_flap_unblown
+        flap_mask = (np.abs(self.flap_1) < self.max_flap_unblown) & (
+            np.abs(self.flap_2) < self.max_flap_unblown
         )
         # cl_best_real_mask = np.argmax(self.CL[elevator_mask])
 
@@ -108,3 +90,25 @@ class AeroCoeffConfig:
             self.CDind = self.CDind[flap_mask]
             self.CD_tot = self.CD_tot[flap_mask]
             self.e = self.e[flap_mask]
+
+
+if __name__ == "__main__":
+    # NOTE: See all available operating conditions in JVL_writer/v2_plane/main_runner.py
+    S_list = np.array([42, 45])
+
+    for plane_idx, plane in enumerate([AircraftConfig, AircraftConfig2]):
+        print(f"\n\n{'*' * 50}\n{'*' * 50}\nPlane #{plane_idx}")
+        for idx, S in enumerate(S_list):
+            print(f"\n{'=' * 40}\nS = {S} [m^2] Performance")
+            for phase in ["takeoff", "cruise", "climb", "landing"]:
+                config = AeroCoeffConfig(phase=phase, aircraft=plane)
+                print(f"\n=== {phase.upper()} (S = {S} [m^2]) ===")
+
+                print(f"Velocities: {np.round(config.velocities, 4)}")
+                print(f"AOAs: {np.round(config.alphas * (1 / DEG2RAD_CONV), 4)} [°]")
+                print(f"d_elevator: {np.round(config.d_elevator, 4)}")
+                print(f"d_flap: {np.round(config.flap_1, 4)}")
+                print(f"CL: {np.round(config.CL, 4)}")
+                print(f"CD_tot: {np.round(config.CD_tot, 4)}")
+                print(f"Cm: {np.round(config.Cm, 4)}")
+                print(f"e: {np.round(config.e, 4)}")
