@@ -6,10 +6,10 @@ Created on Mon Mar  2 15:34:04 2026
 @author: brendachow
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 from ambiance import Atmosphere
-from conceptual_design import V_STALL, cl_max, ureg
-import matplotlib.pyplot as plt
+from conceptual_design import ureg
 
 # parameters
 b = 19.92  # [m]
@@ -56,10 +56,10 @@ tire_radius = 0.818/2 # [m] = 32.2 [in] diameter
 # trouser_length = ...
 
 
-# strut
-c_s = ... # chord of strut
-l_s = ... # length of strut
-S_s = c_s * l_s
+# # TODO: strut
+# c_s = ... # chord of strut
+# l_s = ... # length of strut
+# S_s = c_s * l_s
 
 
 # wetted area
@@ -70,7 +70,7 @@ S_wet_htail = 2*S_h
 S_wet_vtail = 2*S_v 
 
 S_wet_gear = tire_width * (np.pi*tire_radius*2)
-S_wet_strut = 2*S_s
+# S_wet_strut = 2*S_s #TODO: Implement
 # s_wet_trousers = ...
 
 # S_wet_total = S_wet_fuse + 8*S_wet_fancowl + S_wet_wing + S_wet_htail + S_wet_vtail + S_wet_gear
@@ -94,10 +94,9 @@ rho_takeoff = Atmosphere(h=h_takeoff).density[0]
 # print('air density takeoff', rho_takeoff)
 mu_takeoff = Atmosphere(h=h_takeoff).dynamic_viscosity[0]  # [Ns/m^2] dynamic viscosity at sea level
 # print('dynamic viscosity takeoff', mu_takeoff)
-V_takeoff = 1.1 * V_STALL.magnitude  # [m/s]
-# print('takeoff velocity', V_takeoff)
-C_L_takeoff = cl_max  # from wt data???
-e_takeoff = 0.9
+# # print('takeoff velocity', V_takeoff)
+# C_L_takeoff = cl_max  # from wt data???
+# e_takeoff = 0.9
 
 # print(C_L_takeoff)
 
@@ -146,8 +145,10 @@ def calc_K_f_axi(dl):
 def calc_C_Dp(rho, V, mu):
     V_i = V_inf = V
 
-    S_wets = [S_wet_fuse, S_wet_fancowl, S_wet_wing, S_wet_htail, S_wet_vtail, S_wet_gear, S_wet_strut]
-    ls = [l_f, l_n, c, c_h, c_v, tire_radius*2, D_s]
+    # S_wets = [S_wet_fuse, S_wet_fancowl, S_wet_wing, S_wet_htail, S_wet_vtail, S_wet_gear, S_wet_strut] # TODO: implement S_wet_strut
+    # ls = [l_f, l_n, c, c_h, c_v, tire_radius*2, D_s] # TODO: implement S_wet_strut
+    S_wets = [S_wet_fuse, S_wet_fancowl, S_wet_wing, S_wet_htail, S_wet_vtail, S_wet_gear]
+    ls = [l_f, l_n, c, c_h, c_v, tire_radius*2]
     fineness_ratios = [D_f/l_f, D_n/(2*l_n), 0.12, 0.10, 0.10, 0.10, 0.25] # need to check fineness for landing gear
 
     Re_ls = []
@@ -254,7 +255,6 @@ print('profile drag coefficient =', round(C_Dp_landing,3))
 print('induced drag coefficient =', round(C_Di_landing,3))
 print('total drag coefficient =', round(C_Dp_landing+C_Di_landing,3))
 
-print('stall speed', V_STALL)
 
 
 print('cruise L/D', C_L_cruise/(C_Dp_cruise+C_Di_cruise))

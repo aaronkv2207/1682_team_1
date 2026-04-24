@@ -3,10 +3,10 @@
 from dataclasses import dataclass
 
 from ambiance import Atmosphere
-from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, X_TAKEOFF, S, cl_max, ureg
+from conceptual_design import ureg
 from drag import (
-    calc_C_Dp,  # TODO: Brenda's drag model needs to be updated based on revised plane geometry
-)
+    calc_C_Dp,
+)  # TODO: Brenda's drag model needs to be updated based on revised plane geometry
 
 
 # TODO: update constants in dataclass

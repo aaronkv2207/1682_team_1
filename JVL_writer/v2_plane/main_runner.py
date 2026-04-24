@@ -15,10 +15,7 @@ from itertools import product
 
 import aerosandbox as asb
 import aerosandbox.numpy as np
-import aerosandbox.tools.pretty_plots as p
 from aerosandbox import Atmosphere
-from aerosandbox.tools import units
-from scipy.interpolate import Akima1DInterpolator
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
