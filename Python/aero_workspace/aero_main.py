@@ -94,21 +94,19 @@ class AeroCoeffConfig:
 
 if __name__ == "__main__":
     # NOTE: See all available operating conditions in JVL_writer/v2_plane/main_runner.py
-    S_list = np.array([42, 45])
-
     for plane_idx, plane in enumerate([AircraftConfig, AircraftConfig2]):
         print(f"\n\n{'*' * 50}\n{'*' * 50}\nPlane #{plane_idx}")
-        for idx, S in enumerate(S_list):
-            print(f"\n{'=' * 40}\nS = {S} [m^2] Performance")
-            for phase in ["takeoff", "cruise", "climb", "landing"]:
-                config = AeroCoeffConfig(phase=phase, aircraft=plane)
-                print(f"\n=== {phase.upper()} (S = {S} [m^2]) ===")
+        S = plane.s_ref
+        print(f"\n{'=' * 40}\nS = {S} [m^2] Performance")
+        for phase in ["takeoff", "cruise", "climb", "landing"]:
+            config = AeroCoeffConfig(phase=phase, aircraft=plane)
+            print(f"\n=== {phase.upper()} (S = {S} [m^2]) ===")
 
-                print(f"Velocities: {np.round(config.velocities, 4)}")
-                print(f"AOAs: {np.round(config.alphas * (1 / DEG2RAD_CONV), 4)} [°]")
-                print(f"d_elevator: {np.round(config.d_elevator, 4)}")
-                print(f"d_flap: {np.round(config.flap_1, 4)}")
-                print(f"CL: {np.round(config.CL, 4)}")
-                print(f"CD_tot: {np.round(config.CD_tot, 4)}")
-                print(f"Cm: {np.round(config.Cm, 4)}")
-                print(f"e: {np.round(config.e, 4)}")
+            print(f"Velocities: {np.round(config.velocities, 4)}")
+            print(f"AOAs: {np.round(config.alphas * (1 / DEG2RAD_CONV), 4)} [°]")
+            print(f"d_elevator: {np.round(config.d_elevator, 4)}")
+            print(f"d_flap: {np.round(config.flap_1, 4)}")
+            print(f"CL: {np.round(config.CL, 4)}")
+            print(f"CD_tot: {np.round(config.CD_tot, 4)}")
+            print(f"Cm: {np.round(config.Cm, 4)}")
+            print(f"e: {np.round(config.e, 4)}")
