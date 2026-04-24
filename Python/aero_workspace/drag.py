@@ -11,12 +11,15 @@ import numpy as np
 from ambiance import Atmosphere
 from conceptual_design import ureg
 
+# TODO: Check new plane inputs (for each plane) in aero_main and update drag build up. 
+# I started roughly changing some things
+
 # parameters
-b = 19.92  # [m]
-c = 2.49  # [m]
+b = 17.75  # [m]
+c = 2.54   # [m]
 S = b*c
 AR = b**2/S
-x_to = 45  # [m]
+# x_to = 45  # [m]
 
 m = 7500  # [kg]
 W = m * 9.81  # [N]
@@ -36,14 +39,16 @@ D_ef = D_hl
 
 
 # tail
-S_h = 11.98  # [m^2]
-c_h = 2.45 # [m]
+S_h = 13.33  # [m^2]
+c_h = 2.11 # [m]
 
-S_v = 7.61  # [m^2]
-c_v = 3.04 # [m]
+S_v = 5.99  # [m^2]
+c_v = 2.23 # [m]
 
-l_h = 9.06  # [m] estimated from twin otter
-l_v = 9.06  # [m] estimated from twin otter
+l_v = 8.0  # [m]
+vt_ar = 1.2
+vt_c = np.sqrt(S_v / vt_ar)
+l_h = (l_v + 0.25 * vt_c) # [m]
 
 V_h = S_h * l_h / (S * c)
 V_v = S_v * l_v / (S * b)
@@ -85,7 +90,7 @@ print('dynamic viscosity cruise', mu_cruise)
 V_cruise = 125  # [m/s]
 C_L_cruise = W / (1 / 2 * rho_cruise * V_cruise**2 * S)
 print('C_L cruise', C_L_cruise)
-e_cruise = 0.95
+e_cruise = 0.95 # NOTE: should be using jvl e calculated in aero_main
 
 
 # takeoff
@@ -105,15 +110,15 @@ mu_takeoff = Atmosphere(h=h_takeoff).dynamic_viscosity[0]  # [Ns/m^2] dynamic vi
 h_landing = h_takeoff
 rho_landing = rho_takeoff
 mu_landing = mu_takeoff
-V_landing = 20
-C_L_landing = 5
-e_landing = 0.9
+V_landing = 20 # NOTE: should be using jvl velocity in aero_main
+C_L_landing = 5 # NOTE: should be using jvl CL in aero_main
+e_landing = 0.9 # NOTE: should be using jvl e in aero_main
 
 
 print("AR =", AR)
 print("wing area =", round(S, 2), "m^2")
 # print("total wetted area =", round(S_wet_total, 2), "m^2")
-print("takeoff distance =", x_to, "m")
+# print("takeoff distance =", x_to, "m")
 print("MTOW =", round(W, 2), "N")
 
 print("h tail coefficient =", round(V_h, 3))
