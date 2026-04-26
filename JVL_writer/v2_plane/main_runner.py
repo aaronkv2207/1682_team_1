@@ -608,7 +608,9 @@ if __name__ == "__main__":
             "flap_deflections": np.array([0, 10, 20, 30, 40, 50]),
         },  # NOTE: currently no blowing during climb
         "cruise": {
-            "alphas": np.array([0]),
+            "alphas": np.array(
+                [0, 5, 10]
+            ),  # simulated a couple of aoas for drag polar plots
             "velocities": np.array([80.0, 100.0, 120.0, 125.0, 130.0, 140.0, 150.0]),
             "flap_deflections": [None],
         },

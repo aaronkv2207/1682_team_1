@@ -63,6 +63,8 @@ class AeroCoeffConfig:
         self.CDind = np.array(self.CDind)
         self.CD_tot = np.array(self.CD_tot)
         self.e = np.array(self.e)
+        self.flap_1 = np.array(self.flap_1)
+        self.flap_2 = np.array(self.flap_2)
 
         # Filter based on reasonable elevator deflections
         elevator_mask = np.abs(self.d_elevator) < self.max_elevator
@@ -80,6 +82,8 @@ class AeroCoeffConfig:
             self.CDind = self.CDind[elevator_mask]
             self.CD_tot = self.CD_tot[elevator_mask]
             self.e = self.e[elevator_mask]
+            self.flap_1 = self.flap_1[elevator_mask]
+            self.flap_2 = self.flap_2[elevator_mask]
 
         if self.phase == "cruise":
             self.alphas = self.alphas[flap_mask]
@@ -90,6 +94,8 @@ class AeroCoeffConfig:
             self.CDind = self.CDind[flap_mask]
             self.CD_tot = self.CD_tot[flap_mask]
             self.e = self.e[flap_mask]
+            self.flap_1 = self.flap_1[flap_mask]
+            self.flap_2 = self.flap_2[flap_mask]
 
 
 if __name__ == "__main__":
