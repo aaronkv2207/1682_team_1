@@ -19,7 +19,7 @@ class AeroCoeffConfig:
     max_elevator: float = 20.0  # degrees
     max_flap_unblown: float = 40.0  # degrees # TODO: Needs more rigorous analysis
 
-    S = int(aircraft.s_ref)
+    S = int(aircraft.S)
     AR = aircraft.AR
 
     def __post_init__(self):
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # NOTE: See all available operating conditions in JVL_writer/v2_plane/main_runner.py
     for plane_idx, plane in enumerate([AircraftConfig, AircraftConfig2]):
         print(f"\n\n{'*' * 50}\n{'*' * 50}\nPlane #{plane_idx}")
-        S = plane.s_ref
+        S = plane.S
         print(f"\n{'=' * 40}\nS = {S} [m^2] Performance")
         for phase in ["takeoff", "cruise", "climb", "landing"]:
             config = AeroCoeffConfig(phase=phase, aircraft=plane)
