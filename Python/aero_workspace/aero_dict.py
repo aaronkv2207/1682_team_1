@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 
 from ambiance import Atmosphere
-from aero_workspace.conceptual_design import ureg
-from aero_workspace.drag import (
+from conceptual_design import ureg
+from drag import (
     calc_C_Dp,
 )  # TODO: Brenda's drag model needs to be updated based on revised plane geometry
 

@@ -1,11 +1,17 @@
-import numpy as np
-from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
+import os
+import sys
 from dataclasses import dataclass
+
+import matplotlib.pyplot as plt
+import numpy as np
 from ambiance import Atmosphere
+from scipy.integrate import solve_ivp
 from ThrustVelocity import ThrustVelocity
-from aero_workspace.aero_main import AeroCoeffConfig
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "aero_workspace"))
+
 from aero_workspace.aero_dict import AircraftConfig, AircraftConfig2
+from aero_workspace.aero_main import AeroCoeffConfig
 
 aircraft_config = AeroCoeffConfig(phase='takeoff', aircraft=AircraftConfig) #
 alphas, CLs, CDs = aircraft_config.alphas, aircraft_config.CL, aircraft_config.CD_tot

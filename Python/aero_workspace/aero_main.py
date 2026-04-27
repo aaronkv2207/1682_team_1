@@ -2,9 +2,10 @@ import pickle
 from dataclasses import dataclass
 
 import numpy as np
-from aero_workspace.aero_dict import AircraftConfig, AircraftConfig2
-from aero_workspace.conceptual_design import ureg
+from aero_dict import AircraftConfig, AircraftConfig2
+from pint import UnitRegistry
 
+ureg = UnitRegistry()
 DEG2RAD_CONV = ureg("deg").to("rad").magnitude
 
 

@@ -1,8 +1,9 @@
-import numpy as np
-from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
 from dataclasses import dataclass
+
+import matplotlib.pyplot as plt
+import numpy as np
 from ambiance import Atmosphere
+from scipy.integrate import solve_ivp
 from ThrustVelocity import ThrustVelocity
 
 
