@@ -9,7 +9,7 @@ Created on Mon Mar  2 15:34:04 2026
 import matplotlib.pyplot as plt
 import numpy as np
 from ambiance import Atmosphere
-from conceptual_design import ureg
+from aero_workspace.conceptual_design import ureg
 
 # TODO: Check new plane inputs (for each plane) in aero_main and update drag build up. 
 # I started roughly changing some things

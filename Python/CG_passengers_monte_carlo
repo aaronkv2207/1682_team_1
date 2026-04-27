@@ -1,0 +1,153 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# -----------------------------
+# Inputs
+# -----------------------------
+# Aircraft components: (mass_kg, x_m)
+# First 19 entries are passengers/passenger+luggage+seat
+components = np.array([
+    [100, -1.625],
+    [100, -1.625],
+    [100, -0.875],
+    [100, -0.875],
+    [100, -0.125],
+    [100, -0.125],
+    [100,  0.625],
+    [100,  0.625],
+    [100,  1.375],
+    [100,  1.375],
+    [100,  2.125],
+    [100,  2.125],
+    [100,  2.875],
+    [100,  2.875],
+    [100,  3.625],
+    [100,  3.625],
+    [100,  4.375],
+    [100,  4.375],
+    [100,  6.5  ],
+    [200, -4   ],
+    [100,  2   ],
+    [50,   5.9 ],
+    [200, -3   ],
+    [1030, 0.75],
+    [942,  2.4   ],
+    [247, 11   ],
+    [400,  1.94],
+    [0,  1.5   ],
+    [0,  1.5   ],
+    [225,  7.11],
+    [225,  7.11],
+    [40,   0.1 ],
+    [10,   0.25],
+    [5,   -0.1 ],
+    [40,   0.1 ],
+    [10,   0.25],
+    [5,   -0.1 ],
+    [40,   0.1 ],
+    [10,   0.25],
+    [5,   -0.1 ],
+    [40,   0.1 ],
+    [10,   0.25],
+    [5,   -0.1 ],
+    [40,   0.1 ],
+    [10,   0.25],
+    [5,   -0.1 ],
+    [40,   0.1 ],
+    [10,   0.25],
+    [5,   -0.1 ],
+    [40,   0.1 ],
+    [10,   0.25],
+    [5,   -0.1 ],
+    [40,   0.1 ],
+    [10,   0.25],
+    [5,   -0.1 ],
+], dtype=float)
+
+n_passengers = 19
+mean_chord = 2.5   # m
+neutral_point_x = 2.13  # m behind LE
+
+# Monte Carlo settings
+n_samples = 200_000
+passenger_weight_min = 50.0
+passenger_weight_max = 100.0
+random_seed = 42
+
+# -----------------------------
+# Monte Carlo simulation
+# -----------------------------
+rng = np.random.default_rng(random_seed)
+
+masses_nominal = components[:, 0].copy()
+x_locations = components[:, 1].copy()
+
+# Fixed components
+fixed_masses = masses_nominal.copy()
+fixed_masses[:n_passengers] = 0.0
+
+fixed_total_mass = fixed_masses.sum()
+fixed_total_moment = np.sum(fixed_masses * x_locations)
+
+# Random passenger masses: uniform between 50 and 100 kg
+passenger_masses = rng.uniform(
+    passenger_weight_min,
+    passenger_weight_max,
+    size=(n_samples, n_passengers)
+)
+
+passenger_x = x_locations[:n_passengers]
+
+# Total mass and moment for each simulation
+passenger_total_mass = passenger_masses.sum(axis=1)
+passenger_total_moment = passenger_masses @ passenger_x
+
+total_mass = fixed_total_mass + passenger_total_mass
+total_moment = fixed_total_moment + passenger_total_moment
+
+# Center of gravity
+x_cg = total_moment / total_mass
+
+# Static margin
+# Positive SM means CG is ahead of neutral point
+static_margin = (neutral_point_x - x_cg) / mean_chord
+static_margin_percent_mac = 100.0 * static_margin
+
+# -----------------------------
+# Summary statistics
+# -----------------------------
+print("Monte Carlo results")
+print("-------------------")
+print(f"Number of samples: {n_samples:,}")
+print(f"Mean CG location: {np.mean(x_cg):.4f} m behind LE")
+print(f"Std dev of CG:    {np.std(x_cg):.4f} m")
+print(f"Mean static margin: {np.mean(static_margin_percent_mac):.3f} %MAC")
+print(f"Std dev static margin: {np.std(static_margin_percent_mac):.3f} %MAC")
+print(f"Min static margin: {np.min(static_margin_percent_mac):.3f} %MAC")
+print(f"Max static margin: {np.max(static_margin_percent_mac):.3f} %MAC")
+
+# -----------------------------
+# Plot histogram
+# -----------------------------
+plt.figure(figsize=(9, 5.5))
+plt.hist(static_margin_percent_mac, bins=30, color='red', edgecolor="black")
+plt.axvline(np.mean(static_margin_percent_mac), linestyle="--", linewidth=2,
+            label=f"Mean = {np.mean(static_margin_percent_mac):.2f} %MAC")
+plt.xlabel("Static Margin (% MAC)")
+plt.ylabel("Count")
+plt.title("Monte Carlo Distribution of Static Margin at Empty Fuel")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# -----------------------------
+# Optional: seat sensitivity
+# -----------------------------
+# This estimates how strongly each passenger station influences CG.
+# Larger magnitude means that station has more leverage on CG.
+baseline_total_mass = fixed_total_mass + np.mean([(passenger_weight_min + passenger_weight_max) / 2]) * n_passengers
+lever_arms = passenger_x - np.mean(x_cg)
+
+print("\nPassenger station sensitivity (approximate, by x-location):")
+for i, x in enumerate(passenger_x, start=1):
+    print(f"Passenger {i:2d}: x = {x:6.3f} m")

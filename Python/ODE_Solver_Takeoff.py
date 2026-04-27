@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from ambiance import Atmosphere
 from ThrustVelocity import ThrustVelocity
+from aero_workspace.aero_main import AeroCoeffConfig
+from aero_workspace.aero_dict import AircraftConfig, AircraftConfig2
+
+aircraft_config = AeroCoeffConfig(phase='takeoff', aircraft=AircraftConfig) #
+alphas, CLs, CDs = aircraft_config.alphas, aircraft_config.CL, aircraft_config.CD_tot
 
 @dataclass
 class Mass:

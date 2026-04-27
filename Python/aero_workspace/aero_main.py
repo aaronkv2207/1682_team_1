@@ -2,8 +2,8 @@ import pickle
 from dataclasses import dataclass
 
 import numpy as np
-from aero_dict import AircraftConfig, AircraftConfig2
-from conceptual_design import ureg
+from aero_workspace.aero_dict import AircraftConfig, AircraftConfig2
+from aero_workspace.conceptual_design import ureg
 
 DEG2RAD_CONV = ureg("deg").to("rad").magnitude
 
@@ -100,7 +100,8 @@ class AeroCoeffConfig:
 
 if __name__ == "__main__":
     # NOTE: See all available operating conditions in JVL_writer/v2_plane/main_runner.py
-    for plane_idx, plane in enumerate([AircraftConfig, AircraftConfig2]):
+    # for plane_idx, plane in enumerate([AircraftConfig, AircraftConfig2]):
+    for plane_idx, plane in enumerate([AircraftConfig]):
         print(f"\n\n{'*' * 50}\n{'*' * 50}\nPlane #{plane_idx}")
         S = plane.S
         print(f"\n{'=' * 40}\nS = {S} [m^2] Performance")
