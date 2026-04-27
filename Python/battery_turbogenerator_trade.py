@@ -748,6 +748,80 @@ def plot_best_case_envelope(results):
     plt.title("Best-Case Requirement Margin")
     plt.legend()
     plt.tight_layout()
+    
+def print_best_envelope_summary(envelope, target_range_km=TARGET_RANGE_KM):
+    """
+    Print the overall best configuration found in the best-case envelope sweep
+    for both baseline and hybrid architectures.
+    """
+
+    # -------------------------
+    # Baseline best overall point
+    # -------------------------
+    if np.all(np.isnan(envelope["best_range_baseline_km"])):
+        print("\nNo feasible baseline point found in the envelope sweep.")
+    else:
+        i_base = int(np.nanargmax(envelope["best_range_baseline_km"]))
+        R_base = envelope["best_range_baseline_km"][i_base]
+        margin_base = envelope["best_margin_baseline_km"][i_base]
+        P_base = envelope["power_kW"][i_base]
+        CLmax_base = envelope["best_CLmax_baseline"][i_base]
+        S_base = envelope["best_wing_area_baseline"][i_base]
+        h_base = envelope["best_altitude_baseline_m"][i_base]
+
+        print("\n=== Best Baseline Airplane Combination ===")
+        print(f"Best range:                 {R_base:.1f} km")
+        print(f"Range margin to target:     {margin_base:.1f} km")
+        print(f"Takeoff / climb power:      {P_base:.1f} kW")
+        print(f"CLmax:                      {CLmax_base:.3f}")
+        print(f"Wing area:                  {S_base:.3f} m^2")
+        print(f"Cruise altitude:            {h_base:.1f} m")
+        print(f"Cruise speed:               {FIXED_V_CRUISE_MPS:.1f} m/s")
+        print(f"Meets 2400 km target:       {R_base >= target_range_km}")
+
+    # -------------------------
+    # Hybrid best overall point
+    # -------------------------
+    if np.all(np.isnan(envelope["best_range_hybrid_km"])):
+        print("\nNo feasible hybrid point found in the envelope sweep.")
+    else:
+        i_hyb = int(np.nanargmax(envelope["best_range_hybrid_km"]))
+        R_hyb = envelope["best_range_hybrid_km"][i_hyb]
+        margin_hyb = envelope["best_margin_hybrid_km"][i_hyb]
+        P_hyb = envelope["power_kW"][i_hyb]
+        CLmax_hyb = envelope["best_CLmax_hybrid"][i_hyb]
+        S_hyb = envelope["best_wing_area_hybrid"][i_hyb]
+        h_hyb = envelope["best_altitude_hybrid_m"][i_hyb]
+
+        print("\n=== Best Hybrid Airplane Combination ===")
+        print(f"Best range:                 {R_hyb:.1f} km")
+        print(f"Range margin to target:     {margin_hyb:.1f} km")
+        print(f"Takeoff / climb power:      {P_hyb:.1f} kW")
+        print(f"CLmax:                      {CLmax_hyb:.3f}")
+        print(f"Wing area:                  {S_hyb:.3f} m^2")
+        print(f"Cruise altitude:            {h_hyb:.1f} m")
+        print(f"Cruise speed:               {FIXED_V_CRUISE_MPS:.1f} m/s")
+        print(f"Meets 2400 km target:       {R_hyb >= target_range_km}")
+
+    # -------------------------
+    # Best hybrid point that actually meets the requirement
+    # -------------------------
+    valid_hybrid = np.where(envelope["best_range_hybrid_km"] >= target_range_km)[0]
+
+    if len(valid_hybrid) == 0:
+        print("\nNo hybrid configuration in the envelope sweep meets the 2400 km target.")
+    else:
+        # Among target-meeting hybrid points, choose the one with smallest takeoff power
+        i_meet = valid_hybrid[np.argmin(envelope["power_kW"][valid_hybrid])]
+
+        print("\n=== Lowest-Power Hybrid Configuration That Meets 2400 km ===")
+        print(f"Range:                      {envelope['best_range_hybrid_km'][i_meet]:.1f} km")
+        print(f"Range margin to target:     {envelope['best_margin_hybrid_km'][i_meet]:.1f} km")
+        print(f"Takeoff / climb power:      {envelope['power_kW'][i_meet]:.1f} kW")
+        print(f"CLmax:                      {envelope['best_CLmax_hybrid'][i_meet]:.3f}")
+        print(f"Wing area:                  {envelope['best_wing_area_hybrid'][i_meet]:.3f} m^2")
+        print(f"Cruise altitude:            {envelope['best_altitude_hybrid_m'][i_meet]:.1f} m")
+        print(f"Cruise speed:               {FIXED_V_CRUISE_MPS:.1f} m/s")
 
 
 
@@ -800,6 +874,16 @@ if __name__ == "__main__":
     plot_best_case_envelope(envelope)
 
     plt.show()
+    
+    envelope = best_case_envelope_vs_power(
+    base_case,
+    power_vals=np.linspace(1000.0, 3500.0, 40),
+    CLmax_vals=CLmax_vals,
+    wing_area_vals=wing_area_vals,
+    altitude_vals=altitude_vals,
+    )
+    plot_best_case_envelope(envelope)
+    print_best_envelope_summary(envelope)
 
 # if __name__ == "__main__":
 #     base_case = {
