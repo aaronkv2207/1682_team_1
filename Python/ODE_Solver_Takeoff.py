@@ -10,6 +10,10 @@ from aero_workspace.aero_dict import AircraftConfig, AircraftConfig2
 aircraft_config = AeroCoeffConfig(phase='takeoff', aircraft=AircraftConfig) #
 alphas, CLs, CDs = aircraft_config.alphas, aircraft_config.CL, aircraft_config.CD_tot
 
+mask=np.isclose(aircraft_config.velocities, 20)
+mask &= np.isclose(aircraft_config.flap_1, 60)
+
+
 @dataclass
 class Mass:
     m: float
@@ -61,7 +65,7 @@ class Aircraft:
 
     def theta_schedule(self, t):
         # stays 0, then ramps to 15 deg
-        return np.radians(20) * (1 / (1 + np.exp(-(t-6.5)/0.4)))
+        return np.radians(20) * (1 / (1 + np.exp(-(t-5.5)/0.6)))
 
     def controls(self, t):
         throttle = 1/(1+np.exp(-(t-1)/.3))
@@ -121,7 +125,7 @@ class Aircraft:
         # alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], np.radians(14))
         CL=np.interp(alpha, self.aero.alpha_list, self.aero.CL_alpha_list)
         # CD=np.interp(delta_f, self.aero.flap_deg_list, self.aero.CD_tot_list)
-        CD=np.interp(alpha, self.aero.alpha_list, self.aero.CD_alpha_list)
+        CD=np.interp(alpha, self.aero.alpha_list, self.aero.CD_alpha_list.reshape((-1, )))
 
         Cm=0 #self.aero.Cm0+self.aero.Cm@state_vec
 
@@ -240,8 +244,8 @@ Aircraft.takeoff_event.direction=1 #ensures that crossing goes from L-W<0 to L-W
 
 '''PARAMETER INPUTS'''
 geom = Geometry(
-    S=50.1,
-    AR=8,
+    S=AircraftConfig.S,
+    AR=AircraftConfig.AR,
     h=5.5,
     lv=10,
     Vv=.1,
@@ -274,10 +278,16 @@ aero = Aero(
     # Cm=np.array([-1.2, -12, -1, -0.1]),
     Cm=np.array([-1.2, -1, -0.1]),
     # Cm=np.array([-0.1, -0.2, -0.05]),
-    alpha_list=np.radians([-15, -13,-11,-9,-7,-5,-3,-1,1,3,5,7,9,11,13,15]),
-    CL_alpha_list=[1.99602,2.32163,2.64366,2.96144,3.2743,3.58159,3.88268,4.17698,4.46391,4.74295,5.0136,5.2754,5.52793,5.77082,6.00373,6.22638],
+    # alpha_list=np.radians([-15, -13,-11,-9,-7,-5,-3,-1,1,3,5,7,9,11,13,15]),
+    alpha_list=(aircraft_config.alphas)[mask],
+    # CL_alpha_list=[1.99602,2.32163,2.64366,2.96144,3.2743,3.58159,3.88268,4.17698,4.46391,4.74295,5.0136,5.2754,5.52793,5.77082,6.00373,6.22638],
+    # CL_alpha_list=aircraft_config.CL
+    CL_alpha_list = (aircraft_config.CL)[mask],
+    # shape: (v_to, flap_deflection, AoA)
     flap_deg_list=np.radians([40, 50, 60]),
-    CD_alpha_list=[0.1308257661, 0.1769903237, 0.2294957828, 0.2879846803, 0.3520468361, 0.4212260747, 0.4950245147, 0.5729125041, 0.6543262888, 0.7386872485, 0.8253969748, 0.9138487022, 1.003433461, 1.093549801, 1.18360234, 1.273018615],
+    # CD_alpha_list=[0.1308257661, 0.1769903237, 0.2294957828, 0.2879846803, 0.3520468361, 0.4212260747, 0.4950245147, 0.5729125041, 0.6543262888, 0.7386872485, 0.8253969748, 0.9138487022, 1.003433461, 1.093549801, 1.18360234, 1.273018615],
+    CD_alpha_list = (aircraft_config.CD_tot)[mask],
+    # CD_tot_list=aircraft_config.CD_tot
     CD_tot_list=[0.31508, 0.3842, 0.45865] #CD_prof+CD_ind
 )
 
@@ -295,7 +305,7 @@ x0 = [u0_to, w0_to, q0_to, theta0_to, x_e0_to, z_e0_to]
 plane_1=Aircraft(mass, geom, aero, prop,rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0) #change alpha_0 to 0
 
 #Intergate over time span
-t = 15
+t = 20
 t_span = (0, t)
 t_eval = np.linspace(0, t, 1000)
 
@@ -475,3 +485,8 @@ plt.title("Forces over Time")
 plt.legend(loc='lower right')
 plt.grid(True)
 plt.show()
+
+
+# print(f'Takeoff Thrust: {T_clean[-1]} kN')
+# print(f'Takeoff Drag: {D_clean[-1]} kN')
+# print(f'Takeoff CL: {CL_clean[-1]}')
