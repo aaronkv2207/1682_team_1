@@ -36,14 +36,19 @@ class AircraftConfig:
     ht_AR: float = 3.0
     S_h: float = 13.33
     ht_MAC: float = 2.11
-    V_h: float = 1.0
+    V_h: float = 1.0  # S_h * l_h / (S * c)
+    lh: float = 8.56
 
     # Vertical Tail
     vt_AR: float = 1.2
     S_v: float = 5.99
     vt_MAC: float = 2.23
-    V_v: float = 0.06
+    V_v: float = 0.06  # S_v * l_v / (S * b)
     lv: float = 8.0
+
+    # Fuselage
+    nose_x: float = -5.0
+    fuse_width: float = 1.6
 
     # Prop
     tc_prime: float = 2.0  # prop value
@@ -136,6 +141,7 @@ class AircraftConfig2:
     S_h: float = 12.06
     ht_MAC: float = 2.01
     V_h: float = 1.0
+    lh: float = 8.53
 
     # Vertical Tail
     vt_AR: float = 1.2
@@ -147,6 +153,10 @@ class AircraftConfig2:
     # Fuselage
     nose_x: float = -5.0
     fuse_width: float = 1.6
+    # fuselage (roskam pt 2) - (For drag modeling)
+    D_f: float = 1.6  # [m]
+    l_f: float = 15  # [m] f
+    lambda_f: float = l_f / D_f
 
     # Prop
     tc_prime: float = 2.0
