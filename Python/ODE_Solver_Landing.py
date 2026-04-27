@@ -203,7 +203,7 @@ geom = Geometry(50.1, 8, 5.5, 10, 0.1, 1.2, 1.05, 11.98)
 mass = Mass(7400, 40000)
 prop = ThrustVelocity()
 
-landing = Landing_Gear(3300, 120, 3.5e4, 4e5, 5e6)
+landing = Landing_Gear(3300, 120, 3.5e4, 3e5, 5e6)
 
 aero = Aero(
     CL0=[2.96, 0.109],

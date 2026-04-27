@@ -56,7 +56,7 @@ class Aircraft:
 
     def theta_schedule(self, t):
         # stays 0, then ramps to 15 deg
-        return np.radians(20) * (1 / (1 + np.exp(-(t -6)/0.8)))
+        return np.radians(20) * (1 / (1 + np.exp(-(t-6.5)/0.4)))
 
     def controls(self, t):
         throttle = 1/(1+np.exp(-(t-1)/.3))
@@ -95,8 +95,8 @@ class Aircraft:
         # alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], self.aero.alpha_list[-1])
         u_e = u*np.cos(theta) + w*np.sin(theta)
         w_e = -u*np.sin(theta) + w*np.cos(theta)
-        gamma_org = np.arctan2(-w_e, u_e)
-        gamma = np.clip(gamma_org, np.radians(0), np.radians(20))
+        gamma = np.arctan2(-w_e, u_e)
+        gamma = np.clip(gamma, np.radians(0), theta)
 
 
         # alpha=np.clip(alpha, np.radians(-15), np.radians(15))
@@ -111,7 +111,8 @@ class Aircraft:
 
 
         # delta_qbar=q_bar-self.qbar0
-        alpha = theta - gamma
+        alpha = np.arctan2(w, u)
+        alpha = np.clip(alpha, np.radians(0), theta - gamma)
         # alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], np.radians(14))
         CL=np.interp(alpha, self.aero.alpha_list, self.aero.CL_alpha_list)
         # CD=np.interp(delta_f, self.aero.flap_deg_list, self.aero.CD_tot_list)
@@ -152,9 +153,11 @@ class Aircraft:
         # alpha=np.clip(np.arctan2(-w, u), self.aero.alpha_list[0], self.aero.alpha_list[-1])
         u_e = u*np.cos(theta) + w*np.sin(theta)
         w_e = -u*np.sin(theta) + w*np.cos(theta)
-        gamma_org = np.arctan2(-w_e, u_e)
-        gamma=np.clip(gamma_org, np.radians(0), np.radians(20))
-        alpha = theta - gamma
+        gamma = np.arctan2(-w_e, u_e)
+        gamma=np.clip(gamma, np.radians(0), theta)
+
+        alpha = np.arctan2(w, u)
+        alpha = np.clip(alpha, np.radians(0), theta - gamma)
 
         rho=Atmosphere(h=ze*-1).density[0]
         Q = 0.5 * rho * V**2
@@ -206,17 +209,25 @@ class Aircraft:
 
         return [u_dot, w_dot, q_dot, theta_dot, x_dot, z_dot]
 
-    def takeoff_event(self, t, x):
-        u, w = x[0], x[1]
-        ze=x[5]
-        V = np.sqrt(u**2 + w**2)
-        rho=Atmosphere(h=ze*-1).density[0]
-        Q = 0.5 * rho * V**2
-        CL, Cm, CD= self.aero_coefficents(x, self.controls(t), t)
 
-        L=Q*self.geom.S*CL
+    'START HERE'
+
+    def takeoff_event(self, t, x):
+        ze=x[5]
+        # u, w = x[0], x[1]
+        # ze=x[5]
+        # V = np.sqrt(u**2 + w**2)
+        # rho=Atmosphere(h=ze*-1).density[0]
+        # Q = 0.5 * rho * V**2
+        # CL, Cm, CD= self.aero_coefficents(x, self.controls(t), t)
+
+        # L=Q*self.geom.S*CL
+        # W = self.mass.m * 9.81
+
+        # Z = -L*np.cos(alpha) + D*np.sin(alpha) - N
+        L=self.forces(x, t)[3]
         W = self.mass.m * 9.81
-        return L-W
+        return -ze-.1
 
 
 Aircraft.takeoff_event.terminal=False # doesn't stop integrating with ivp once takeoff occurs but records when event happens
@@ -279,7 +290,7 @@ x0 = [u0_to, w0_to, q0_to, theta0_to, x_e0_to, z_e0_to]
 plane_1=Aircraft(mass, geom, aero, prop,rho=1.225, ic=x0, deltae0=0, deltaf0=0, alpha0=np.radians(2), qbar0=0) #change alpha_0 to 0
 
 #Intergate over time span
-t = 25
+t = 15
 t_span = (0, t)
 t_eval = np.linspace(0, t, 1000)
 
@@ -310,10 +321,11 @@ if sol.t_events[0].size > 0:
 
     u_eto = u_to*np.cos(theta_to) + w_to*np.sin(theta_to)
     w_eto = -u_to*np.sin(theta_to) + w_to*np.cos(theta_to)
-    gamma_to_org = np.arctan2(-w_eto, u_eto)
-    gamma_to=np.clip(gamma_to_org, np.radians(-10), np.radians(20))
+    gamma_to = np.arctan2(-w_eto, u_eto)
+    gamma_to=np.clip(gamma_to, np.radians(0), theta_to)
     print(f"gamma at takeoff: {np.degrees(gamma_to):.2f} deg")
-    alpha_to=theta_to-gamma_to
+    alpha_to = np.arctan2(w_to, u_to)
+    alpha = np.clip(alpha_to, np.radians(0), theta_to - gamma_to)
     v_to=np.sqrt(sol.y_events[0][0][0]**2+sol.y_events[0][0][1]**2)
 
     print(f"Takeoff time: {t_to:.3f} s")
@@ -331,7 +343,7 @@ else:
 # Trajectory
 plt.plot(sol.y[4], -sol.y[5])
 plt.scatter(x_to, 0, label='Takeoff',c='red', marker='*')
-plt.axhline(y=15.24, color='red', linestyle='--', label='50 ft clearing')
+# plt.axhline(y=15.24, color='red', linestyle='--', label='50 ft clearing')
 plt.xlabel("Downrange Distance (m)")
 plt.ylabel("Altitude (m)")
 plt.title("Trajectory")
@@ -355,7 +367,7 @@ u = sol.y[0]
 w = sol.y[1]
 v = np.sqrt(u**2 + w**2)
 ax[1].plot(sol.t, u, label='Forward Velocity (u)')
-ax[1].plot(sol.t, -w, label='Vertical Velocity (w)')
+ax[1].plot(sol.t, w, label='Vertical Velocity (w)')
 ax[1].plot(sol.t, v, label='Total Velocity (v)')
 ax[1].set_xlabel("Time (s)")
 ax[1].set_ylabel("Velocity (m/s)")
@@ -370,6 +382,8 @@ L_clean=[]
 D_clean=[]
 T_clean=[]
 N_clean=[]
+X_clean=[]
+Z_clean=[]
 Roll_resist_clean=[]
 alpha_clean=[]
 theta_clean=[]
@@ -382,16 +396,16 @@ for i in range(len(sol.t)):
     # alpha_i=np.clip(np.arctan2(-w, u), alpha_list[0], alpha_list[-1])
     u_e = u*np.cos(theta) + w*np.sin(theta)
     w_e = -u*np.sin(theta) + w*np.cos(theta)
-    gamma_org = np.arctan2(-w_e, u_e)
-    gamma=np.clip(gamma_org, np.radians(0), np.radians(20))
-    alpha = theta - gamma
-
+    gamma= np.arctan2(-w_e, u_e)
+    gamma=np.clip(gamma, np.radians(0), theta)
+    alpha = np.arctan2(w, u)
+    alpha = np.clip(alpha, np.radians(0), theta - gamma)
 
     t = sol.t[i]
     controls = plane_1.controls(t)
     CL, _, _ = plane_1.aero_coefficents(x, controls, t)
     CL_clean.append(CL)
-    _, _, _, L, D, T, N, Roll_resist=plane_1.forces(x, t)
+    X, Z, _, L, D, T, N, Roll_resist=plane_1.forces(x, t)
 
     alpha_clean.append(alpha)
     theta_clean.append(theta)
@@ -399,9 +413,23 @@ for i in range(len(sol.t)):
     D_clean.append(D/10**3)
     T_clean.append(T/10**3)
     N_clean.append(N/10**3)
+    X_clean.append(X/10**3)
+    Z_clean.append(Z/10**3)
     Roll_resist_clean.append(Roll_resist/10**3)
 
 # print(N_clean)
+
+
+plt.plot(sol.t, X_clean, label='Net X Force')
+plt.plot(sol.t, Z_clean, label='Net Z Force')
+plt.xlabel("Time (s)")
+plt.ylabel('Force (N)')
+plt.title('Net Forces Over Time')
+plt.legend(loc='lower right')
+plt.grid(True)
+plt.show()
+
+
 
 plt.plot(sol.t, np.degrees(alpha_clean), label='AoA')
 plt.plot(sol.t, np.degrees(theta_clean), label='Theta')
