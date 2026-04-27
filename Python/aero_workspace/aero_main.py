@@ -1,198 +1,118 @@
 import pickle
-import warnings
 from dataclasses import dataclass
 
 import numpy as np
-import pandas as pd
-from aero_dict import AircraftConfig
-from ambiance import Atmosphere
-from conceptual_design import MTOW, V_CRUISE, V_STALL, W_S, S, ureg
-
-# get jvl cg --> mset, run file, input file, ...; can shift around masses to shift cg in .mass file
-
-# identify sizing cases
-# tail size --> trim on descent or takeoff rotation
-
-# define operating points
-# communicate with prop for trades with range and takeoff distance
+from aero_dict import AircraftConfig, AircraftConfig2
+from conceptual_design import ureg
 
 DEG2RAD_CONV = ureg("deg").to("rad").magnitude
 
-raise NotImplementedError(
-    "Design sweep not yet performed. See polars.py for first round estimates."
-)
-
 
 @dataclass
-class TakeoffCoeff:
+class AeroCoeffConfig:
     """Reads a summary of JVL output dataframe at various operating points. Defines functions
     based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
 
-    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/takeoff.pkl"
-    with open(FILE_NAME, "rb") as f:
-        data = pickle.load(f)
+    phase: str  # 'takeoff', 'cruise', or 'landing'
+    # NOTE: CHANGE TO either AircraftConfig or AircraftConfig2
+    aircraft: object = AircraftConfig
+    max_elevator: float = 20.0  # degrees
+    max_flap_unblown: float = 40.0  # degrees # TODO: Needs more rigorous analysis
 
-    alphas, velocities, betas = [], [], []
-    CL, CD, Cm, CDind, e = [], [], [], [], []
+    S = int(aircraft.S)
+    AR = aircraft.AR
 
-    for _, run in enumerate(data):
-        alphas.append(run["alpha"] * DEG2RAD_CONV)
-        velocities.append(run["velocity"])
-        betas.append(run["beta"] * DEG2RAD_CONV)
-        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
-        # CD.append(run["CD"])
-        Cm.append(run["Cm"])
+    def __post_init__(self):
+        file_path = f"JVL_writer/v2_plane/run_outputs/coeff_results/Sref-{self.S}/{self.phase}.pkl"
 
-        CDind.append(run["CDind"])
-        e.append(run["e"])
+        with open(file_path, "rb") as f:
+            data = pickle.load(f)
 
-        # NOTE: For drag buildup, CD_ind is obtained from JVL;
-        #       CD_form and CD_visc is obtained from Brenda's drag build up
-    CD_DP = AircraftConfig.C_Dp_t0  # profile drag from Brenda's model
-    CD_tot = (CDind + CD_DP) * 1.2
+        self.alphas, self.velocities, self.d_elevator = [], [], []
+        self.CL, self.CD, self.Cm = [], [], []
+        self.CDind, self.CD_tot, self.e = [], [], []
+        self.flap_1, self.flap_2 = [], []
 
+        for run in data:
+            self.alphas.append(run["alpha"] * DEG2RAD_CONV)
+            self.velocities.append(run["velocity"])
+            self.d_elevator.append(run["d6"])
+            self.CL.append(run["CL"])
+            self.Cm.append(run["Cm"])
+            self.e.append(run["e"])
+            self.flap_1.append(run["d1"])
+            self.flap_2.append(run["d2"])
 
-@dataclass
-class ClimbCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
-    """Will read a summary of JVL output dataframe at various operating points. Defines functions
-    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
+            _CDind = run["CL"] ** 2 / (self.AR * np.pi * run["e"])
+            self.CDind.append(_CDind)
 
-    warnings.warn(
-        "DEPRECATED! Climb coefficients are no longer produced by aero team.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/climb.pkl"
-    with open(FILE_NAME, "rb") as f:
-        data = pickle.load(f)
+            if self.phase == "cruise":
+                CD_DP = AircraftConfig(v_cruise=run["velocity"]).C_Dp_cruise
+            else:
+                CD_DP = AircraftConfig(v_t0=run["velocity"]).C_Dp_t0
 
-    alphas, velocities, betas = [], [], []
-    CL, CD, Cm, CDind, e = [], [], [], [], []
+            self.CD_tot.append(
+                [(_CDind + CD_DP) * 1.2]
+            )  # TODO: Double check drag treatment
 
-    for _, run in enumerate(data):
-        alphas.append(run["alpha"] * DEG2RAD_CONV)
-        velocities.append(run["velocity"])
-        betas.append(run["beta"] * DEG2RAD_CONV)
-        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
-        # CD.append(run["CD"])
-        Cm.append(run["Cm"])
+        self.alphas = np.array(self.alphas)
+        self.velocities = np.array(self.velocities)
+        self.d_elevator = np.array(self.d_elevator)
+        self.CL = np.array(self.CL)
+        self.Cm = np.array(self.Cm)
+        self.CDind = np.array(self.CDind)
+        self.CD_tot = np.array(self.CD_tot)
+        self.e = np.array(self.e)
+        self.flap_1 = np.array(self.flap_1)
+        self.flap_2 = np.array(self.flap_2)
 
-        CDind.append(run["CDind"])
-        e.append(run["e"])
+        # Filter based on reasonable elevator deflections
+        elevator_mask = np.abs(self.d_elevator) < self.max_elevator
+        flap_mask = (np.abs(self.flap_1) < self.max_flap_unblown) & (
+            np.abs(self.flap_2) < self.max_flap_unblown
+        )
+        # cl_best_real_mask = np.argmax(self.CL[elevator_mask])
 
-        # NOTE: For drag buildup, CD_ind is obtained from JVL;
-        #       CD_form and CD_visc is obtained from Brenda's drag build up
-    # CD_DP = AircraftConfig.C_Dp_climb  # profile drag from Brenda's model
-    # CD_tot = (CDind + CD_DP) * 1.2
+        if self.phase == "takeoff":
+            self.alphas = self.alphas[elevator_mask]
+            self.velocities = self.velocities[elevator_mask]
+            self.d_elevator = self.d_elevator[elevator_mask]
+            self.CL = self.CL[elevator_mask]
+            self.Cm = self.Cm[elevator_mask]
+            self.CDind = self.CDind[elevator_mask]
+            self.CD_tot = self.CD_tot[elevator_mask]
+            self.e = self.e[elevator_mask]
+            self.flap_1 = self.flap_1[elevator_mask]
+            self.flap_2 = self.flap_2[elevator_mask]
 
-    # TODO: CD_DP = AircraftConfig.C_Dp_climb # profile drag from Brenda's model
-
-
-@dataclass
-class CruiseCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
-    """Will read a summary of JVL output dataframe at various operating points. Defines functions
-    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
-
-    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/cruise.pkl"
-    with open(FILE_NAME, "rb") as f:
-        data = pickle.load(f)
-
-    alphas, velocities, betas = [], [], []
-    CL, CD, Cm, CDind, e = [], [], [], [], []
-
-    for _, run in enumerate(data):
-        alphas.append(run["alpha"] * DEG2RAD_CONV)
-        velocities.append(run["velocity"])
-        betas.append(run["beta"] * DEG2RAD_CONV)
-        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
-        # CD.append(run["CD"])
-        Cm.append(run["Cm"])
-
-        CDind.append(run["CDind"])
-        e.append(run["e"])
-
-        # NOTE: For drag buildup, CD_ind is obtained from JVL;
-        #       CD_form and CD_visc is obtained from Brenda's drag build up
-    CD_DP = AircraftConfig.C_Dp_cruise  # profile drag from Brenda's model
-    CD_tot = (CDind + CD_DP) * 1.2
+        if self.phase == "cruise":
+            self.alphas = self.alphas[flap_mask]
+            self.velocities = self.velocities[flap_mask]
+            self.d_elevator = self.d_elevator[flap_mask]
+            self.CL = self.CL[flap_mask]
+            self.Cm = self.Cm[flap_mask]
+            self.CDind = self.CDind[flap_mask]
+            self.CD_tot = self.CD_tot[flap_mask]
+            self.e = self.e[flap_mask]
+            self.flap_1 = self.flap_1[flap_mask]
+            self.flap_2 = self.flap_2[flap_mask]
 
 
-class CruiseModel:
-    def __init__(
-        self, s_ref, weight, v_cruise, h_cruise, AR, Cd0, Cdv, CDi, e=0.7
-    ) -> None:
-        self.s_ref = s_ref * ureg("m^2")
-        self.weight = weight * ureg("N")  # newtons
-        self.v_cruise = v_cruise
-        self.h_cruise = h_cruise
-        self.density = Atmosphere(h=h_cruise).density[0]
-        self.AR = AR
-        self.q = 0.5 * self.density * (self.v_cruise**2)
-        self.Cd0 = Cd0
-        self.Cdv = Cdv
-        self.CDi = CDi
-        self.e = e
-
-    def cl(self):
-        L = self.weight  # assumes I have weight as a function of time
-        return L / (self.q * self.s_ref)
-
-    def cd_induced(self):
-        if self.CDi is None:
-            return (self.cl() ** 2) / (np.pi * self.AR * self.e)
-        else:
-            return self.CDi
-
-    def cd_total(self):
-        return self.cd_induced() + self.Cd0 + self.Cdv
-
-    def drag_total(self):
-        return self.cd_total() * self.q * self.s_ref
-
-
-class LandingCoeff:  # TODO: NO DATA IMPLEMENTED; NEEDS UPDATE
-    """Will read a summary of JVL output dataframe at various operating points. Defines functions
-    based on operating points --> CL, CD, CM. If other parameters are desired, see data dictionary."""
-
-    FILE_NAME = "Python/aero_workspace/jvl_run_outputs/landing.pkl"
-    with open(FILE_NAME, "rb") as f:
-        data = pickle.load(f)
-
-    alphas, velocities, betas = [], [], []
-    CL, CD, Cm, CDind, e = [], [], [], [], []
-
-    for _, run in enumerate(data):
-        alphas.append(run["alpha"] * DEG2RAD_CONV)
-        velocities.append(run["velocity"])
-        betas.append(run["beta"] * DEG2RAD_CONV)
-        CL.append(run["CL"])  # NOTE: double check definitions: Cl vs CL
-        # CD.append(run["CD"])
-        Cm.append(run["Cm"])
-
-        CDind.append(run["CDind"])
-        e.append(run["e"])
-    # # TODO: CD_DP = AircraftConfig.C_Dp_landing # profile drag from Brenda's model
-    #     # NOTE: For drag buildup, CD_ind is obtained from JVL;
-    #     #       CD_form and CD_visc is obtained from Brenda's drag build up
-    # CD_DP = AircraftConfig.C_Dp_landing  # profile drag from Brenda's model
-    # CD_tot = (CDind + CD_DP) * 1.2
-
-
-# Runner script
 if __name__ == "__main__":
-    cruise_cls = CruiseModel(
-        s_ref=AircraftConfig.s_ref,
-        weight=0.85
-        * MTOW.magnitude,  # TODO: needed from prop; UPDATE to AircraftConfig.weight_cruise
-        v_cruise=CruiseCoeff.velocities[
-            0
-        ],  # NOTE: change for a particular run of interest
-        h_cruise=AircraftConfig.h_cruise,
-        AR=AircraftConfig.AR,
-        Cd0=0.0,
-        Cdv=TakeoffCoeff.CD_DP,
-        CDi=CruiseCoeff.CDind[0],  # NOTE: change for a particular run of interest
-        e=CruiseCoeff.e[0],  # NOTE: change for a particular run of interest
-    )  #  default assumes e=0.7; change this parameter if different
-    CD_total_cruise = cruise_cls.cd_total()
-    L_over_D_cruise = cruise_cls.cl() / CD_total_cruise
+    # NOTE: See all available operating conditions in JVL_writer/v2_plane/main_runner.py
+    for plane_idx, plane in enumerate([AircraftConfig, AircraftConfig2]):
+        print(f"\n\n{'*' * 50}\n{'*' * 50}\nPlane #{plane_idx}")
+        S = plane.S
+        print(f"\n{'=' * 40}\nS = {S} [m^2] Performance")
+        for phase in ["takeoff", "cruise", "climb", "landing"]:
+            config = AeroCoeffConfig(phase=phase, aircraft=plane)
+            print(f"\n=== {phase.upper()} (S = {S} [m^2]) ===")
+
+            print(f"Velocities: {np.round(config.velocities, 4)}")
+            print(f"AOAs: {np.round(config.alphas * (1 / DEG2RAD_CONV), 4)} [°]")
+            print(f"d_elevator: {np.round(config.d_elevator, 4)}")
+            print(f"d_flap: {np.round(config.flap_1, 4)}")
+            print(f"CL: {np.round(config.CL, 4)}")
+            print(f"CD_tot: {np.round(config.CD_tot, 4)}")
+            print(f"Cm: {np.round(config.Cm, 4)}")
+            print(f"e: {np.round(config.e, 4)}")

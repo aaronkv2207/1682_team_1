@@ -18,9 +18,9 @@ from J import JVL, JetControl, JetParam, JWing, WingJSec
 h_cruise = 5486.4  # m
 h_climb = 3135  # TODO: completely arbitrary --> needs correction
 
-takeoff_deflection = 50  # degrees
-climb_deflection = 30
-landing_deflection = 65
+# takeoff_deflection = 50  # degrees
+# climb_deflection = 30
+# landing_deflection = 65
 trim_variable = "d6"  # elevator
 
 # TODO: Fix inner and outer flap spans
@@ -28,7 +28,7 @@ trim_variable = "d6"  # elevator
 # fuselage (not very well parametrized at the moment)
 nose_x = -5
 fuse_width = 1.6  # width at the wing: 2 rows of seats
-AR = 8  # twin otter is 10.05
+AR = 7  # twin otter is 10.05
 ail_hinge = 0.7
 flap_hinge = 0.75
 wing_incidence = 0
@@ -39,10 +39,10 @@ lv = 8  # distance from wing quarter chord to vertical tail quarter chord
 Vv = 0.06  # Vertical tail volume coefficient
 vt_ar = 1.2
 tail_hinge = 0.7
-Vh = 0.75
+Vh = 1.0
 
 # h_tail - fixed parameters
-ht_ar = 2
+ht_ar = 3
 
 # fan - fixed parameters
 fan_radius = 1.166 / 2
@@ -51,6 +51,9 @@ n_fans = 8
 # Wing geometry
 main_foil = asb.Airfoil(coordinates="./JVL_writer/jw05.dat")
 # S = 49.6  # twin otter wing area is 39 m^2
+
+# Jet parameters
+J_takeoff, J_climb, J_land = ..., ..., ...
 
 
 def plane_operating_point(cond, plane, analysis_options):
@@ -140,29 +143,23 @@ def save_results(data, filename):
         pickle.dump(data, f)
 
 
-def run_case(phase, surface, velocity, alpha, blowing_perturb):
+def run_case(phase, surface, velocity, alpha, deflection):
     if phase == "takeoff":
         out = surface.run(
-            flap_deflections={"d1": takeoff_deflection, "d2": takeoff_deflection},
+            flap_deflections={"d1": deflection, "d2": deflection},
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
             blowing={
-                "J1": 2.0 * blowing_perturb,
-                "J2": 2.0 * blowing_perturb,
-                "J3": 2.0 * blowing_perturb,
-                "J4": 2.0 * blowing_perturb,
+                "J1": J_takeoff,
             },
         )
     elif phase == "climb":
         out = surface.run(
-            flap_deflections={"d1": climb_deflection, "d2": climb_deflection},
+            flap_deflections={"d1": deflection, "d2": deflection},
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
             blowing={
-                "J1": 1.0 * blowing_perturb,
-                "J2": 1.0 * blowing_perturb,
-                "J3": 1.0 * blowing_perturb,
-                "J4": 1.0 * blowing_perturb,
+                "J1": J_climb,
             },
         )
     elif phase == "cruise":
@@ -176,12 +173,9 @@ def run_case(phase, surface, velocity, alpha, blowing_perturb):
             run_command=None,
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
-            flap_deflections={"d1": landing_deflection, "d2": landing_deflection},
+            flap_deflections={"d1": deflection, "d2": deflection},
             blowing={
-                "J1": 1.5 * blowing_perturb,
-                "J2": 1.5 * blowing_perturb,
-                "J3": 1.5 * blowing_perturb,
-                "J4": 1.5 * blowing_perturb,
+                "J1": J_land,
             },
         )
 
@@ -194,28 +188,42 @@ def run_case(phase, surface, velocity, alpha, blowing_perturb):
 
 
 # NOTE: I am extending on planeB, since I am not looking at differential blowing
-def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PLR0915
+def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
     for S in S_list:
         for phase in oper_dict:
-            velocities, alphas = (
+            velocities, alphas, flap_deflections = (
                 oper_dict[phase]["velocities"],
                 oper_dict[phase]["alphas"],
+                oper_dict[phase]["flap_deflections"],
             )
-            cases = [
-                {"velocity": v, "alpha": a} for v, a in product(velocities, alphas)
-            ]
+            if (
+                None not in flap_deflections
+            ):  # NOTE: more robust; in future implement logiv
+                cases = [
+                    {"velocity": v, "alpha": a, "flap_deflection": flap_d}
+                    for v, a, flap_d in product(velocities, alphas, flap_deflections)
+                ]
+            else:
+                cases = [
+                    {"velocity": v, "alpha": a, "flap_deflection": flap_d}
+                    for v, a, flap_d in product(velocities, alphas, [None])
+                ]
+
             results = []
             for case_idx, case in enumerate(cases):
-                velocity, alpha = case.values()
-                config = f"{phase}_Sref_{S}_v_{int(velocity)}_aoa_{int(alpha)}"
+                velocity, alpha, flap_d = case.values()
+                if case["flap_deflection"] is None:
+                    config = f"{phase}_Sref_{S}_v_{int(velocity)}_aoa_{int(alpha)}"
+                else:
+                    config = f"{phase}_Sref_{S}_v_{int(velocity)}_aoa_{int(alpha)}_d-{flap_d}"
                 b = np.sqrt(AR * S)
                 aileron_y = (
                     aileron_fraction * b / 2
                 )  # start aileron at 2/3 of halfspan. No blowing at this point.
+
                 MAC = b / AR
                 tip_chord = 9 / 10 * MAC  # set taper ratio if desired
                 root_chord = MAC  # (2*MAC - tip_chord) #root chord needs to be adjusted for lost area from taper at the wingtips #TODO: fix
-
                 blown_span = (aileron_fraction) * b - fuse_width
 
                 fan_length = n_fans * 2 * fan_radius
@@ -259,140 +267,63 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
                     print(f"Horizontal tail area: {Sh:.2f} m^2")
                     print(f"Horizontal tail MA chord: {ht_mac:.2f} m")
                 # standard config
-                wingB = JWing(
+                
+                wingA = JWing(
                     name="Main Wing",
                     symmetric=True,
-                    JetParam=JetParam(
-                        hdisk=hdisk,
-                        fh=0.0,
-                        djet0=0.0,
-                        djet1=0.0,
-                        djet3=0.0,
-                        dxdsk=0.07,
-                        dndsk=-0.51 * hdisk,
-                    ),
+                    JetParam=JetParam(hdisk=hdisk, fh=0.0, djet0=0.0, djet1=0.0, djet3=0.0, dxdsk=.07, dndsk=-0.51*hdisk),
                     xsecs=[
                         WingJSec(
                             xyz_le=[0, 0, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap1", hinge_point=flap_hinge, deflection=0
-                                )
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet1", gain=1, sgn_dup=1)
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=1.5, sgn_dup=1)],
                         ),
                         WingJSec(
-                            xyz_le=[0, fuse_width / 2 + blowing_dy, 0],
+                            xyz_le=[0, fuse_width/2 + blowing_dy, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap1", hinge_point=flap_hinge, deflection=0
-                                )
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet1", gain=1, sgn_dup=1),
-                                JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1),
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=1.5, sgn_dup=1)],
                         ),
                         WingJSec(
-                            xyz_le=[0, fuse_width / 2 + 2 * blowing_dy, 0],
+                            xyz_le=[0, fuse_width/2 + 2*blowing_dy, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap1", hinge_point=flap_hinge, deflection=0
-                                )
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet2", gain=1, sgn_dup=1),
-                                JetControl(jet_name="FlapJet3", gain=1, sgn_dup=1),
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=1, sgn_dup=1)],
                         ),
-                        WingJSec(  # flap1 goes to end of 3rd duct
-                            xyz_le=[0, fuse_width / 2 + 3 * blowing_dy, 0],
+                        WingJSec( #flap1 goes to end of 3rd duct
+                            xyz_le=[0, fuse_width/2 + 3*blowing_dy, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap1", hinge_point=flap_hinge, deflection=0
-                                ),
-                                asb.ControlSurface(
-                                    name="Flap2", hinge_point=flap_hinge, deflection=0
-                                ),
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet3", gain=1, sgn_dup=1),
-                                JetControl(jet_name="FlapJet4", gain=1, sgn_dup=1),
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap1", hinge_point=flap_hinge, deflection=0), asb.ControlSurface(name="Flap2", hinge_point=flap_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=1, sgn_dup=1)],
                         ),
-                        # WingJSec(
-                        #     xyz_le=[0, fuse_width/2 + 4*blowing_dy, 0],
-                        #     chord=root_chord,
-                        #     twist = wing_incidence,
-                        #     airfoil=main_foil,
-                        #     control_surfaces = [asb.ControlSurface(name="Flap2", hinge_point=flap_hinge, deflection=0)],
-                        #     JetControls= [JetControl(jet_name="FlapJet4", gain=1, sgn_dup=1), JetControl(jet_name="FlapJet5", gain=1, sgn_dup=1)],
-                        # ),
                         WingJSec(
                             xyz_le=[0, aileron_y, 0],
                             chord=root_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Flap2", hinge_point=0.8, deflection=0
-                                ),
-                                asb.ControlSurface(
-                                    name="Aileron",
-                                    symmetric=False,
-                                    hinge_point=ail_hinge,
-                                    deflection=0,
-                                ),
-                                asb.ControlSurface(
-                                    name="Flaperon",
-                                    symmetric=True,
-                                    hinge_point=ail_hinge,
-                                    deflection=0,
-                                ),
-                            ],
-                            JetControls=[
-                                JetControl(jet_name="FlapJet4", gain=1, sgn_dup=1)
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Flap2", hinge_point=0.8, deflection=0), 
+                                                asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=ail_hinge, deflection=0),
+                                                asb.ControlSurface(name="Flaperon", symmetric=True, hinge_point=ail_hinge, deflection=0)],
+                            JetControls= [JetControl(jet_name="JetSym", gain=1, sgn_dup=1), JetControl(jet_name="JetDiff", gain=1, sgn_dup=-1), JetControl(jet_name="JetDist", gain=0.5, sgn_dup=1)],
                         ),
                         WingJSec(
-                            xyz_le=[
-                                ail_hinge * root_chord - ail_hinge * tip_chord,
-                                1 / 2 * b,
-                                0,
-                            ],
+                            xyz_le=[ail_hinge*root_chord-ail_hinge*tip_chord, 1/2*b, 0],
                             chord=tip_chord,
-                            twist=wing_incidence,
+                            twist = wing_incidence,
                             airfoil=main_foil,
-                            control_surfaces=[
-                                asb.ControlSurface(
-                                    name="Aileron",
-                                    symmetric=False,
-                                    hinge_point=ail_hinge,
-                                    deflection=0,
-                                ),
-                                asb.ControlSurface(
-                                    name="Flaperon",
-                                    symmetric=True,
-                                    hinge_point=0.8,
-                                    deflection=0,
-                                ),
-                            ],
+                            control_surfaces = [asb.ControlSurface(name="Aileron", symmetric=False, hinge_point=ail_hinge, deflection=0),
+                                                asb.ControlSurface(name="Flaperon", symmetric=True, hinge_point=0.8, deflection=0)],
                         ),
-                    ],
+                    ]
                 )
 
                 vertical_tail = asb.Wing(
@@ -443,7 +374,7 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
                         WingJSec(
                             xyz_le=[
                                 ht_rc - ht_tc,
-                                ht_b,
+                                ht_b / 2,
                                 0,
                             ],  # constant TE, okay for now but should update to be constant hinge line
                             chord=ht_tc,
@@ -499,16 +430,15 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
                 }
 
                 # NOTE: Uncomment fuselage in asb.Airplane(...) below if you are a non-Mac user
-                planeB = asb.Airplane(
+                plane = asb.Airplane(
                     name="Initial Aircraft",
                     xyz_ref=[MAC / 4, 0, 0],
-                    wings=[wingB, vertical_tail, horizontal_tail],
-                    # fuselages=[fuselage]
+                    wings=[wingA, vertical_tail, horizontal_tail],
                 )
 
                 if phase.lower() == "cruise":
                     jvl_plane = JVL(
-                        airplane=planeB,
+                        airplane=plane,
                         op_point=asb.OperatingPoint(
                             velocity=velocity,
                             alpha=alpha,
@@ -522,7 +452,7 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
                     )
                 elif phase.lower() == "climb":
                     jvl_plane = JVL(
-                        airplane=planeB,
+                        airplane=plane,
                         op_point=asb.OperatingPoint(
                             velocity=velocity,
                             alpha=alpha,
@@ -536,7 +466,7 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
                     )
                 else:
                     jvl_plane = JVL(
-                        airplane=planeB,
+                        airplane=plane,
                         op_point=asb.OperatingPoint(
                             velocity=velocity,
                             alpha=alpha,
@@ -552,21 +482,22 @@ def run_sref_cases(S_list, oper_dict, folder_name, blowing_perturb):  # noqa: PL
 
                 jvl_plane.default_analysis_specific_options = analysis_options
                 jvl_plane.write_jvl(
-                    f"./JVL_writer/sref_trades/run_outputs/{folder_name}/geoms/{config}",
+                    # f"./JVL_writer/v2_plane/run_outputs/{folder_name}/geoms/{config}",
+                    f"./JVL_writer/v2_plane/run_outputs/geoms/{config}",
                     # f"JVL_writer/sref_design-trades/run_outputs/geoms/{config}",
                     CLAF=False,
                     j=True,
                 )
 
                 results.append(
-                    run_case(phase, jvl_plane, velocity, alpha, blowing_perturb)
+                    run_case(phase, jvl_plane, velocity, alpha, flap_d)
                 )  # run JVL
                 print(
                     f"Successfully ran case {case_idx + 1} of {len(cases)} in {phase}"
                 )
             save_results(
                 results,
-                f"./JVL_writer/sref_trades/run_outputs/{folder_name}/coeff_results/Sref-{S}/{phase}.pkl",
+                f"./JVL_writer/v2_plane/run_outputs/coeff_results/Sref-{S}/{phase}.pkl",
             )
 
 
@@ -574,33 +505,32 @@ if __name__ == "__main__":
     S_list = np.array([42, 45])
     # S_list = np.linspace(40, 52, 13)
 
-    # NOTE: Technically stall velocity slightly changes, but so does mass. At this stage, we can't
-    # accurately predict the relative magnitude of W/S & which effect dominates due to lack of correct mass models.
-    # Assumed that v_stall is largely constant. (W / (0.5 * rho * S))^0.5
-    v_stall = 20  # [m/s]; (7600 / (0.5 * 1.225 * S_list)) ** 0.5 --> exact but rounded to 20 for simplicitly
+    # NOTE: Takeoff model is technically modeled via controls ODE solver.
+    # Only trade here would be modulating blowing
 
+    # NOTE: Enforce elevator trim in all phases of flight through elevator
     oper_dict = {
         "takeoff": {
-            "alphas": np.linspace(14, 20, 3),
-            "velocities": np.linspace(1, 30, 17),
+            "alphas": np.linspace(0, 25, 10),
+            "velocities": np.array([20, 24, 28]),
+            "flap_deflections": np.array([40, 50, 60, 65]),
         },
         "climb": {
-            "alphas": np.array([20, 25, 30]),
-            "velocities": np.array([20]),
+            "alphas": np.array([10, 15, 20]),
+            "velocities": np.array([20, 30, 40, 50]),
+            "flap_deflections": np.array([0, 10, 20, 30, 40, 50]),
         },
         "cruise": {
             "alphas": np.array([0]),
-            "velocities": np.array([80, 125, 150]),
+            "velocities": np.array([80.0, 100.0, 120.0, 125.0, 130.0, 140.0, 150.0]),
+            # "flap_deflections": np.array([0]),
         },
         "landing": {
-            "alphas": np.linspace(12, 18, 3),
-            "velocities": np.array(
-                [v_stall * 1.1]  # TODO: Look into precise value
-            ),
+            "alphas": np.array([0, 5, 10, 15, 20, 25, 30, 40, 60, 80]),
+            "velocities": np.linspace(0, 80, 9),
+            "flap_deflections": np.array([40, 50, 60, 65]),
         },
     }
 
-    for folder_name, val in {"full_blow": 1.0, "half_blow": 0.5}.items():
-        run_sref_cases(
-            S_list, oper_dict=oper_dict, folder_name=folder_name, blowing_perturb=val
-        )  # NOTE: blowing_perturb ~ [0, 1]
+    # for folder_name, val in {"full_blow": 1.0, "half_blow": 0.5}.items():
+    run_sref_cases(S_list, oper_dict=oper_dict)
