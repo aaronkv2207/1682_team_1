@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 # from aero_workspace.aero_dict import AircraftConfig
 
+# print(AircraftConfig.v_t0)
+
 # GOAL: SIZE & DETERMINE THE AMOUNT OF FANS FOR OUR 19 PAX PLANE
 
 # ============================================================
@@ -17,25 +19,29 @@ a_cruise = 309 # Speed of sound cruise [m/s^2] --> at 25k ft
 W = 73618.07  # Aircraft weight [N] --> 16550 lbs
 m = W / g  # Aircraft mass [kg]
 
-wing_loading = 1484.56  # Wing loading [N/m^2]
-S = W / wing_loading  # Wing area [m^2]
+# wing_loading = 1484.56  # Wing loading [N/m^2]
+# S = W / wing_loading  # Wing area [m^2]
+S = 45
+c = 2.54 # Wing chord [m] --> FAN BLADE RADIUS SHOULD BE 25% OR LESS OF THIS NUMBER
+b = 17.75 # Wingspan [m] --> Fans should fit probs on 14 m
 
-AR = 8  # Aspect ratio [-]
+AR = 7  # Aspect ratio [-] was 8
 e = 0.8  # Oswald efficiency factor [-]
 
-CL = 6.1  # Lift coefficient (TO config) [-]
+CL = 6.22  # Lift coefficient (TO config) [-]
 CD0 = 0.032  # Parasite drag coefficient [-]
 
 mu = 0.02  # Rolling friction coefficient [-]
-x_runway = 52  # Runway length (171 ft) [m]
+x_runway = 57.87  # Runway length (171 ft) [m]
 
-V_stall = 19.933  # Stall speed [m/s]
-V_to = 1.1*V_stall # Takeoff speed [m/s]
+# V_stall = 19.933  # Stall speed [m/s]
+# V_to = 1.1*V_stall # Takeoff speed [m/s]
+V_to = 19.47 #NOTE: IN QMIL/QFAN USE HALF OF V_to BC YOU WANT TO CONSIDER AN AVERGAE OF STATIC AND TAKEOFF CONDITIONS
 V_cruise = 125  # Cruise Speed [m/s] --> 280 mph
 
-RPM = 7500 # RPM of propeller [rev/min]
+RPM = 6500 # RPM of propeller [rev/min]
 omega = RPM * 2 * np.pi / 60  # [rad/s]
-N_fans = 8  # number of fans
+
 
 CDi = CL**2 / (np.pi * AR * e)  # Induced drag coefficient [-]
 CD = CD0 + CDi  # Total drag coefficient [-]
@@ -57,9 +63,10 @@ def D(v):
 
 
 # ============================================================
-# TAKEOFF GROUND ROLL MODEL
+# TAKEOFF GROUND ROLL MODEL (W/ FOCUS ON TAKEOFF)
 # ============================================================
-
+# At takeoff, (W-L(v)) is not included, as there is no friction force when we are off the ground
+# T_to = D(V_to) + m*acc(V_to)
 
 def acc(v):
     """Required average acceleration to reach v in runway distance [m/s^2]."""
@@ -70,14 +77,15 @@ def T(v):
     """Thrust required during ground roll [N]."""
     return D(v) + mu * (W - L(v)) + m * acc(v)
 
-print("Thrust at takeoff with friction force:", T(V_to))
-print("Thrust at takeoff no friction force:", D(V_to)+m*acc(V_to))
-print("Friction force:", mu * (W - L(V_to)))
-print("Drag:", D(V_to))
+D_to = 22.05e3
+# print("Thrust at takeoff with friction force:", T(V_to))
+# print("Thrust at takeoff no friction force:", D(V_to)+m*acc(V_to))
+# print("Friction force:", mu * (W - L(V_to)))
+# print("Drag:", D(V_to))
 print("ma force:", m*(acc(V_to)))
-print("Acceleration:", acc(V_to))
+# print("Acceleration:", acc(V_to))
 
-
+print("Thrust at takeoff: " , D_to + m*(acc(V_to)))
 # ============================================================
 # CRUISE MODEL (STEADY LEVEL FLIGHT)
 # ============================================================
@@ -108,8 +116,7 @@ def T_cruise(v):
 def Tc_cruise(v, R):
     """Velocity-based thrust coefficient at cruise [-]"""
     A = Disk_area(R)
-    T_per_fan = T_cruise(v) / N_fans
-    return T_per_fan / (0.5 * rho * v**2 * A)
+    return T_cruise(v) / (0.5 * rho * v**2 * A)
 
 
 def Eta_ideal_cruise(v, R):
@@ -138,7 +145,7 @@ def Disk_area(R):
 
 def T_c(v, R):
     """Velocity-based thrust coefficient Tc [-]"""
-    A_total = N_fans*Disk_area(R)  # total disk area for all fans
+    A_total = Disk_area(R)  # total disk area for all fans
 
     # Avoid divide-by-zero
     if v < 1e-6:
@@ -159,7 +166,7 @@ def Eta_ideal(v, R):
 
 def P_shaft_required(v, R):
     """Ideal shaft power required [W]"""
-    A = Disk_area(R)
+    A = Disk_area(R) # TOTAL EFFECTIVE AREA
 
     if v < 1e-6:  # Static case
         T_static = T(0)
@@ -168,22 +175,45 @@ def P_shaft_required(v, R):
     else:  # Non-static case
         ##### TRY ASSUMING THE EFFECINECY QFAN GIVES AND SEE IF THAT WORKS WITH 27.5E3
         eta = Eta_ideal(v, R)
-        T_total = 62e3
+        # T_total = T(v)
+        T_total = 41e3
         return T_total * v / eta
 
+# def T_required(P_shaft, v, R):
+#     return P_shaft / 
+
+
 # print("P_required: ", P_shaft_required(V_to, 0.583))
+
+# ============================================================
+# AREA PER FAN FUNCTION
+# ============================================================
+
+def area_per_fan(A_eff, N):
+    """For a given total effective area and number of fans, 
+    this returns the area AND radius per fan"""
+
+    A_per_fan = A_eff / N
+    r_per_fan = np.sqrt(A_per_fan / (np.pi))
+    return (A_per_fan, r_per_fan)
+
+# # Test case
+# A,r = area_per_fan(8.54, 8)
+# print("Area:", A) # Should print 1.0675
+# print("Radius:", r) # Should print 0.583
+
 
 # ============================================================
 # PLOT: Tradeoff Plot
 # ============================================================
 
-R_plot = np.linspace(0.5, 5, 200)   # radius range [m]                       
+R_plot = np.linspace(0.5, 5, 200)   # TOTAL EFFECTIVE radius range [m]                       
 P_vals = []
 A_vals = []
 
 for R in R_plot:
     P_total = P_shaft_required(V_to, R)  # total power
-    A_total = np.pi * R**2                         # total area
+    A_total = np.pi * R**2               # total area
 
     P_vals.append(P_total / 1000)  # convert to kW
     A_vals.append(A_total)
@@ -193,10 +223,10 @@ A_vals = np.array(A_vals)
 fig, ax = plt.subplots(figsize=(9, 6))
 ax.plot(A_vals, P_vals, label="Takeoff Power Required (kW)")
 
-motor_power = 2100  # kW
-A_chosen = 8.542
-# ax.axhline(motor_power, linestyle="--", label="Motor Limit (2100 kW)")
-ax.axvline(A_chosen, linestyle="--", label="Area chosen")
+motor_power = 3e3  # kW
+A_chosen = 6.05
+# ax.axhline(motor_power, color = "k", linestyle="--", label=f"Chosen Motor Power: {motor_power} kW")
+ax.axvline(A_chosen, linestyle="--", label=f"Area chosen: {A_chosen} m^2")
 
 ax.set_xlabel("Effective Total Propeller Area [m²]")
 ax.set_ylabel("Power (kW)")
@@ -204,86 +234,29 @@ ax.set_title("Takeoff Power vs Effective Area")
 ax.legend()
 plt.show()
 
-# Propulsor Values from radius chosen using plots above
-R_selected = .583 # [m]
-A_selected = N_fans * np.pi * R_selected**2 # [m^2]
-lam = V_cruise / (omega*R_selected) 
-J = np.pi*lam
 
-
-
-
-# def runway_dist(TW, CL_val, v_eval):
-#     """
-#     Compute takeoff distance assuming constant average acceleration.
-#     """
-
-#     # Induced drag
-#     CDi = CL_val**2 / (np.pi * AR * e)
-#     CD = CD0 + CDi
-
-#     # Local lift and drag functions
-#     def L_local(v):
-#         return 0.5 * rho * v**2 * S * CL_val
-
-#     def D_local(v):
-#         return 0.5 * rho * v**2 * S * CD
-
-#     # Forces at representative velocity
-#     L_eval = L_local(v_eval)
-#     D_eval = D_local(v_eval)
-
-#     # Thrust from T/W
-#     T_const = TW * W
-
-#     # Acceleration including rolling friction
-#     a = (T_const - D_eval - mu*(W - L_eval)) / m
-
-#     if a <= 0:
-#         return np.nan  # cannot take off
-
-#     # Runway distance using kinematics
-#     x = V_to**2 / (2 * a)
-
-#     return x
-
-# TW_range = np.linspace(0.2, 1.5, 60)
-# CL_range = np.linspace(1.5, 10.5, 60)
-
-# X, Y = np.meshgrid(TW_range, CL_range)
-# Z = np.zeros_like(X)
-
-# # Representative velocity ~ 60% of takeoff speed
-# v_eval = 0.6 * V_to
-
-# for i in range(len(CL_range)):
-#     for j in range(len(TW_range)):
-#         Z[i, j] = runway_dist(TW_range[j], CL_range[i], v_eval)
-
-
-# Z_plot = np.ma.masked_where(Z > 200, Z) # Mask extreme values for plotting
-
-# # Plot
-# plt.figure(figsize=(10, 7))
-# cp = plt.contourf(X, Y, Z_plot, levels=np.linspace(0, 200, 11))
-# plt.colorbar(cp, label="Runway Distance [m]")
-
-# plt.xlabel("Thrust-to-Weight Ratio (T/W)")
-# plt.ylabel("Lift Coefficient (CL)")
-# plt.title("Takeoff Distance Trade Study (Constant Acceleration)")
-# plt.grid(alpha=0.3)
-# plt.show()
 
 
 # ============================================================
 # Printing Section for important values
 # ============================================================
 
-# TAKEOFF
-# At takeoff, (W-L(v)) is not included, as there is no friction force when we are off the ground
-# T_to = D(V_to) + m*acc(V_to)
-T_to = 40e3
-print("T/W at takeoff: ", T_to/W)
+N_fans = 20
+# R_selected = .583 # [m]
+# A_selected = N_fans * np.pi * R_selected**2 # [m^2]
+# lam = V_cruise / (omega*R_selected) 
+# J = np.pi*lam
+
+# Test case: NOTE: Max radius to meet 25% diameter requirement = 0.3175 [m]
+#            NOTE: b = 17.75 m --> -2 m due to fuselage, -1 m due to spacing for wingtips(0.5 each side) 
+#                              --> have 14.75 m to work with 
+A_eff = 6.05
+A,r = area_per_fan(A_eff, N_fans)
+print(f"{N_fans = }")
+print(f"Area per fan: {A:.3f} [m^2]")
+print(f"Radius per fan : {r:.3f} [m]") 
+print(f"Total distance taken up by fans (no spacing): {(2*r*N_fans):.3f} [m]")
+T_to = 41e3
 if False:
     print("--------------------------------")
     print("TAKOFF VALUES")
@@ -314,8 +287,27 @@ if False:
     print("-------------------------------")
 
 
+# ============================================================
+# Performance Curve for Final Fan
+# ============================================================
+def CT(T, omega, R):
+    return T/ (1/2*rho*omega*R**2 * np.pi*R**2)
 
+def CQ(P_shaft, omega, R):
+    Q = P_shaft / omega
+    return (Q/R) / (1/2*rho*omega*R**2 * np.pi*R**2)
 
+def lam(v, omega, R):
+    return v/ (omega*R)
+
+def Eta_ideal(v, R):
+    """Ideal propulsive efficiency [-]"""
+    Tc = T_c(v, R)
+    return 2 / (1 + np.sqrt(1 + Tc))
+
+# Plot
+# NOTE: add double axes, one for C_Q, C_T, the other for eta_prop
+# NOTE: using text, add lines that show C_L at chosen takeoff and cruise conditions OF THE PROP/BLADES (NOT THE AIRCRAFT)
 # # ============================================================
 # # Fan Blade Distribution Plot
 # # ============================================================
@@ -563,4 +555,70 @@ if False:
 # plt.title("Propeller Tip Mach at Cruise")
 # plt.legend()
 # plt.grid(True)
+# plt.show()
+
+
+
+# # ============================================================
+# # PLOT: Attempt at sweeping over some paramters to get x_TO curves
+# # ============================================================
+# def runway_dist(TW, CL_val, v_eval):
+#     """
+#     Compute takeoff distance assuming constant average acceleration.
+#     """
+
+#     # Induced drag
+#     CDi = CL_val**2 / (np.pi * AR * e)
+#     CD = CD0 + CDi
+
+#     # Local lift and drag functions
+#     def L_local(v):
+#         return 0.5 * rho * v**2 * S * CL_val
+
+#     def D_local(v):
+#         return 0.5 * rho * v**2 * S * CD
+
+#     # Forces at representative velocity
+#     L_eval = L_local(v_eval)
+#     D_eval = D_local(v_eval)
+
+#     # Thrust from T/W
+#     T_const = TW * W
+
+#     # Acceleration including rolling friction
+#     a = (T_const - D_eval - mu*(W - L_eval)) / m
+
+#     if a <= 0:
+#         return np.nan  # cannot take off
+
+#     # Runway distance using kinematics
+#     x = V_to**2 / (2 * a)
+
+#     return x
+
+# TW_range = np.linspace(0.2, 1.5, 60)
+# CL_range = np.linspace(1.5, 10.5, 60)
+
+# X, Y = np.meshgrid(TW_range, CL_range)
+# Z = np.zeros_like(X)
+
+# # Representative velocity ~ 60% of takeoff speed
+# v_eval = 0.6 * V_to
+
+# for i in range(len(CL_range)):
+#     for j in range(len(TW_range)):
+#         Z[i, j] = runway_dist(TW_range[j], CL_range[i], v_eval)
+
+
+# Z_plot = np.ma.masked_where(Z > 200, Z) # Mask extreme values for plotting
+
+# # Plot
+# plt.figure(figsize=(10, 7))
+# cp = plt.contourf(X, Y, Z_plot, levels=np.linspace(0, 200, 11))
+# plt.colorbar(cp, label="Runway Distance [m]")
+
+# plt.xlabel("Thrust-to-Weight Ratio (T/W)")
+# plt.ylabel("Lift Coefficient (CL)")
+# plt.title("Takeoff Distance Trade Study (Constant Acceleration)")
+# plt.grid(alpha=0.3)
 # plt.show()
