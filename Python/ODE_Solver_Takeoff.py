@@ -13,7 +13,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "aero_workspace"))
 from aero_workspace.aero_dict import AircraftConfig, AircraftConfig2
 from aero_workspace.aero_main import AeroCoeffConfig
 
-aircraft_config = AeroCoeffConfig(phase='takeoff', aircraft=AircraftConfig) #
+aircraft = AircraftConfig
+aircraft_config = AeroCoeffConfig(phase='takeoff', aircraft=aircraft) #
 alphas, CLs, CDs = aircraft_config.alphas, aircraft_config.CL, aircraft_config.CD_tot
 
 mask=np.isclose(aircraft_config.velocities, 20)
@@ -250,16 +251,16 @@ Aircraft.takeoff_event.direction=1 #ensures that crossing goes from L-W<0 to L-W
 
 '''PARAMETER INPUTS'''
 geom = Geometry(
-    S=AircraftConfig.S,
-    AR=AircraftConfig.AR,
-    h=5.5,
-    lv=10,
-    Vv=.1,
-    vt_ar=1.2,
-    Vh=1.05,
-    Sh=11.98
-    # S=AircraftConfig.s_ref
-    # AR=AircraftConfig.AR
+    S=aircraft.S,
+    AR=aircraft.AR,
+    h=5.5, # TODO: not sure what this value is supposed to be; replace with aircraft.val
+    lv=aircraft.lv,
+    Vv=aircraft.V_v,
+    vt_ar=aircraft.vt_AR,
+    Vh=aircraft.V_h,
+    Sh=aircraft.S_h,
+    # S=aircraft.s_ref
+    # AR=aircraft.AR
     )
 
 mass = Mass(
