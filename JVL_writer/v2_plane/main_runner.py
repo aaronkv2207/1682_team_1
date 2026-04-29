@@ -52,15 +52,15 @@ Vh = 1.0
 ht_ar = 3
 
 # fan - fixed parameters
-fan_radius = 1.166 / 2
-n_fans = 8
+fan_radius = 0.282
+n_fans = 14
 
 # Wing geometry
 main_foil = asb.Airfoil(coordinates="./JVL_writer/jw05.dat")
 # S = 49.6  # twin otter wing area is 39 m^2
 
 # Jet parameters
-Tcp_takeoff, Tcp_land = 2, 2
+Tcp_takeoff, Tcp_land = 3.0, 3.0
 
 
 def plane_operating_point(cond, plane, analysis_options):
@@ -514,7 +514,8 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                 # NOTE: Uncomment fuselage in asb.Airplane(...) below if you are a non-Mac user
                 planeB = asb.Airplane(
                     name="Initial Aircraft",
-                    xyz_ref=[MAC / 4, 0, 0],
+                    xyz_ref=[MAC * 0.75, 0, 0],  # NOTE: most up to-date-CG
+                    # xyz_ref=[MAC / 4, 0, 0],
                     wings=[wingB, vertical_tail, horizontal_tail],
                     fuselages=[fuselage],
                 )

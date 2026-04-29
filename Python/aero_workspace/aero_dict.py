@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+import numpy as np
 from ambiance import Atmosphere
 from conceptual_design import ureg
 from drag import (
@@ -51,13 +52,14 @@ class AircraftConfig:
     fuse_width: float = 1.6
 
     # Prop
-    tc_prime: float = 2.0  # prop value
-    fan_radius: float = 0.583
-    n_fans: int = 8
+    tc_prime: float = 3.0  # NOTE: exact val is 3.76, but we'll use 80%
+    fan_radius: float = 0.282
+    n_fans: int = 14
     blown_span: float = 11.71
-    fan_length: float = 9.33
-    hdisk: float = 0.73
-    blowing_dy: float = 1.46
+    fan_length: float = 7.887
+    blowing_dy: float = 0.804
+    disc_area = n_fans * np.pi * fan_radius**2
+    hdisk = disc_area / blown_span
 
     # #### TAKEOFF DEFINITIONS ###
     # NOTE: Any operating point can be called from aero_main.py.
@@ -159,13 +161,14 @@ class AircraftConfig2:
     lambda_f: float = l_f / D_f
 
     # Prop
-    tc_prime: float = 2.0
-    fan_radius: float = 0.583
-    n_fans: int = 8
-    blown_span: float = 11.26
-    fan_length: float = 9.33
-    hdisk: float = 0.76
-    blowing_dy: float = 1.41
+    tc_prime: float = 3.0  # NOTE: exact val is 3.76, but we'll use 80%
+    fan_radius: float = 0.282
+    n_fans: int = 14
+    blown_span: float = 11.71
+    fan_length: float = 7.887
+    blowing_dy: float = 0.804
+    disc_area = n_fans * np.pi * fan_radius**2
+    hdisk = disc_area / blown_span
 
     # #### TAKEOFF DEFINITIONS ###
     # NOTE: Any operating point can be called from aero_main.py.

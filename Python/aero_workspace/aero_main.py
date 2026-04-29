@@ -44,7 +44,9 @@ class AeroCoeffConfig:
             self.flap_1.append(run["d1"])
             self.flap_2.append(run["d2"])
 
-            _CDind = run["CL"] ** 2 / ((self.AR * np.pi * run["e"]) + (2 * run["DCJ"]))
+            _CDind = run["CL"] ** 2 / (
+                run["e"] * ((self.AR * np.pi) + (2 * run["DCJ"]))
+            )
             self.CDind.append(_CDind)
 
             if self.phase == "cruise":
