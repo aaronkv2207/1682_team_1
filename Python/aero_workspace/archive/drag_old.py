@@ -61,10 +61,10 @@ tire_radius = 0.818/2 # [m] = 32.2 [in] diameter
 # trouser_length = ...
 
 
-# # TODO: strut
-# c_s = ... # chord of strut
-# l_s = ... # length of strut
-# S_s = c_s * l_s
+# TODO: strut
+c_s = ... # chord of strut
+l_s = ... # length of strut
+S_s = c_s * l_s
 
 
 # wetted area

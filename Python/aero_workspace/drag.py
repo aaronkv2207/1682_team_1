@@ -6,19 +6,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ambiance import Atmosphere
 
-
 @dataclass
 class AircraftConstants:
     """Defaults to v2 Plane 1. Update constants via class call if changed."""
 
+    # Just for testing
+    h_cruise: float = 5486.4
+    rho_cruise: float = Atmosphere(h=h_cruise).density[0]
+    mu_cruise: float = Atmosphere(h=h_cruise).dynamic_viscosity[0]
+    V_cruise: float = 125.0
+
     b: float = 17.75
     MAC: float = 2.54
+    S: float = b*MAC
 
     D_f: float = 1.6
     l_f: float = 15
 
-    D_n: float = 1.1 * 1.116
-    D_hl: float = 1.116
+    D_n: float = 1.1 * 1.116 # [m] diameter of cowl (est)
+    D_hl: float = 1.116 # [m] diameter of fan (from prop team)
 
     S_h: float = 13.33
     ht_MAC: float = 2.11
@@ -33,9 +39,13 @@ class AircraftConstants:
     c_s: float = 0.5
     l_s: float = 1.0
 
+    m: float = 7500 # kg
+    W: float = m*9.81
+    C_L_cruise: float = W / (1 / 2 * rho_cruise * V_cruise**2 * S)
+
     # initialized values
     l_n: float = 0.0
-    S: float = 0.0
+    # S: float = 0.0
     AR: float = 0.0
     lambda_f: float = 0.0
     S_s: float = 0.0
@@ -54,7 +64,7 @@ class AircraftConstants:
         for k, v in kwargs.items():
             setattr(self, k, v)
         self.l_n = self.MAC / 2
-        self.S = self.b * self.MAC
+        # self.S = self.b * self.MAC
         self.AR = self.b**2 / self.S
         self.lambda_f = self.l_f / self.D_f
         self.S_s = self.c_s * self.l_s
@@ -168,13 +178,6 @@ def calc_C_Dp(rho, V, mu, C: AircraftConstants = C):
     C_Dps = [Dp / (0.5 * rho * V**2 * C.S) for Dp in Dps]
 
     return sum(Dps), sum(C_Dps)
-
-
-# Just for testing
-h_cruise = 5486.4
-rho_cruise = Atmosphere(h=h_cruise).density[0]
-mu_cruise = Atmosphere(h=h_cruise).dynamic_viscosity[0]
-V_cruise = 125
 
 
 Dp_cruise, C_Dp_cruise = calc_C_Dp(rho_cruise, V_cruise, mu_cruise, C)
