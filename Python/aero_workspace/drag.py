@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ambiance import Atmosphere
 
+
 @dataclass
 class AircraftConstants:
     """Defaults to v2 Plane 1. Update constants via class call if changed."""
@@ -18,13 +19,13 @@ class AircraftConstants:
 
     b: float = 17.75
     MAC: float = 2.54
-    S: float = b*MAC
+    S: float = b * MAC
 
     D_f: float = 1.6
     l_f: float = 15
 
-    D_n: float = 1.1 * 1.116 # [m] diameter of cowl (est)
-    D_hl: float = 1.116 # [m] diameter of fan (from prop team)
+    D_n: float = 1.1 * 1.116  # [m] diameter of cowl (est)
+    D_hl: float = 1.116  # [m] diameter of fan (from prop team)
 
     S_h: float = 13.33
     ht_MAC: float = 2.11
@@ -39,8 +40,8 @@ class AircraftConstants:
     c_s: float = 0.5
     l_s: float = 1.0
 
-    m: float = 7500 # kg
-    W: float = m*9.81
+    m: float = 7500  # kg
+    W: float = m * 9.81
     C_L_cruise: float = W / (1 / 2 * rho_cruise * V_cruise**2 * S)
 
     # initialized values
@@ -180,7 +181,13 @@ def calc_C_Dp(rho, V, mu, C: AircraftConstants = C):
     return sum(Dps), sum(C_Dps)
 
 
-Dp_cruise, C_Dp_cruise = calc_C_Dp(rho_cruise, V_cruise, mu_cruise, C)
-print("-------")
-print("cruise")
-print("Cd_p =", round(C_Dp_cruise, 3))
+if __name__ == "__main__":
+    Dp_cruise, C_Dp_cruise = calc_C_Dp(
+        AircraftConstants.rho_cruise,
+        AircraftConstants.V_cruise,
+        AircraftConstants.mu_cruise,
+        C,
+    )
+    print("-------")
+    print("cruise")
+    print("Cd_p =", round(C_Dp_cruise, 3))
