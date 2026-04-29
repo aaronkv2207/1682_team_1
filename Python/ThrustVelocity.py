@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 # ============================================================
 # THRUST INTERPOLATOR (first used in takeoff model) (0–22 m/s)
 # ============================================================
-
-V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0])
-T_data = 12 * np.array([3604.0, 3280.0, 2999.0, 2759.0, 2557.0, 2381.0, 2224.0, 2088.0, 1969.0, 1866.0, 1776.0]) # Thrust per fan [N]
+N_fans = 14
+V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 120.0])
+T_data = N_fans * np.array([4026, 3739, 3477, 3240, 3030, 2837, 2666, 2508, 2364, 2237, 2120, 2016, 1922, 1838]) # Thrust per fan [N]
 degree = 5          # change this to 1,2,3,4,... to test fits
 coeffs = np.polyfit(V_data, T_data, degree)
 T_poly = np.poly1d(coeffs)

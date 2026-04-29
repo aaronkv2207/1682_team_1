@@ -183,7 +183,7 @@ def P_shaft_required(v, R):
 #     return P_shaft / 
 
 
-# print("P_required: ", P_shaft_required(V_to, 0.583))
+print("T_produced: ", 0.5*3.5e6/20 * 0.25 / 1000, "kN")
 
 # ============================================================
 # AREA PER FAN FUNCTION
@@ -223,10 +223,10 @@ A_vals = np.array(A_vals)
 fig, ax = plt.subplots(figsize=(9, 6))
 ax.plot(A_vals, P_vals, label="Takeoff Power Required (kW)")
 
-motor_power = 3e3  # kW
-A_chosen = 6.05
-# ax.axhline(motor_power, color = "k", linestyle="--", label=f"Chosen Motor Power: {motor_power} kW")
-ax.axvline(A_chosen, linestyle="--", label=f"Area chosen: {A_chosen} m^2")
+motor_power = 3.5e3  # kW
+A_chosen = 3.65
+ax.axhline(motor_power, color = "k", linestyle="--", label=f"Chosen Motor Power: {motor_power} kW")
+# ax.axvline(A_chosen, linestyle="--", label=f"Area chosen: {A_chosen} m^2")
 
 ax.set_xlabel("Effective Total Propeller Area [m²]")
 ax.set_ylabel("Power (kW)")
@@ -241,7 +241,7 @@ plt.show()
 # Printing Section for important values
 # ============================================================
 
-N_fans = 20
+N_fans = 16
 # R_selected = .583 # [m]
 # A_selected = N_fans * np.pi * R_selected**2 # [m^2]
 # lam = V_cruise / (omega*R_selected) 
@@ -250,12 +250,13 @@ N_fans = 20
 # Test case: NOTE: Max radius to meet 25% diameter requirement = 0.3175 [m]
 #            NOTE: b = 17.75 m --> -2 m due to fuselage, -1 m due to spacing for wingtips(0.5 each side) 
 #                              --> have 14.75 m to work with 
-A_eff = 6.05
+A_eff = 4
 A,r = area_per_fan(A_eff, N_fans)
 print(f"{N_fans = }")
 print(f"Area per fan: {A:.3f} [m^2]")
 print(f"Radius per fan : {r:.3f} [m]") 
 print(f"Total distance taken up by fans (no spacing): {(2*r*N_fans):.3f} [m]")
+
 T_to = 41e3
 if False:
     print("--------------------------------")
@@ -290,6 +291,8 @@ if False:
 # ============================================================
 # Performance Curve for Final Fan
 # ============================================================
+T_vals = []
+v_vals = []
 def CT(T, omega, R):
     return T/ (1/2*rho*omega*R**2 * np.pi*R**2)
 
@@ -308,6 +311,8 @@ def Eta_ideal(v, R):
 # Plot
 # NOTE: add double axes, one for C_Q, C_T, the other for eta_prop
 # NOTE: using text, add lines that show C_L at chosen takeoff and cruise conditions OF THE PROP/BLADES (NOT THE AIRCRAFT)
+
+
 # # ============================================================
 # # Fan Blade Distribution Plot
 # # ============================================================
