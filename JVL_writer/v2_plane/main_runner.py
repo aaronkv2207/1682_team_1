@@ -516,6 +516,7 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                     name="Initial Aircraft",
                     xyz_ref=[MAC / 4, 0, 0],
                     wings=[wingB, vertical_tail, horizontal_tail],
+                    fuselages=[fuselage],
                 )
 
                 if phase.lower() == "cruise":
