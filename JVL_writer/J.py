@@ -1,3 +1,4 @@
+import os
 import subprocess
 import tempfile
 import warnings
@@ -269,7 +270,7 @@ class JVL(AVL):
                 {fuse_options["panel_resolution"]} {self.AVL_spacing_parameters[fuse_options["panel_spacing"]]}
                 
                 BFIL
-                {fuse_filepath}
+                {fuse_filepath.name}
                 
                 TRANSLATE
                 0 {np.mean([x.xyz_c[1] for x in fuse.xsecs]):.8g} 0
@@ -288,6 +289,7 @@ class JVL(AVL):
         trim_variable=None,
         flap_deflections=None,
         blowing=None,
+        xyz_cg=[None],
     ) -> Dict[str, float]:
         with tempfile.TemporaryDirectory() as directory:
             directory = Path(directory)
@@ -303,7 +305,7 @@ class JVL(AVL):
 
             # Build keystroke script
             keystroke_file_contents = self._default_keystroke_file_contents(
-                trim_Cm_to_zero, trim_variable, flap_deflections, blowing
+                trim_Cm_to_zero, trim_variable, flap_deflections, blowing, xyz_cg
             )
             if run_command is not None:
                 keystroke_file_contents += [run_command]
@@ -426,6 +428,7 @@ class JVL(AVL):
         trim_variable=None,
         flap_deflections: dict | None = None,
         blowing: dict | None = None,
+        xyz_cg: tuple[float, float, float] | None = None,
     ) -> List[str]:
         """_summary_
 
@@ -433,7 +436,7 @@ class JVL(AVL):
             trim_Cm_to_zero (bool, optional): Defaults to False.
             trim_variable (str, optional): Defaults to "d6".
             blowing (dict, optional): Dictionary mapping jet variables to their respective magnitudes. Defaults to None.
-
+            xyz_cg ([float, float, float]): xyz_cg
         Returns:
             List[str]: _description_
         """
@@ -444,6 +447,12 @@ class JVL(AVL):
             "plop",
             "g",
             "",
+        ]
+
+        run_file_contents += [
+            "mass",
+            "m.mass",
+            "mset 0",
         ]
 
         # Enter oper mode
@@ -457,6 +466,16 @@ class JVL(AVL):
             "r",
             "",
         ]
+
+        # Sets Xcg, Ycg, Zcg
+        if xyz_cg.any():
+            run_file_contents += [
+                "c1",
+                f"x {xyz_cg[0]}",
+                f"y {xyz_cg[1]}",
+                f"z {xyz_cg[2]}",
+                "",
+            ]
 
         # Set parameters
         run_file_contents += [

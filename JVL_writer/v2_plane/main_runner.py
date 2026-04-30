@@ -21,6 +21,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from J import JVL, JetControl, JetParam, JWing, WingJSec
 
+# NOTE: m.mass file must be in your 'geoms' directory
 # assumed cruise height
 h_cruise = 5486.4  # m
 h_climb = 3135  # TODO: completely arbitrary --> needs correction
@@ -60,7 +61,8 @@ main_foil = asb.Airfoil(coordinates="./JVL_writer/jw05.dat")
 # S = 49.6  # twin otter wing area is 39 m^2
 
 # Jet parameters
-Tcp_takeoff, Tcp_land = 3.0, 3.0
+Tcp_takeoff, Tcp_land = 1.0, 1.0
+XYZ_CG = np.array([1.883, -0.003, -0.562])  # NOTE: most up-to-date based on MTOW cg
 
 
 def plane_operating_point(cond, plane, analysis_options):
@@ -159,18 +161,21 @@ def run_case(phase, surface, velocity, alpha, deflection):
             blowing={
                 "Tcp": Tcp_takeoff,
             },
+            xyz_cg=XYZ_CG,
         )
     elif phase == "climb":
         out = surface.run(
             flap_deflections={"d1": deflection, "d2": deflection},
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
+            xyz_cg=XYZ_CG,
         )
     elif phase == "cruise":
         out = surface.run(
             run_command=None,
             trim_Cm_to_zero=True,
             trim_variable=trim_variable,
+            xyz_cg=XYZ_CG,
         )
     else:  # landing
         out = surface.run(
@@ -181,6 +186,7 @@ def run_case(phase, surface, velocity, alpha, deflection):
             blowing={
                 "Tcp": Tcp_land,
             },
+            xyz_cg=XYZ_CG,
         )
 
     return {
@@ -514,8 +520,7 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                 # NOTE: Uncomment fuselage in asb.Airplane(...) below if you are a non-Mac user
                 planeB = asb.Airplane(
                     name="Initial Aircraft",
-                    xyz_ref=[MAC * 0.75, 0, 0],  # NOTE: most up to-date-CG
-                    # xyz_ref=[MAC / 4, 0, 0],
+                    xyz_ref=[MAC / 4, 0, 0],
                     wings=[wingB, vertical_tail, horizontal_tail],
                     fuselages=[fuselage],
                 )
