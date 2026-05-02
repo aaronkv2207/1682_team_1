@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # ============================================================
 N_fans = 14
 V_data = np.array([0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 120.0])
-T_data = N_fans * np.array([3497., 3226., 2984., 2768., 2579., 2404., 2252., 2111., 1987., 1875., 1774., 1685., 1605., 1534.]) # Thrust per fan [N]
+T_data = N_fans * np.array([3503.0, 3231.0, 2989.0, 2777.0, 2582.0, 2411.0, 2256.0, 2115.0, 1990.0, 1877.0, 1775.0, 1686.0, 1605.0, 1533.0]) # Thrust per fan [N]
 degree = 5          # change this to 1,2,3,4,... to test fits
 coeffs = np.polyfit(V_data, T_data, degree)
 T_poly = np.poly1d(coeffs)
@@ -30,12 +30,12 @@ def T_fan_interp(v):
         return T_poly(v)
 
 vel = np.linspace(0,130,500)
-plt.figure(figsize=(8,6))
-plt.scatter(V_data, T_data/1000, label="Original Data")
-plt.plot(vel, T_fan_interp(vel)/1000, label=f"Polynomial Fit (deg={degree})")
-plt.xlabel("Velocity [m/s]")
-plt.ylabel("Thrust per fan [kN]")
-plt.title("Fan Thrust Interpolation")
-plt.legend()
-plt.grid(True)
-plt.show()
+# plt.figure(figsize=(8,6))
+# plt.scatter(V_data, T_data/1000, label="Original Data")
+# plt.plot(vel, T_fan_interp(vel)/1000, label=f"Polynomial Fit (deg={degree})")
+# plt.xlabel("Velocity [m/s]")
+# plt.ylabel("Thrust per fan [kN]")
+# plt.title("Fan Thrust Interpolation")
+# plt.legend()
+# plt.grid(True)
+# plt.show()
