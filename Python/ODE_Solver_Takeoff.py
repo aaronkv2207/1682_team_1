@@ -18,7 +18,7 @@ aircraft_config = AeroCoeffConfig(phase='takeoff', aircraft=aircraft) #
 alphas, CLs, CDs = aircraft_config.alphas, aircraft_config.CL, aircraft_config.CD_tot
 
 mask=np.isclose(aircraft_config.velocities, 20)
-mask &= np.isclose(aircraft_config.flap_1, 60)
+mask &= np.isclose(aircraft_config.flap_1, 50)
 
 
 @dataclass
@@ -72,7 +72,7 @@ class Aircraft:
 
     def theta_schedule(self, t):
         # stays 0, then ramps to 15 deg
-        return np.radians(20) * (1 / (1 + np.exp(-(t-5.5)/0.6)))
+        return np.radians(20) * (1 / (1 + np.exp(-(t-5.5)/0.8)))
 
     def controls(self, t):
         throttle = 1/(1+np.exp(-(t-1)/.3))
