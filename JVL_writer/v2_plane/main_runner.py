@@ -35,7 +35,7 @@ trim_variable = "d6"  # elevator
 
 # fuselage (not very well parametrized at the moment)
 nose_x = -6
-fuse_width = 2.2  # width at the wing: 2 rows of seats
+fuse_width = 2.5  # width at the wing: 2 rows of seats
 AR = 7  # twin otter is 10.05
 ail_hinge = 0.7
 flap_hinge = 0.75
@@ -62,7 +62,7 @@ main_foil = asb.Airfoil(coordinates="./JVL_writer/jw05.dat")
 
 # Jet parameters
 Tcp_takeoff, Tcp_land = 3.0, 3.0
-XYZ_CG = np.array([1.139, -0.003, -0.617])  # NOTE: most up-to-date based on MTOW cg
+XYZ_CG = np.array([1.400, -0.003, -0.617])  # NOTE: most up-to-date based on MTOW cg
 
 
 def plane_operating_point(cond, plane, analysis_options):
@@ -594,7 +594,6 @@ if __name__ == "__main__":
     # S_list = np.array([42, 45])
     S_list = np.array([45])
 
-
     # NOTE: Takeoff model is technically modeled via controls ODE solver.
     # Only trade you can do here would be modulating blowing or wing area
 
@@ -611,23 +610,23 @@ if __name__ == "__main__":
             "velocities": np.array([20, 24, 28]),
             "flap_deflections": np.array([50, 60, 65]),
         },
-        # "climb": {
-        #     "alphas": np.array([10, 15, 20]),
-        #     "velocities": np.array([20, 30, 40, 50]),
-        #     "flap_deflections": np.array([0, 10, 20, 30, 40, 50]),
-        # },  # NOTE: currently no blowing during climb
-        # "cruise": {
-        #     "alphas": np.array(
-        #         [0, 5, 10]
-        #     ),  # simulated a couple of aoas for drag polar plots
-        #     "velocities": np.array([80.0, 100.0, 120.0, 125.0, 130.0, 140.0, 150.0]),
-        #     "flap_deflections": [None],
-        # },
-        # "landing": {
-        #     "alphas": np.array([1, 5, 10, 15, 20, 25]),
-        #     "velocities": np.linspace(1, 80, 9),
-        #     "flap_deflections": np.array([50, 60, 65]),
-        # },
+        "climb": {
+            "alphas": np.array([10, 15, 20]),
+            "velocities": np.array([20, 30, 40, 50]),
+            "flap_deflections": np.array([0, 10, 20, 30, 40, 50]),
+        },  # NOTE: currently no blowing during climb
+        "cruise": {
+            "alphas": np.array(
+                [0, 5, 10]
+            ),  # simulated a couple of aoas for drag polar plots
+            "velocities": np.array([80.0, 100.0, 120.0, 125.0, 130.0, 140.0, 150.0]),
+            "flap_deflections": [None],
+        },
+        "landing": {
+            "alphas": np.array([1, 5, 10, 15, 20, 25]),
+            "velocities": np.linspace(1, 80, 9),
+            "flap_deflections": np.array([50, 60, 65]),
+        },
     }
 
     run_sref_cases(S_list, oper_dict=oper_dict)
