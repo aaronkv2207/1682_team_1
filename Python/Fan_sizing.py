@@ -229,9 +229,9 @@ A_chosen = 3.65
 # ax.axhline(motor_power, color = "k", linestyle="--", label=f"Chosen Motor Power: {motor_power} kW")
 # ax.axvline(A_chosen, linestyle="--", label=f"Area chosen: {A_chosen} m^2")
 
-ax.set_xlabel("Effective Total Propeller Area [m²]")
-ax.set_ylabel("Power (kW)")
-ax.set_title("Takeoff Power vs Effective Area")
+ax.set_xlabel("Effective Total Propeller Area [m²]", fontsize=15)
+ax.set_ylabel("Power (kW)", fontsize=15)
+ax.set_title("Takeoff Power vs Effective Area", fontsize=20)
 ax.legend()
 plt.show()
 
@@ -321,26 +321,28 @@ fig, ax1 = plt.subplots(figsize=(9,6))
 # Left axis: Ct and Cp
 ax1.plot(adv, Ct, "r-", label="C_T")
 ax1.plot(adv, Cp, "m-", label="C_Q)")
-ax1.set_xlabel("Advance Ratio (λ)")
-ax1.set_ylabel("C_T , C_Q")
+ax1.set_xlabel("Advance Ratio (λ)", fontsize=15)
+ax1.set_ylabel("C_T , C_Q", fontsize=15)
 
 # Vertical lines
 lambda_to = 0.12173
+lambda_climb = 0.435
 lambda_cruise = 0.74
 
 ax1.axvline(lambda_to, linestyle="--", color='k', label="Takeoff")
-ax1.axvline(lambda_cruise, linestyle="--", color='gray', label="Cruise")
+ax1.axvline(lambda_climb, linestyle="--", color='k', label="Climb")
+ax1.axvline(lambda_cruise, linestyle="--", color='k', label="Cruise")
 # Right axis: efficiency
 ax2 = ax1.twinx()
 ax2.plot(adv, eta_fan, "g", label="η_fan")
-ax2.set_ylabel("Efficiency")
+ax2.set_ylabel("Efficiency", fontsize=15)
 
 # Combine legends
 # lines1, labels1 = ax1.get_legend_handles_labels()
 # lines2, labels2 = ax2.get_legend_handles_labels()
 # ax1.legend(lines1 + lines2, labels1 + labels2, loc="center right")
 
-plt.title("Fan Performance Curves")
+# plt.title("Fan Performance")
 plt.show()
 
 # ============================================================
@@ -427,9 +429,9 @@ r_full = np.concatenate([r, r[::-1]])
 plt.figure()
 plt.plot(r_full, y_full, '-', color='blue')
 plt.fill(r_full, y_full, alpha=0.3, color='skyblue')
-plt.xlabel('Radius (m)')
-plt.ylabel('y (m)')
-plt.title('Single Fan Blade Distribution')
+plt.xlabel('Radius (m)', fontsize=15)
+plt.ylabel('y (m)', fontsize=15)
+plt.title('Single Fan Blade Distribution', fontsize=15)
 # plt.grid(True)
 # plt.axis('equal')
 plt.show()
@@ -446,9 +448,9 @@ for i in range(n_blades):
     x_rot = r_full * np.cos(angle) - y_full * np.sin(angle)
     y_rot = r_full * np.sin(angle) + y_full * np.cos(angle)
     plt.fill(x_rot, y_rot, alpha=0.4, color="skyblue", label=f'Blade {i+1}')
-plt.xlabel('x (m)')
-plt.ylabel('y (m)')
-plt.title(f'Full fan with {n_blades} blades')
+plt.xlabel('x (m)',fontsize=15)
+plt.ylabel('y (m)',fontsize=15)
+plt.title(f'Full fan with {n_blades} blades', fontsize=20)
 plt.axis('equal')
 plt.show()
 
