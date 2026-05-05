@@ -12,10 +12,15 @@ class AircraftConstants:
     """Defaults to v2 Plane 1. Update constants via class call if changed."""
 
     # Just for testing
-    h_cruise: float = 5486.4
+    h_cruise: float = 7620 #[m]
     rho_cruise: float = Atmosphere(h=h_cruise).density[0]
-    mu_cruise: float = Atmosphere(h=h_cruise).dynamic_viscosity[0]
-    V_cruise: float = 125.0
+    mu_cruise: float = Atmosphere(h_cruise).dynamic_viscosity[0]
+    V_cruise: float = 125
+    
+    h_takeoff: float = 0
+    rho_takeoff: float = Atmosphere(h=h_takeoff).density[0]
+    mu_takeoff: float = Atmosphere(h=h_takeoff).dynamic_viscosity[0]
+    V_takeoff: float = 20
 
     b: float = 17.75
     MAC: float = 2.54
@@ -24,8 +29,9 @@ class AircraftConstants:
     D_f: float = 1.6
     l_f: float = 15
 
-    D_n: float = 1.1 * 1.116  # [m] diameter of cowl (est)
-    D_hl: float = 1.116  # [m] diameter of fan (from prop team)
+    D_n: float = 1.1 * 0.282*2  # [m] diameter of cowl (est)
+    D_hl: float = 0.282*2  # [m] diameter of fan (from prop team)
+    n: float = 14 # number of fans
 
     S_h: float = 13.33
     ht_MAC: float = 2.11
@@ -170,13 +176,16 @@ def calc_C_Dp(rho, V, mu, C: AircraftConstants = C):
 
         CDA = calc_CDA(S_wet, C_f, K_f)
 
-        if i == 1:  # 8 nacelles
-            CDA *= 8
+        if i == 1:  # n nacelles
+            CDA *= 14
 
         CDAs.append(CDA)
 
     Dps = [CDA * 0.5 * rho * V**2 for CDA in CDAs]
     C_Dps = [Dp / (0.5 * rho * V**2 * C.S) for Dp in Dps]
+
+    C_Dps = np.array(C_Dps)
+    print(np.round(C_Dps,3))
 
     return sum(Dps), sum(C_Dps)
 
@@ -191,3 +200,16 @@ if __name__ == "__main__":
     print("-------")
     print("cruise")
     print("Cd_p =", round(C_Dp_cruise, 3))
+    print("D_p =", round(Dp_cruise, 3))
+
+    Dp_takeoff, C_Dp_takeoff = calc_C_Dp(
+        AircraftConstants.rho_takeoff,
+        AircraftConstants.V_takeoff,
+        AircraftConstants.mu_cruise,
+        C,
+    )
+
+    print("-------")
+    print("takeoff")
+    print("Cd_p =", round(C_Dp_takeoff, 3))
+
