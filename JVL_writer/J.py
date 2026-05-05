@@ -470,7 +470,7 @@ class JVL(AVL):
         # Sets Xcg, Ycg, Zcg
         if xyz_cg.any():
             run_file_contents += [
-                "c1",
+                "m",
                 f"x {xyz_cg[0]}",
                 f"y {xyz_cg[1]}",
                 f"z {xyz_cg[2]}",

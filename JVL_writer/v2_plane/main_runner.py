@@ -47,7 +47,7 @@ lv = 8  # distance from wing quarter chord to vertical tail quarter chord
 Vv = 0.06  # Vertical tail volume coefficient
 vt_ar = 1.2
 tail_hinge = 0.7
-Vh = 1.0
+Vh = 1.0 # TODO: can go up to 1.5; modulate till stable
 
 # h_tail - fixed parameters
 ht_ar = 3
@@ -61,8 +61,8 @@ main_foil = asb.Airfoil(coordinates="./JVL_writer/jw05.dat")
 # S = 49.6  # twin otter wing area is 39 m^2
 
 # Jet parameters
-Tcp_takeoff, Tcp_land = 1.0, 1.0
-XYZ_CG = np.array([1.883, -0.003, -0.562])  # NOTE: most up-to-date based on MTOW cg
+Tcp_takeoff, Tcp_land = 2.0, 2.0
+XYZ_CG = np.array([1.139, -0.003, -0.617])  # NOTE: most up-to-date based on MTOW cg
 
 
 def plane_operating_point(cond, plane, analysis_options):
@@ -287,7 +287,7 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                         djet0=0.0,
                         djet1=0.0,
                         djet3=0.0,
-                        dxdsk=0.07,
+                        dxdsk=0.2*MAC,
                         dndsk=-0.51 * hdisk,
                     ),
                     xsecs=[
