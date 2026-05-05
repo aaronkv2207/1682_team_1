@@ -463,7 +463,7 @@ if __name__ == "__main__":
             cruise_altitude=AircraftConfig.h_cruise,
         )
 
-        max_range = np.max(range_out["cruise_range_km"])*0.75
+        max_range = np.max(range_out["cruise_range_km"])*0.72
 
         # takeoff distance (operating point)
         if len(config_to.xto_oper) == 0:
@@ -492,39 +492,53 @@ if __name__ == "__main__":
                 pareto_mask[i] = False
                 break
 
-    # -------------------------------------------------
-    # Plot
-    # -------------------------------------------------
-    plt.figure(figsize=(8, 6))
 
-    # all designs (faded)
-    plt.scatter(xto_vals, range_vals, c=S_vals, cmap="viridis", alpha=0.4, s=60)
+    # -------------------------------------------------
+    # Plot (clean + correct S mapping via colorbar)
+    # -------------------------------------------------
+    plt.figure(figsize=(10, 5))
 
-    # pareto front (bold)
+    # all designs (colored by wing area)
+    sc = plt.scatter(
+        xto_vals,
+        range_vals,
+        c=S_vals,
+        cmap="viridis",
+        # alpha=0.7,
+        # s=50
+    )
+
+    # Pareto front (same colormap for consistency)
     pareto_sorted = np.argsort(xto_vals[pareto_mask])
+    xto_p = xto_vals[pareto_mask][pareto_sorted]
+    range_p = range_vals[pareto_mask][pareto_sorted]
+    S_p = S_vals[pareto_mask][pareto_sorted]
+
     plt.plot(
-        xto_vals[pareto_mask][pareto_sorted],
-        range_vals[pareto_mask][pareto_sorted],
-        color="red",
-        linewidth=2.5,
-        label="Pareto front",
+        xto_p,
+        range_p,
+        color="black",
     )
 
     plt.scatter(
-        xto_vals[pareto_mask],
-        range_vals[pareto_mask],
-        c=S_vals[pareto_mask],
+        xto_p,
+        range_p,
+        c=S_p,
         cmap="viridis",
-        edgecolor="k",
-        s=100,
+        # edgecolor="black",
+        s=80,
+        zorder=3
     )
 
-    cbar = plt.colorbar()
+    # colorbar = wing area mapping
+    cbar = plt.colorbar(sc)
     cbar.set_label("Wing Area S [m²]")
 
     plt.xlabel("Takeoff Distance [ft]")
-    plt.ylabel("Cruise Range [km]")
-    plt.title("Design Trade: Range vs Takeoff Distance")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
+    plt.ylabel("Range [km]")
+    plt.title("Range vs Takeoff Distance")
+
+    # plt.grid(True, alpha=0.3)
+
+    plt.tight_layout()
     plt.show()
