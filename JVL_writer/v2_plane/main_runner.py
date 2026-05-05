@@ -80,7 +80,7 @@ def plane_operating_point(cond, plane, analysis_options):
     jvl.default_analysis_specific_options = analysis_options
     return jvl
 
- 
+
 def generate_fuselage_xsecs(
     N: int, vt_x, vt_sweep_x: float, vt_c: float
 ) -> list[asb.FuselageXSec]:
