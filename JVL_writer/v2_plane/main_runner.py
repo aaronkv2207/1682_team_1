@@ -47,7 +47,7 @@ lv = 8  # distance from wing quarter chord to vertical tail quarter chord
 Vv = 0.06  # Vertical tail volume coefficient
 vt_ar = 1.2
 tail_hinge = 0.7
-Vh = 1.0 # TODO: can go up to 1.5; modulate till stable
+Vh = 1.0  # TODO: can go up to 1.5; modulate till stable
 
 # h_tail - fixed parameters
 ht_ar = 3
@@ -287,7 +287,7 @@ def run_sref_cases(S_list, oper_dict):  # noqa: PLR0915
                         djet0=0.0,
                         djet1=0.0,
                         djet3=0.0,
-                        dxdsk=0.2*MAC,
+                        dxdsk=0.2 * MAC,
                         dndsk=-0.51 * hdisk,
                     ),
                     xsecs=[

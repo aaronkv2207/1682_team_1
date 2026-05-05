@@ -2,15 +2,9 @@ Initial Aircraft
 #Mach
 0        ! AeroSandbox note: This is overwritten later to match the current OperatingPoint Mach during the AVL run.
 #IYsym   IZsym   Zsym
-<<<<<<< HEAD
-0       1   -3.2
-#Sref    Cref    Bref
-44.4375 2.505507929840742 17.74823934929885
-=======
 0       1   -3.5
 #Sref    Cref    Bref
 44.43750000000001 2.5055079298407414 17.74823934929885
->>>>>>> 9c879fb (working aero takeoff asuming cg = [1.400, -0.003, -0.617]. Rereun main_runner.py with corrected constants at the top. NOTE: script should natively work on all computers and 100% Brendas laptop since she has the same jvl setup as me)
 #Xref    Yref    Zref
 0.6338656910463875 0.0 0.0
 # CDp
@@ -26,11 +20,7 @@ YDUPLICATE
 
 JETPARAM
 #hdisk   fh   djet0   djet1   djet3 dxdsk dndsk
-<<<<<<< HEAD
-0.315 0.000 0.000 0.000 0.000000 0.507093 -0.160541
-=======
 0.324 0.000 0.000 0.000 0.000000 0.507093 -0.164996
->>>>>>> 9c879fb (working aero takeoff asuming cg = [1.400, -0.003, -0.617]. Rereun main_runner.py with corrected constants at the top. NOTE: script should natively work on all computers and 100% Brendas laptop since she has the same jvl setup as me)
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
@@ -50,11 +40,7 @@ FlapJet1 1.000 1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-<<<<<<< HEAD
-0 1.8936557 0 2.5354628 0
-=======
 0 2.0222271 0 2.5354628 0
->>>>>>> 9c879fb (working aero takeoff asuming cg = [1.400, -0.003, -0.617]. Rereun main_runner.py with corrected constants at the top. NOTE: script should natively work on all computers and 100% Brendas laptop since she has the same jvl setup as me)
 
 AFIL
 takeoff_Sref_45_v_20_aoa_10_d-60.af1
@@ -74,11 +60,7 @@ FlapJet2 1.000 1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-<<<<<<< HEAD
-0 2.6873114 0 2.5354628 0
-=======
 0 2.7944542 0 2.5354628 0
->>>>>>> 9c879fb (working aero takeoff asuming cg = [1.400, -0.003, -0.617]. Rereun main_runner.py with corrected constants at the top. NOTE: script should natively work on all computers and 100% Brendas laptop since she has the same jvl setup as me)
 
 AFIL
 takeoff_Sref_45_v_20_aoa_10_d-60.af2
@@ -98,11 +80,7 @@ FlapJet3 1.000 1.000
 #--------------------------------------------------
 SECTION
 #Xle    Yle    Zle     Chord   Ainc  [Nspanwise   Sspace]
-<<<<<<< HEAD
-0 3.480967 0 2.5354628 0
-=======
 0 3.5666813 0 2.5354628 0
->>>>>>> 9c879fb (working aero takeoff asuming cg = [1.400, -0.003, -0.617]. Rereun main_runner.py with corrected constants at the top. NOTE: script should natively work on all computers and 100% Brendas laptop since she has the same jvl setup as me)
 
 AFIL
 takeoff_Sref_45_v_20_aoa_10_d-60.af3
